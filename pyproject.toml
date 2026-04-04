@@ -1,0 +1,127 @@
+[project]
+name = "gpsaudswebsite"
+version = "0.1.0"
+description = "GPSA-UDS Departmental Website backend API"
+requires-python = ">=3.12"
+
+dependencies = [
+    # Web framework and ASGI server
+    "fastapi[standard]>=0.115.0",
+
+    # Database
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.0",
+
+    # Validation and settings
+    "pydantic[email]>=2.10.0",
+    "pydantic-settings>=2.6.0",
+
+    # Authentication and security
+    "passlib[argon2]>=1.7.4",
+    "argon2-cffi>=23.1.0",
+    "PyJWT>=2.10.0",
+    "cryptography>=44.0.0",
+
+    # File uploads and media processing
+    "python-multipart>=0.0.12",
+    "python-magic>=0.4.27",
+    "Pillow>=11.0.0",
+
+    # Object storage
+    "boto3>=1.35.0",
+    "aiobotocore>=2.15.0",
+
+    # Email
+    "resend>=2.4.0",
+
+    # Logging
+    "structlog>=24.4.0",
+
+    # Background tasks and scheduling
+    "apscheduler>=3.10.4",
+
+    # Utilities
+    "python-slugify>=8.0.4",
+    "httpx>=0.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "httpx>=0.28.0",
+    "anyio>=4.7.0",
+
+    # Linting and type checking
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "sqlalchemy[mypy]>=2.0.36",
+
+    # Developer workflow
+    "pre-commit>=4.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# ✅ FIX: Tell Hatch where your package lives
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "C4",
+    "UP",
+    "N",
+    "SIM",
+]
+ignore = [
+    "B008",
+    "B904",
+    "E501",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = [
+    "pydantic.mypy",
+    "sqlalchemy.ext.mypy.plugin",
+]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--cov=app --cov-report=term-missing --cov-report=html"
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/models/__init__.py",
+    "*/migrations/*",
+]
