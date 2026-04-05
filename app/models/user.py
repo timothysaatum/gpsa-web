@@ -1,15 +1,13 @@
+import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Enum as SAEnum, Integer, SmallInteger, String
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
-from app.models.academic_resource import AcademicResource
-from app.models.audit import AuditLog
 from app.models.enums import UserRole
-from app.models.event import EventRegistration
-from app.models.token import PasswordResetToken, RefreshToken
 
 
 class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
