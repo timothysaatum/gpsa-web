@@ -5,7 +5,7 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import CurrentUser, require_roles
@@ -97,6 +97,24 @@ class NewsRepository(BaseRepository[NewsPost]):
         result = await self.db.execute(q)
         return list(result.scalars().all())
 
+    async def count_published(
+        self,
+        *,
+        category: NewsCategory | None = None,
+    ) -> int:
+        q = (
+            select(func.count())
+            .select_from(NewsPost)
+            .where(
+                NewsPost.deleted_at.is_(None),
+                NewsPost.published_at.is_not(None),
+            )
+        )
+        if category:
+            q = q.where(NewsPost.category == category)
+        result = await self.db.execute(q)
+        return result.scalar_one()
+
     async def get_featured(self) -> NewsPost | None:
         result = await self.db.execute(
             self._base_query()
@@ -155,7 +173,7 @@ async def list_news(
 ) -> PaginatedResponse[NewsSummaryResponse]:
     repo = NewsRepository(db)
     posts = await repo.list_published(category=category, offset=offset, limit=limit)
-    total = await repo.count()
+    total = await repo.count_published(category=category)
     return PaginatedResponse(
         items=[NewsSummaryResponse.model_validate(p) for p in posts],
         total=total,
@@ -254,7 +272,6 @@ async def create_news_post(
         new_values={"title": post.title, "published": post.is_published}, request=request,
     )
     await db.commit()
-    await db.refresh(post)
     return NewsResponse.model_validate(post)
 
 
@@ -278,7 +295,6 @@ async def update_news_post(
         request=request,
     )
     await db.commit()
-    await db.refresh(post)
     return NewsResponse.model_validate(post)
 
 
@@ -302,7 +318,6 @@ async def publish_news_post(
         action="PUBLISH", entity_type="news_post", entity_id=post.id, request=request
     )
     await db.commit()
-    await db.refresh(post)
     return NewsResponse.model_validate(post)
 
 

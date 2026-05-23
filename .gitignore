@@ -18,7 +18,7 @@ build/
 # Virtual environments
 .venv/
 venv/
-env/
+gpsaenv/
 
 # Testing
 .pytest_cache/

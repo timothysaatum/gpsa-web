@@ -6,10 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import CurrentUser, require_roles
-from app.core.permissions import assert_permission, can_manage_users
 from app.db.session import get_db
 from app.models.enums import UserRole
-from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.common import MessageResponse, PaginatedResponse
 from app.schemas.user import AdminUpdateUserRequest, UpdateProfileRequest, UserPublicResponse
@@ -62,7 +60,6 @@ async def update_my_profile(
         request=request,
     )
     await db.commit()
-    await db.refresh(user)
     return UserPublicResponse.model_validate(user)
 
 
@@ -147,7 +144,6 @@ async def admin_update_user(
         actor_id=current_user.id,
     )
     await db.commit()
-    await db.refresh(user)
     return UserPublicResponse.model_validate(user)
 
 

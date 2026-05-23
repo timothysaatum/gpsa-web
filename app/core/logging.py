@@ -34,11 +34,10 @@ def configure_logging() -> None:
     Configure structlog for the application.
 
     - Development: human-readable console output with colours.
-    - Production:  machine-parseable JSON output.
+    - Production: machine-parseable JSON output.
     """
     shared_processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
-        structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso", utc=True),
@@ -47,36 +46,36 @@ def configure_logging() -> None:
         structlog.processors.StackInfoRenderer(),
     ]
 
+    # Use proper stdlib integration so add_logger_name works everywhere
+    # (scripts, alembic, tests, uvicorn, etc.)
     if settings.is_development:
-        # Colourful, human-readable output in dev
         processors = [
             *shared_processors,
+            structlog.stdlib.add_logger_name,          # Now safe
             structlog.dev.ConsoleRenderer(colors=True),
         ]
     else:
-        # JSON for log aggregators (Datadog, Loki, CloudWatch, etc.)
         processors = [
             *shared_processors,
+            structlog.stdlib.add_logger_name,
             structlog.processors.dict_tracebacks,
             structlog.processors.JSONRenderer(),
         ]
 
     structlog.configure(
         processors=processors,  # type: ignore[arg-type]
-        wrapper_class=structlog.make_filtering_bound_logger(
-            logging.DEBUG if settings.debug else logging.INFO
-        ),
+        wrapper_class=structlog.stdlib.BoundLogger,      # ← Key fix
         context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(sys.stdout),
+        logger_factory=structlog.stdlib.LoggerFactory(), # ← Key fix
         cache_logger_on_first_use=True,
     )
 
-    # Route stdlib logging through structlog so SQLAlchemy/uvicorn logs
-    # are formatted the same way.
+    # Configure standard library logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=logging.DEBUG if settings.debug else logging.INFO,
+        force=True,                     # Important for scripts & alembic
     )
 
     # Quieten noisy libraries
@@ -86,5 +85,6 @@ def configure_logging() -> None:
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 
-def get_logger(name: str | None = None) -> structlog.BoundLogger:
+def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
+    """Return a properly configured logger."""
     return structlog.get_logger(name)

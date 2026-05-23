@@ -47,7 +47,7 @@ async def list_events(
     events = await repo.list_filtered(
         status=event_status, event_type=event_type, offset=offset, limit=limit
     )
-    total = await repo.count()
+    total = await repo.count_filtered(status=event_status, event_type=event_type)
     return PaginatedResponse(
         items=[EventSummaryResponse.model_validate(e) for e in events],
         total=total,
@@ -109,7 +109,6 @@ async def create_event(
         request=request,
     )
     await db.commit()
-    await db.refresh(event)
     return EventResponse.model_validate(event)
 
 
@@ -148,7 +147,6 @@ async def update_event(
         request=request,
     )
     await db.commit()
-    await db.refresh(event)
     return EventResponse.model_validate(event)
 
 
@@ -237,7 +235,6 @@ async def register_for_event(
         actor_id=current_user.id if current_user else None,
     )
     await db.commit()
-    await db.refresh(registration)
     return EventRegistrationResponse.model_validate(registration)
 
 

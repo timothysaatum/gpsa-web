@@ -1,13 +1,19 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
+from app.db.types import JSONBCompat
 from app.models.enums import NewsCategory
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class NewsPost(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
@@ -43,7 +49,7 @@ class NewsPost(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     is_strip_announcement: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Attachments — stored as array of R2/S3 object keys
-    attachments: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    attachments: Mapped[list | None] = mapped_column(JSONBCompat, nullable=True)
 
     # Publishing workflow
     published_at: Mapped[datetime | None] = mapped_column(

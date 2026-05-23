@@ -1,13 +1,21 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, SmallInteger, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Boolean, DateTime, ForeignKey, SmallInteger, String, Text
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
+from app.db.types import JSONBCompat
 from app.models.enums import EventStatus, EventType
+
+if TYPE_CHECKING:
+    from app.models.certificate import Certificate
+    from app.models.feedback import Feedback
+    from app.models.user import User
 
 
 class Event(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
@@ -38,8 +46,8 @@ class Event(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Rich content
-    agenda: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    speakers: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    agenda: Mapped[dict | None] = mapped_column(JSONBCompat, nullable=True)
+    speakers: Mapped[list | None] = mapped_column(JSONBCompat, nullable=True)
 
     # Attribution
     created_by: Mapped[uuid.UUID] = mapped_column(

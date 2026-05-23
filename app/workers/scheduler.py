@@ -118,6 +118,8 @@ async def prune_old_notifications() -> None:
 # ── Registration ──────────────────────────────────────────────────────────────
 
 def register_jobs() -> None:
+    from app.workers.tasks import send_event_reminders
+
     scheduler.add_job(
         expire_opportunities,
         trigger=CronTrigger(hour=0, minute=5, timezone="Africa/Accra"),
@@ -136,6 +138,16 @@ def register_jobs() -> None:
         prune_old_notifications,
         trigger=CronTrigger(day_of_week="sun", hour=2, timezone="Africa/Accra"),
         id="prune_old_notifications",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    # 24-hour event reminder — runs daily at 8am
+    scheduler.add_job(
+        lambda: __import__("asyncio").get_event_loop().run_until_complete(
+            send_event_reminders(hours_before=24)
+        ),
+        trigger=CronTrigger(hour=8, minute=0, timezone="Africa/Accra"),
+        id="event_reminders_24h",
         replace_existing=True,
         misfire_grace_time=3600,
     )

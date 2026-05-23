@@ -7,18 +7,23 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from pydantic import Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import CurrentUser, require_roles
-from app.core.permissions import assert_permission, can_resolve_welfare_report, can_view_welfare_reports, can_manage_spotlight
+from app.core.dependencies import CurrentUser
+from app.core.permissions import (
+    assert_permission,
+    can_manage_spotlight,
+    can_resolve_welfare_report,
+    can_view_welfare_reports,
+)
 from app.db.session import get_db
-from app.models.enums import ReportStatus, ReportType, UserRole, WelfareCategory
+from app.models.enums import ReportStatus, ReportType, WelfareCategory
 from app.models.welfare import WelfareReport, WelfareSpotlight
 from app.repositories.base import BaseRepository
-from app.schemas.common import AppModel, MessageResponse, PaginatedResponse
+from app.schemas.common import AppModel, PaginatedResponse
 from app.services.audit import AuditService
 from app.services.email import EmailService
 
@@ -98,6 +103,22 @@ class WelfareReportRepository(BaseRepository[WelfareReport]):
         result = await self.db.execute(q)
         return list(result.scalars().all())
 
+    async def count_filtered(
+        self,
+        *,
+        report_type: ReportType | None = None,
+        status: ReportStatus | None = None,
+    ) -> int:
+        q = select(func.count()).select_from(WelfareReport).where(
+            WelfareReport.deleted_at.is_(None)
+        )
+        if report_type:
+            q = q.where(WelfareReport.report_type == report_type)
+        if status:
+            q = q.where(WelfareReport.status == status)
+        result = await self.db.execute(q)
+        return result.scalar_one()
+
 
 class WelfareSpotlightRepository(BaseRepository[WelfareSpotlight]):
     def __init__(self, db: AsyncSession) -> None:
@@ -175,7 +196,6 @@ async def submit_report(
         request=request if not (payload.is_anonymous or payload.report_type == ReportType.confidential) else None,
     )
     await db.commit()
-    await db.refresh(report)
     return WelfareReportResponse.model_validate(report)
 
 
@@ -197,7 +217,7 @@ async def list_reports(
     reports = await repo.list_filtered(
         report_type=report_type, status=report_status, offset=offset, limit=limit
     )
-    total = await repo.count()
+    total = await repo.count_filtered(report_type=report_type, status=report_status)
     return PaginatedResponse(
         items=[AdminWelfareReportResponse.model_validate(r) for r in reports],
         total=total,
@@ -248,7 +268,6 @@ async def resolve_report(
         request=request,
     )
     await db.commit()
-    await db.refresh(report)
     return AdminWelfareReportResponse.model_validate(report)
 
 
@@ -296,5 +315,4 @@ async def create_spotlight(
         request=request,
     )
     await db.commit()
-    await db.refresh(spotlight)
     return SpotlightResponse.model_validate(spotlight)

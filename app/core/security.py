@@ -9,7 +9,10 @@ from passlib.context import CryptContext
 from app.core.config import settings
 
 # ── Password hashing ──────────────────────────────────────────────────────────
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto",
+)
 
 
 def hash_password(plain: str) -> str:
@@ -18,6 +21,10 @@ def hash_password(plain: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
+
+
+def needs_rehash(hashed: str) -> bool:
+    return pwd_context.needs_update(hashed)
 
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
@@ -55,7 +62,7 @@ def create_refresh_token(subject: str | uuid.UUID) -> tuple[str, datetime]:
         "iat": now,
         "exp": expires_at,
         "type": "refresh",
-        "jti": str(uuid.uuid4()),  # unique per token for revocation
+        "jti": str(uuid.uuid4()),
     }
     return _encode(payload), expires_at
 

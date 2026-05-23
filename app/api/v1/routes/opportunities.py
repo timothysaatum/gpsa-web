@@ -8,8 +8,8 @@ from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import AnyHttpUrl, Field
-from sqlalchemy import select
+from pydantic import Field
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import CurrentUser, require_roles
@@ -84,6 +84,27 @@ class OpportunityRepository(BaseRepository[Opportunity]):
         result = await self.db.execute(q)
         return list(result.scalars().all())
 
+    async def count_filtered(
+        self,
+        *,
+        opp_type: OpportunityType | None = None,
+        active_only: bool = True,
+    ) -> int:
+        q = (
+            select(func.count())
+            .select_from(Opportunity)
+            .where(
+                Opportunity.deleted_at.is_(None),
+                Opportunity.is_published.is_(True),
+            )
+        )
+        if active_only:
+            q = q.where(Opportunity.is_active.is_(True))
+        if opp_type:
+            q = q.where(Opportunity.opp_type == opp_type)
+        result = await self.db.execute(q)
+        return result.scalar_one()
+
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
@@ -106,7 +127,10 @@ async def list_opportunities(
     opps = await repo.list_filtered(
         opp_type=opp_type, active_only=not include_expired, offset=offset, limit=limit
     )
-    total = await repo.count()
+    total = await repo.count_filtered(
+        opp_type=opp_type,
+        active_only=not include_expired,
+    )
     return PaginatedResponse(
         items=[OpportunityResponse.model_validate(o) for o in opps],
         total=total,
@@ -121,6 +145,8 @@ async def get_opportunity(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OpportunityResponse:
     opp = await OpportunityRepository(db).get_by_id_or_404(opp_id)
+    if not opp.is_published:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found.")
     return OpportunityResponse.model_validate(opp)
 
 
@@ -156,7 +182,6 @@ async def create_opportunity(
         entity_id=opp.id, new_values={"title": opp.title}, request=request,
     )
     await db.commit()
-    await db.refresh(opp)
     return OpportunityResponse.model_validate(opp)
 
 
@@ -184,7 +209,6 @@ async def update_opportunity(
         request=request,
     )
     await db.commit()
-    await db.refresh(opp)
     return OpportunityResponse.model_validate(opp)
 
 

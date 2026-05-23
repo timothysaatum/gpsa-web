@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -105,10 +105,10 @@ async def mark_read(
     notif = await repo.get_by_id_or_404(notif_id)
     if notif.user_id != current_user.id:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=403, detail="Not your notification.")
     notif = await repo.update(notif, {"is_read": True, "read_at": datetime.now(UTC)})
     await db.commit()
-    await db.refresh(notif)
     return NotificationResponse.model_validate(notif)
 
 

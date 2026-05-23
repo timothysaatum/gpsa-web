@@ -1,12 +1,17 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import UUIDPrimaryKeyMixin
+from app.db.types import JSONBCompat
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class AuditLog(UUIDPrimaryKeyMixin, Base):
@@ -47,8 +52,8 @@ class AuditLog(UUIDPrimaryKeyMixin, Base):
     entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
     # Data snapshot
-    old_values: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    new_values: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    old_values: Mapped[dict | None] = mapped_column(JSONBCompat, nullable=True)
+    new_values: Mapped[dict | None] = mapped_column(JSONBCompat, nullable=True)
 
     # Request context
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)

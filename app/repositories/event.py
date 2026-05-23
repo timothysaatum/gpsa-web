@@ -1,12 +1,10 @@
 import uuid
-from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.models.event import Event, EventRegistration
 from app.models.enums import EventStatus, EventType
+from app.models.event import Event, EventRegistration
 from app.repositories.base import BaseRepository
 
 
@@ -30,6 +28,20 @@ class EventRepository(BaseRepository[Event]):
         q = q.order_by(Event.start_datetime.asc()).offset(offset).limit(limit)
         result = await self.db.execute(q)
         return list(result.scalars().all())
+
+    async def count_filtered(
+        self,
+        *,
+        status: EventStatus | None = None,
+        event_type: EventType | None = None,
+    ) -> int:
+        q = select(func.count()).select_from(Event).where(Event.deleted_at.is_(None))
+        if status:
+            q = q.where(Event.status == status)
+        if event_type:
+            q = q.where(Event.event_type == event_type)
+        result = await self.db.execute(q)
+        return result.scalar_one()
 
     async def get_featured(self) -> Event | None:
         result = await self.db.execute(
