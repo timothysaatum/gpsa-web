@@ -1,0 +1,305 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS custom properties ──────────────────────────────────────────────────
+   All greens are BRIGHT — matching the logo ring and bolt.host screenshot.
+   NO deep/dark greens used for backgrounds or primary UI elements.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --green:           #29a329;
+  --green-mid:       #29a329;
+  --green-mint:      #39c639;
+  --green-hover:     #238a23;
+  --green-text:      #1f7a1f;
+  --gold:            #F2C12E;
+  --gold-light:      #F5D060;
+  --cream:           #F7FAF7;
+  --cream-dark:      #EDF4EE;
+  --cream-darker:    #D9EBD9;
+  --surface:         #FFFFFF;
+  --border:          #D9EBD9;
+  --text:            #1B3D22;
+  --text-muted:      #4A7A55;
+  --green-gradient:  linear-gradient(90deg, #A8D5BA 0%, #00B140 100%);
+  --brand-gradient:  linear-gradient(90deg, #A8D5BA 0%, #00B140 100%);
+  --brand-gradient-h: linear-gradient(90deg, #A8D5BA 0%, #00B140 100%);
+}
+
+@layer base {
+  html { @apply antialiased scroll-smooth; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background-color: #F7FAF7;
+    color: #1B3D22;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4 { font-family: 'Cormorant Garamond', Georgia, serif; }
+
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #F7FAF7, 0 0 0 4px #29a329;
+  }
+
+  ::-webkit-scrollbar       { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #EDF4EE; }
+  ::-webkit-scrollbar-thumb { background: #39c639; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #29a329; }
+
+  ::selection { background: #29a329; color: white; }
+}
+
+@layer components {
+
+  /* ── Buttons ──────────────────────────────────────────────────────────── */
+  .btn {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-weight: 600;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl
+           transition-all duration-200 select-none
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-sm  { @apply btn px-4 py-2 text-sm; }
+  .btn-md  { @apply btn px-5 py-2.5 text-sm; }
+  .btn-lg  { @apply btn px-7 py-3.5 text-base; }
+
+  /* Primary: bright green gradient — matches the screenshot "Register for Events" button */
+  .btn-primary {
+    background: var(--brand-gradient);
+    color: white;
+    box-shadow: 0 2px 10px rgba(60,181,89,0.32);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, var(--green-hover), var(--green));
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px rgba(60,181,89,0.42);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--green-text);
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(242,193,46,0.28);
+  }
+  .btn-gold:hover {
+    background: linear-gradient(135deg, #D4A017, var(--gold));
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(242,193,46,0.44);
+  }
+  .btn-gold:active { transform: translateY(0); }
+
+  .btn-outline {
+    border: 2px solid var(--green);
+    color: var(--green);
+    background: transparent;
+  }
+  .btn-outline:hover {
+    background-color: var(--cream-dark);
+    border-color: var(--green-hover);
+    color: var(--green-hover);
+  }
+
+  .btn-ghost {
+    color: var(--green);
+    background: transparent;
+  }
+  .btn-ghost:hover { background-color: var(--cream-dark); }
+
+  /* White outline — for use on gradient/green backgrounds */
+  .btn-outline-white {
+    border: 2px solid rgba(255,255,255,0.55);
+    color: white;
+    background: transparent;
+  }
+  .btn-outline-white:hover {
+    background-color: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.85);
+  }
+
+  .btn-destructive {
+    background-color: #dc2626;
+    color: white;
+    box-shadow: 0 2px 8px rgba(220,38,38,0.25);
+  }
+  .btn-destructive:hover { background-color: #b91c1c; transform: translateY(-1px); }
+
+  /* ── Cards ────────────────────────────────────────────────────────────── */
+  .card {
+    background-color: white;
+    border-radius: 1rem;
+    border: 1px solid #D9EBD9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+    transition: all 0.2s;
+  }
+  .card-hover {
+    background-color: white;
+    border-radius: 1rem;
+    border: 1px solid #D9EBD9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    border-color: #7DD98A;
+    box-shadow: 0 8px 30px rgba(60,181,89,0.14), 0 2px 8px rgba(60,181,89,0.08);
+  }
+  .card-glass {
+    background-color: rgba(255,255,255,0.82);
+    backdrop-filter: blur(8px);
+    border-radius: 1rem;
+    border: 1px solid rgba(255,255,255,0.65);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  /* ── Badges ───────────────────────────────────────────────────────────── */
+  .badge {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-weight: 700;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs uppercase tracking-wide;
+  }
+  .badge-green  { @apply badge; background-color: #dcf5e3; color: #1B3D22; }
+  .badge-gold   { @apply badge; background-color: #fef3c7; color: #7C5A09; }
+  .badge-red    { @apply badge bg-red-100 text-red-700; }
+  .badge-orange { @apply badge bg-orange-100 text-orange-700; }
+  .badge-blue   { @apply badge bg-blue-100 text-blue-700; }
+  .badge-purple { @apply badge bg-purple-100 text-purple-700; }
+  .badge-gray   { @apply badge bg-gray-100 text-gray-600; }
+
+  /* ── Forms ────────────────────────────────────────────────────────────── */
+  .form-input {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    display: block; width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1.5px solid #D9EBD9;
+    background-color: #F7FAF7;
+    font-size: 14px; line-height: 1.5;
+    color: #1B3D22;
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    outline: none;
+  }
+  .form-input::placeholder { color: rgba(74,122,85,0.45); }
+  .form-input:focus {
+    border-color: #3CB559;
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(60,181,89,0.14);
+  }
+  .form-input-error { border-color: #f87171 !important; }
+  .form-input-error:focus {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.13) !important;
+  }
+  .form-label {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    display: block; font-size: 14px; font-weight: 600;
+    color: #1B3D22; margin-bottom: 6px;
+  }
+  .form-error {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    margin-top: 6px; font-size: 12px; color: #dc2626; font-weight: 500;
+  }
+  .form-select {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    display: block; width: 100%;
+    padding: 12px 40px 12px 16px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background-color: var(--cream);
+    font-size: 14px; color: var(--green-text);
+    transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+    outline: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%234A7A55' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center; background-size: 16px; background-repeat: no-repeat;
+  }
+  .form-select:focus {
+    border-color: var(--green);
+    background-color: var(--surface);
+    box-shadow: 0 0 0 3px rgba(60,181,89,0.14);
+  }
+
+  /* ── Section helpers ──────────────────────────────────────────────────── */
+  .section-container { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .section-padding   { @apply py-16 lg:py-24; }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold leading-tight;
+    color: var(--green-text);
+  }
+  .section-sub { @apply text-lg leading-relaxed mt-3; color: var(--text-muted); }
+
+  .divider {
+    width: 48px; height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--green-mint));
+    border-radius: 9999px;
+    margin-top: 14px; margin-bottom: 32px;
+  }
+
+  .section-alt { background-color: var(--cream-dark); }
+
+  .page-header {
+    background: var(--brand-gradient);
+    @apply relative overflow-hidden;
+    z-index: 1;
+  }
+  .page-header::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Marquee ──────────────────────────────────────────────────────────── */
+  .marquee-wrapper { overflow: hidden; width: 100%; }
+  .marquee-track {
+    display: flex; gap: 4rem; white-space: nowrap;
+    animation: marquee 30s linear infinite; width: max-content;
+  }
+
+  /* ── Skeleton ─────────────────────────────────────────────────────────── */
+  .skeleton {
+    @apply rounded-lg;
+    background: linear-gradient(90deg, var(--cream-dark) 25%, var(--cream-darker) 50%, var(--cream-dark) 75%);
+    background-size: 200% 100%;
+    animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
+  }
+}
+
+@layer utilities {
+  .font-500 { font-weight: 500; }
+  .font-600 { font-weight: 600; }
+  .font-700 { font-weight: 700; }
+  .font-800 { font-weight: 800; }
+  .text-balance   { text-wrap: balance; }
+  .scrollbar-hide { scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  .shadow-card     { box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); }
+  .shadow-card-md  { box-shadow: 0 4px 16px rgba(60,181,89,0.13), 0 2px 6px rgba(60,181,89,0.07); }
+  .shadow-card-lg  { box-shadow: 0 12px 40px rgba(60,181,89,0.17), 0 4px 16px rgba(60,181,89,0.09); }
+  .shadow-glow     { box-shadow: 0 0 0 3px rgba(60,181,89,0.22); }
+  .shadow-glow-gold { box-shadow: 0 0 0 3px rgba(242,193,46,0.28); }
+
+  .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
+  .font-body    { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+
+  .bg-brand    { background: var(--brand-gradient); }
+  .bg-brand-h  { background: var(--brand-gradient-h); }
+  .text-brand  { color: var(--green); }
+
+  .text-muted { color: var(--text-muted); }
+  .text-deep { color: var(--green-text); }
+  .bg-cream-dark { background-color: var(--cream-dark); }
+  .border-cream-dark { border-color: var(--cream-dark); }
+  .bg-green-gradient { background: var(--green-gradient); }
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeUp  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
