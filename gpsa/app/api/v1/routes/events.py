@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.dependencies import CurrentUser, OptionalUser, require_roles
 from app.core.permissions import assert_permission, can_create_event, can_publish_event
 from app.db.session import get_db
+from app.domain.bus import bus as domain_bus
+from app.domain.events import EventCreated, EventPublished, RegistrationConfirmed
 from app.models.enums import EventStatus, EventType, UserRole
 from app.repositories.event import EventRegistrationRepository, EventRepository
 from app.schemas.common import MessageResponse, PaginatedResponse
@@ -109,6 +111,9 @@ async def create_event(
         request=request,
     )
     await db.commit()
+    await domain_bus.publish_async(EventCreated(
+        event_id=event.id, title=event.title, event_type=str(event.event_type),
+    ))
     return EventResponse.model_validate(event)
 
 
@@ -147,6 +152,10 @@ async def update_event(
         request=request,
     )
     await db.commit()
+    if "status" in updates and updates["status"] == EventStatus.ongoing:
+        await domain_bus.publish_async(EventPublished(
+            event_id=event.id, title=event.title,
+        ))
     return EventResponse.model_validate(event)
 
 
@@ -235,6 +244,12 @@ async def register_for_event(
         actor_id=current_user.id if current_user else None,
     )
     await db.commit()
+    await domain_bus.publish_async(RegistrationConfirmed(
+        registration_id=registration.id,
+        event_id=event_id,
+        user_id=current_user.id if current_user else None,
+        full_name=payload.full_name,
+    ))
     return EventRegistrationResponse.model_validate(registration)
 
 

@@ -2,37 +2,127 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── CSS custom properties ──────────────────────────────────────────────────
-   All greens are BRIGHT — matching the logo ring and bolt.host screenshot.
-   NO deep/dark greens used for backgrounds or primary UI elements.
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   GPSA-UDS Design Tokens — v3 (centralised semantic colour system)
+   ═══════════════════════════════════════════════════════════════════════════
+   All UI colours live here.  Every component, page, and utility class
+   consumes these variables.  No hardcoded hex/rgba values outside this file.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --green:           #29a329;
-  --green-mid:       #29a329;
-  --green-mint:      #39c639;
-  --green-hover:     #238a23;
-  --green-text:      #1f7a1f;
-  --gold:            #F2C12E;
-  --gold-light:      #F5D060;
-  --cream:           #F7FAF7;
-  --cream-dark:      #EDF4EE;
-  --cream-darker:    #D9EBD9;
-  --surface:         #FFFFFF;
-  --border:          #D9EBD9;
-  --text:            #1B3D22;
-  --text-muted:      #4A7A55;
-  --green-gradient:  linear-gradient(90deg, #A8D5BA 0%, #00B140 100%);
-  --brand-gradient:  linear-gradient(90deg, #A8D5BA 0%, #00B140 100%);
-  --brand-gradient-h: linear-gradient(90deg, #A8D5BA 0%, #00B140 100%);
+  /* ── Base palette (raw values — do NOT use directly in components) ───── */
+  --green-primary:     #10A606;
+  --green-hover:       #0E8D05;
+  --green-active:      #0A6C04;
+  --green-deep:        #074B03;
+  --green-mint:        #5CC452;
+  --amber:             #C8912E;
+  --amber-hover:       #A07020;
+  --amber-light:       #DFB075;
+  --amber-deep:        #785214;
+  --cream-bg:          #F8F9F7;
+  --cream-dark:        #EDF0EC;
+  --cream-darker:      #D9DFD7;
+  --white:             #FFFFFF;
+  --near-black:        #1A1A2E;
+  --gray-400:          #9CA3AF;
+  --gray-500:          #6B7280;
+  --gray-600:          #4B5563;
+  --gray-border:       #E2E8F0;
+  --gray-text:         #5C697A;     /* improved contrast — 5.9:1 on white, 5.1:1 on cream-dark */
+  --red:               #dc2626;
+  --red-dark:          #b91c1c;
+  --red-light:         #f87171;
+  --red-lighter:       #fee2e2;
+  --green-light-old:   #3CB559;     /* legacy — used in icons, badges */
+  --green-bright-old:  #29a329;     /* legacy — used in hero, tags */
+  --green-sage-old:    #A8D5BA;     /* legacy — gradient light end */
+  --green-emerald-old: #00B140;     /* legacy — gradient dark end */
+  --gold-old:          #F2C12E;     /* legacy — logo, gallery items */
+  --gold-old-deep:     #C8991A;     /* legacy — icon colours */
+  --text-deep-old:     #1B3D22;     /* legacy — dark green text */
+  --blue-lapaz:        #185FA5;     /* legacy — community pillar */
+  --purple-social:     #7c3aed;     /* legacy — social category */
+
+  /* ── Semantic tokens (use these in components) ───────────────────────── */
+
+  /* Backgrounds */
+  --color-bg:              var(--cream-bg);
+  --color-surface:         var(--white);
+  --color-surface-alt:     var(--cream-dark);
+  --color-surface-hover:   var(--cream-darker);
+
+  /* Primary brand */
+  --color-primary:            var(--green-primary);
+  --color-primary-hover:      var(--green-hover);
+  --color-primary-active:     var(--green-active);
+  --color-primary-foreground: var(--white);
+  --color-primary-light:      var(--green-mint);
+
+  /* Accent (amber/gold) */
+  --color-accent:             var(--amber);
+  --color-accent-hover:       var(--amber-hover);
+  --color-accent-light:       var(--amber-light);
+  --color-accent-foreground:  var(--white);
+  --color-accent-deep:        var(--amber-deep);
+
+  /* Foreground (text) — semantic hierarchy with WCAG AA compliance */
+  --color-foreground:             var(--near-black);   /* #1A1A2E — body text, ~16:1 */
+  --color-foreground-secondary:   var(--gray-600);     /* #4B5563 — secondary text, ~6.2:1 */
+  --color-muted-foreground:       var(--gray-text);    /* #64748B — muted text, ~4.5:1 */
+  --color-disabled-foreground:    var(--gray-400);     /* #9CA3AF — disabled text */
+  --color-placeholder:            var(--gray-500);     /* #6B7280 — placeholder (no opacity) */
+  --color-link:                   var(--green-hover);  /* #0E8D05 — links */
+  --color-link-hover:             var(--green-active); /* #0A6C04 — link hover */
+
+  /* Foreground on brand backgrounds */
+  --color-primary-foreground:     var(--white);
+  --color-accent-foreground:      var(--white);
+  --color-danger-foreground:      var(--white);
+  --color-success-foreground:     var(--white);
+  --color-dark-foreground:        var(--white);        /* on dark green surfaces */
+
+  /* Text — backward-compatible aliases (keep for existing usage) */
+  --color-text:                   var(--color-foreground);
+  --color-text-muted:             var(--color-muted-foreground);
+  --color-text-deep:              var(--color-primary-active);
+  --color-text-on-primary:        var(--color-primary-foreground);
+  --color-text-on-accent:         var(--color-accent-foreground);
+
+  /* Borders */
+  --color-border:          var(--gray-border);
+  --color-border-focus:    var(--green-primary);
+
+  /* Feedback */
+  --color-danger:          var(--red);
+  --color-danger-hover:    var(--red-dark);
+  --color-danger-light:    var(--red-light);
+  --color-success:         var(--green-primary);
+
+  /* Legacy gradient → solid color (gradients removed per design decision) */
+  --legacy-gradient:       var(--green-primary);
+  --legacy-gradient-alt:   var(--green-primary);
+
+  /* Brand gradient → solid color */
+  --brand-gradient:        var(--green-primary);
+  --brand-gradient-h:      var(--green-hover);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-primary: 0 4px 16px rgba(16,166,6,0.13), 0 2px 6px rgba(16,166,6,0.07);
+  --shadow-primary-lg: 0 12px 40px rgba(16,166,6,0.17), 0 4px 16px rgba(16,166,6,0.09);
+  --shadow-glow: 0 0 0 3px rgba(16,166,6,0.22);
+  --shadow-glow-accent: 0 0 0 3px rgba(200,145,46,0.28);
 }
+
 
 @layer base {
   html { @apply antialiased scroll-smooth; }
 
   body {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    background-color: #F7FAF7;
-    color: #1B3D22;
+    background-color: var(--color-bg);
+    color: var(--color-text);
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   }
 
@@ -40,16 +130,17 @@
 
   *:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px #F7FAF7, 0 0 0 4px #29a329;
+    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-border-focus);
   }
 
   ::-webkit-scrollbar       { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #EDF4EE; }
-  ::-webkit-scrollbar-thumb { background: #39c639; border-radius: 9999px; }
-  ::-webkit-scrollbar-thumb:hover { background: #29a329; }
+  ::-webkit-scrollbar-track { background: var(--color-surface-alt); }
+  ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-hover); }
 
-  ::selection { background: #29a329; color: white; }
+  ::selection { background: var(--color-primary); color: var(--color-primary-foreground); }
 }
+
 
 @layer components {
 
@@ -65,53 +156,51 @@
   .btn-md  { @apply btn px-5 py-2.5 text-sm; }
   .btn-lg  { @apply btn px-7 py-3.5 text-base; }
 
-  /* Primary: bright green gradient — matches the screenshot "Register for Events" button */
   .btn-primary {
     background: var(--brand-gradient);
-    color: white;
-    box-shadow: 0 2px 10px rgba(60,181,89,0.32);
+    color: var(--color-text-on-primary);
+    box-shadow: 0 2px 10px rgba(16,166,6,0.32);
   }
   .btn-primary:hover {
-    background: linear-gradient(135deg, var(--green-hover), var(--green));
+    background: var(--brand-gradient-h);
     transform: translateY(-1px);
-    box-shadow: 0 6px 22px rgba(60,181,89,0.42);
+    box-shadow: 0 6px 22px rgba(16,166,6,0.42);
   }
   .btn-primary:active { transform: translateY(0); }
 
   .btn-gold {
-    background: linear-gradient(135deg, var(--gold), var(--gold-light));
-    color: var(--green-text);
+    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
+    color: var(--color-text-on-accent);
     font-weight: 700;
-    box-shadow: 0 2px 8px rgba(242,193,46,0.28);
+    box-shadow: 0 2px 8px rgba(200,145,46,0.28);
   }
   .btn-gold:hover {
-    background: linear-gradient(135deg, #D4A017, var(--gold));
+    background: linear-gradient(135deg, var(--color-accent-hover), var(--color-accent));
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(242,193,46,0.44);
+    box-shadow: 0 6px 20px rgba(200,145,46,0.44);
   }
   .btn-gold:active { transform: translateY(0); }
 
   .btn-outline {
-    border: 2px solid var(--green);
-    color: var(--green);
+    border: 2px solid var(--color-primary);
+    color: var(--color-primary);
     background: transparent;
   }
   .btn-outline:hover {
-    background-color: var(--cream-dark);
-    border-color: var(--green-hover);
-    color: var(--green-hover);
+    background-color: color-mix(in srgb, var(--color-primary) 8%, var(--white));
+    border-color: var(--color-primary-hover);
+    color: var(--color-primary-hover);
   }
 
   .btn-ghost {
-    color: var(--green);
+    color: var(--color-primary);
     background: transparent;
   }
-  .btn-ghost:hover { background-color: var(--cream-dark); }
+  .btn-ghost:hover { background-color: var(--color-surface-alt); }
 
-  /* White outline — for use on gradient/green backgrounds */
   .btn-outline-white {
     border: 2px solid rgba(255,255,255,0.55);
-    color: white;
+    color: var(--white);
     background: transparent;
   }
   .btn-outline-white:hover {
@@ -120,39 +209,39 @@
   }
 
   .btn-destructive {
-    background-color: #dc2626;
-    color: white;
+    background-color: var(--color-danger);
+    color: var(--white);
     box-shadow: 0 2px 8px rgba(220,38,38,0.25);
   }
-  .btn-destructive:hover { background-color: #b91c1c; transform: translateY(-1px); }
+  .btn-destructive:hover { background-color: var(--color-danger-hover); transform: translateY(-1px); }
 
   /* ── Cards ────────────────────────────────────────────────────────────── */
   .card {
-    background-color: white;
+    background-color: var(--color-surface);
     border-radius: 1rem;
-    border: 1px solid #D9EBD9;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
     transition: all 0.2s;
   }
   .card-hover {
-    background-color: white;
+    background-color: var(--color-surface);
     border-radius: 1rem;
-    border: 1px solid #D9EBD9;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
     transition: all 0.2s;
     cursor: pointer;
   }
   .card-hover:hover {
     transform: translateY(-4px);
-    border-color: #7DD98A;
-    box-shadow: 0 8px 30px rgba(60,181,89,0.14), 0 2px 8px rgba(60,181,89,0.08);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-primary);
   }
   .card-glass {
     background-color: rgba(255,255,255,0.82);
     backdrop-filter: blur(8px);
     border-radius: 1rem;
     border: 1px solid rgba(255,255,255,0.65);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-sm);
   }
 
   /* ── Badges ───────────────────────────────────────────────────────────── */
@@ -161,9 +250,9 @@
     font-weight: 700;
     @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs uppercase tracking-wide;
   }
-  .badge-green  { @apply badge; background-color: #dcf5e3; color: #1B3D22; }
-  .badge-gold   { @apply badge; background-color: #fef3c7; color: #7C5A09; }
-  .badge-red    { @apply badge bg-red-100 text-red-700; }
+  .badge-green  { @apply badge; background-color: color-mix(in srgb, var(--color-primary) 10%, var(--white)); color: var(--color-primary-active); }
+  .badge-gold   { @apply badge; background-color: var(--accent-light, #F5E6C8); color: var(--color-accent-deep); }
+  .badge-red    { @apply badge; background-color: var(--red-lighter); color: var(--color-danger); }
   .badge-orange { @apply badge bg-orange-100 text-orange-700; }
   .badge-blue   { @apply badge bg-blue-100 text-blue-700; }
   .badge-purple { @apply badge bg-purple-100 text-purple-700; }
@@ -175,71 +264,71 @@
     display: block; width: 100%;
     padding: 12px 16px;
     border-radius: 12px;
-    border: 1.5px solid #D9EBD9;
-    background-color: #F7FAF7;
+    border: 1.5px solid var(--color-border);
+    background-color: var(--color-bg);
     font-size: 14px; line-height: 1.5;
-    color: #1B3D22;
+    color: var(--color-text);
     transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     outline: none;
   }
-  .form-input::placeholder { color: rgba(74,122,85,0.45); }
+  .form-input::placeholder { color: var(--color-placeholder); }
   .form-input:focus {
-    border-color: #3CB559;
-    background-color: white;
-    box-shadow: 0 0 0 3px rgba(60,181,89,0.14);
+    border-color: var(--color-border-focus);
+    background-color: var(--color-surface);
+    box-shadow: 0 0 0 3px rgba(16,166,6,0.12);
   }
-  .form-input-error { border-color: #f87171 !important; }
+  .form-input-error { border-color: var(--color-danger-light) !important; }
   .form-input-error:focus {
-    border-color: #ef4444 !important;
-    box-shadow: 0 0 0 3px rgba(239,68,68,0.13) !important;
+    border-color: var(--color-danger) !important;
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.13) !important;
   }
   .form-label {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     display: block; font-size: 14px; font-weight: 600;
-    color: #1B3D22; margin-bottom: 6px;
+    color: var(--color-text); margin-bottom: 6px;
   }
   .form-error {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    margin-top: 6px; font-size: 12px; color: #dc2626; font-weight: 500;
+    margin-top: 6px; font-size: 12px; color: var(--color-danger); font-weight: 500;
   }
   .form-select {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     display: block; width: 100%;
     padding: 12px 40px 12px 16px;
     border-radius: 12px;
-    border: 1.5px solid var(--border);
-    background-color: var(--cream);
-    font-size: 14px; color: var(--green-text);
+    border: 1.5px solid var(--color-border);
+    background-color: var(--color-bg);
+    font-size: 14px; color: var(--color-text);
     transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
     outline: none; appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%234A7A55' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 12px center; background-size: 16px; background-repeat: no-repeat;
   }
   .form-select:focus {
-    border-color: var(--green);
-    background-color: var(--surface);
-    box-shadow: 0 0 0 3px rgba(60,181,89,0.14);
+    border-color: var(--color-border-focus);
+    background-color: var(--color-surface);
+    box-shadow: 0 0 0 3px rgba(16,166,6,0.12);
   }
 
   /* ── Section helpers ──────────────────────────────────────────────────── */
-  .section-container { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .section-container { @apply max-w-7xl mx-auto px-5 sm:px-8 lg:px-10; }
   .section-padding   { @apply py-16 lg:py-24; }
 
   .section-title {
     font-family: 'Cormorant Garamond', Georgia, serif;
     @apply text-3xl md:text-4xl lg:text-5xl font-bold leading-tight;
-    color: var(--green-text);
+    color: var(--color-primary-active);
   }
-  .section-sub { @apply text-lg leading-relaxed mt-3; color: var(--text-muted); }
+  .section-sub { @apply text-lg leading-relaxed mt-3; color: var(--color-muted-foreground); }
 
   .divider {
     width: 48px; height: 3px;
-    background: linear-gradient(90deg, var(--green), var(--green-mint));
+    background: var(--color-primary);
     border-radius: 9999px;
     margin-top: 14px; margin-bottom: 32px;
   }
 
-  .section-alt { background-color: var(--cream-dark); }
+  .section-alt { background-color: var(--color-surface-alt); }
 
   .page-header {
     background: var(--brand-gradient);
@@ -263,7 +352,7 @@
   /* ── Skeleton ─────────────────────────────────────────────────────────── */
   .skeleton {
     @apply rounded-lg;
-    background: linear-gradient(90deg, var(--cream-dark) 25%, var(--cream-darker) 50%, var(--cream-dark) 75%);
+    background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--color-surface-hover) 50%, var(--color-surface-alt) 75%);
     background-size: 200% 100%;
     animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
   }
@@ -278,24 +367,30 @@
   .scrollbar-hide { scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-  .shadow-card     { box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); }
-  .shadow-card-md  { box-shadow: 0 4px 16px rgba(60,181,89,0.13), 0 2px 6px rgba(60,181,89,0.07); }
-  .shadow-card-lg  { box-shadow: 0 12px 40px rgba(60,181,89,0.17), 0 4px 16px rgba(60,181,89,0.09); }
-  .shadow-glow     { box-shadow: 0 0 0 3px rgba(60,181,89,0.22); }
-  .shadow-glow-gold { box-shadow: 0 0 0 3px rgba(242,193,46,0.28); }
+  .shadow-card     { box-shadow: var(--shadow-sm); }
+  .shadow-card-md  { box-shadow: var(--shadow-primary); }
+  .shadow-card-lg  { box-shadow: var(--shadow-primary-lg); }
+  .shadow-glow     { box-shadow: var(--shadow-glow); }
+  .shadow-glow-gold { box-shadow: var(--shadow-glow-accent); }
 
   .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
   .font-body    { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
 
   .bg-brand    { background: var(--brand-gradient); }
   .bg-brand-h  { background: var(--brand-gradient-h); }
-  .text-brand  { color: var(--green); }
+  .text-brand  { color: var(--color-primary); }
 
-  .text-muted { color: var(--text-muted); }
-  .text-deep { color: var(--green-text); }
-  .bg-cream-dark { background-color: var(--cream-dark); }
-  .border-cream-dark { border-color: var(--cream-dark); }
-  .bg-green-gradient { background: var(--green-gradient); }
+  .text-muted { color: var(--color-muted-foreground); }
+  .text-secondary { color: var(--color-foreground-secondary); }
+  .text-deep { color: var(--color-primary-active); }
+  .bg-cream-dark { background-color: var(--color-surface-alt); }
+  .border-cream-dark { border-color: var(--color-surface-alt); }
+
+  /* Legacy gradient utility for components that need the old green gradient */
+  .bg-legacy-gradient { background: var(--legacy-gradient); }
+
+  /* Green brand background (preserves backward compat with 32+ components using bg-green-gradient) */
+  .bg-green-gradient { background: var(--green-primary); }
 }
 
 /* ── Keyframes ──────────────────────────────────────────────────────────── */

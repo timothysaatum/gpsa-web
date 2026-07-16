@@ -152,7 +152,7 @@ export function AcademicsPage() {
                         </Badge>
                       )}
                     </div>
-                    <p className="font-body font-700 text-[#1B3D22] leading-tight">{resource.title}</p>
+                    <p className="font-body font-700 text-deep leading-tight">{resource.title}</p>
                     <p className="text-xs text-muted mt-1">
                       {resource.course?.name ?? '—'} · {formatFileSize(resource.file_size_bytes)}
                       {resource.duration_mins && ` · ${resource.duration_mins} min`}
@@ -193,7 +193,7 @@ export function AcademicsPage() {
                   <button
                     onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                     disabled={safePage === 1}
-                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-600 border border-cream-dark bg-white text-muted hover:border-green-300 hover:text-green-700 disabled:opacity-40 disabled:pointer-events-none transition-all"
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-600 border border-cream-dark bg-white text-secondary hover:border-green-300 hover:text-green-700 disabled:opacity-60 disabled:pointer-events-none transition-all"
                   >
                     <ChevronLeft className="h-4 w-4" /> Prev
                   </button>
@@ -227,7 +227,7 @@ export function AcademicsPage() {
                   <button
                     onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                     disabled={safePage === totalPages}
-                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-600 border border-cream-dark bg-white text-muted hover:border-green-300 hover:text-green-700 disabled:opacity-40 disabled:pointer-events-none transition-all"
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-600 border border-cream-dark bg-white text-secondary hover:border-green-300 hover:text-green-700 disabled:opacity-60 disabled:pointer-events-none transition-all"
                   >
                     Next <ChevronRight className="h-4 w-4" />
                   </button>

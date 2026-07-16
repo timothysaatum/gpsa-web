@@ -53,6 +53,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     scheduler.start()
     logger.info("scheduler_started")
 
+    # Register domain event handlers
+    from app.domain.handlers import register_event_handlers
+    register_event_handlers()
+    logger.info("domain_event_handlers_registered")
+
     logger.info("startup_complete")
 
     yield

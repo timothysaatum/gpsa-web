@@ -268,7 +268,7 @@ export function NewsPage() {
                       <Badge variant="green">{NEWS_CATEGORY_LABELS[heroPost.category]}</Badge>
                       {heroPost.is_urgent && <Badge variant="red">🔴 Urgent</Badge>}
                     </div>
-                    <h2 className="font-display text-2xl lg:text-3xl font-bold text-[#1B3D22] mb-3 leading-snug">
+                    <h2 className="font-display text-2xl lg:text-3xl font-bold text-deep mb-3 leading-snug">
                       {heroPost.title}
                     </h2>
                     <p className="text-muted text-sm leading-relaxed line-clamp-3 mb-4">{heroPost.summary}</p>
@@ -331,7 +331,7 @@ export function NewsPage() {
                 <button
                   onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                   disabled={safePage === 1}
-                  className="px-4 py-2 rounded-xl text-sm font-600 border border-cream-dark bg-white text-muted hover:border-green-300 hover:text-green-700 disabled:opacity-40 disabled:pointer-events-none transition-all"
+                  className="px-4 py-2 rounded-xl text-sm font-600 border border-cream-dark bg-white text-secondary hover:border-green-300 hover:text-green-700 disabled:opacity-60 disabled:pointer-events-none transition-all"
                 >
                   ← Prev
                 </button>
@@ -363,7 +363,7 @@ export function NewsPage() {
                 <button
                   onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                   disabled={safePage === totalPages}
-                  className="px-4 py-2 rounded-xl text-sm font-600 border border-cream-dark bg-white text-muted hover:border-green-300 hover:text-green-700 disabled:opacity-40 disabled:pointer-events-none transition-all"
+                  className="px-4 py-2 rounded-xl text-sm font-600 border border-cream-dark bg-white text-secondary hover:border-green-300 hover:text-green-700 disabled:opacity-60 disabled:pointer-events-none transition-all"
                 >
                   Next →
                 </button>
@@ -465,7 +465,7 @@ export function NewsDetailPage() {
         {/* Summary callout */}
         {post.summary && (
           <div className="bg-green-gradient border-l-4 border-green-700 rounded-r-xl p-5 mb-8 text-white">
-            <p className="text-[#1B3D22] text-base leading-relaxed font-500">{post.summary}</p>
+            <p className="text-deep text-base leading-relaxed font-500">{post.summary}</p>
           </div>
         )}
 
@@ -575,7 +575,7 @@ export function NotificationsPage() {
 
       {isLoading ? (
         <div className="space-y-3">{[1,2,3,4].map((i) => <Skeleton key={i} className="h-20" />)}</div>
-      ) : !data?.items.length ? (
+      ) : !data?.items?.length ? (
         <EmptyState icon="🔔" title="No notifications" description="You're all caught up!" />
       ) : (
         <div className="space-y-2">
@@ -591,9 +591,9 @@ export function NotificationsPage() {
               <div className="w-2 h-2 rounded-full bg-green-gradient flex-shrink-0 mt-2 opacity-0 transition-opacity"
                 style={{ opacity: n.is_read ? 0 : 1 }} />
               <div className="flex-1">
-                <p className={cn('text-sm font-600 text-[#1B3D22]', !n.is_read && 'font-700')}>{n.title}</p>
+                <p className={cn('text-sm font-600 text-deep', !n.is_read && 'font-700')}>{n.title}</p>
                 <p className="text-sm text-muted mt-0.5">{n.body}</p>
-                <p className="text-xs text-muted opacity-60 mt-1.5">{relativeTime(n.created_at)}</p>
+                <p className="text-xs text-secondary mt-1.5">{relativeTime(n.created_at)}</p>
               </div>
               {n.link && <ChevronRight className="h-4 w-4 text-muted flex-shrink-0 mt-1" />}
             </div>

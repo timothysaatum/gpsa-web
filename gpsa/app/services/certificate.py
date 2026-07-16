@@ -14,6 +14,9 @@ from fastapi import HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions import assert_permission, can_issue_certificates
+from app.domain.bus import bus as domain_bus
+from app.domain.events import CertificateIssued
+from app.domain.kernel import DomainEventBus
 from app.models.certificate import Certificate
 from app.models.user import User
 from app.repositories.certificate import CertificateRepository
@@ -28,13 +31,14 @@ logger = structlog.get_logger(__name__)
 
 
 class CertificateService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, bus: DomainEventBus | None = None) -> None:
         self.db = db
         self.repo = CertificateRepository(db)
         self.events = EventRepository(db)
         self.registrations = EventRegistrationRepository(db)
         self.audit = AuditService(db)
         self.notifications = NotificationService(db)
+        self.bus = bus or domain_bus
 
     # ── Issue ─────────────────────────────────────────────────────────────────
 
@@ -57,6 +61,7 @@ class CertificateService:
             )
 
         issued: list[CertificateResponse] = []
+        cert_events: list[CertificateIssued] = []
 
         for reg in registrations:
             if reg.user_id is None:
@@ -95,6 +100,9 @@ class CertificateService:
                 "issued_at": datetime.now(UTC),
             })
 
+            cert_events.append(CertificateIssued(
+                certificate_id=cert.id, event_id=event_id, user_id=reg.user_id,
+            ))
             # Notify the student
             await self.notifications.certificate_issued(reg.user_id, cert.id, event.title)
 
@@ -108,6 +116,8 @@ class CertificateService:
 
         await self.db.commit()
         logger.info("certificates_issued", event_id=str(event_id), count=len(issued))
+        for evt in cert_events:
+            await self.bus.publish_async(evt)
         return issued
 
     # ── Verify (public endpoint) ──────────────────────────────────────────────

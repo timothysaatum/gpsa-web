@@ -175,7 +175,7 @@ export function EventsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1,2,3,4,5,6].map((i) => <CardSkeleton key={i} />)}
           </div>
-        ) : !data?.items.length ? (
+        ) : !data?.items?.length ? (
           <EmptyState icon="📅" title="No events found" description="Try changing your filters." />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -222,7 +222,7 @@ export function EventDetailPage() {
       {/* Header */}
       <div className="page-header py-16">
         <div className="section-container relative">
-          <button onClick={() => navigate('/events')} className="text-white/60 hover:text-white text-sm mb-6 flex items-center gap-1.5 transition-colors">
+          <button onClick={() => navigate('/events')} className="text-white/70 hover:text-white text-sm mb-6 flex items-center gap-1.5 transition-colors">
             ← Back to Events
           </button>
           <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -277,26 +277,26 @@ export function EventDetailPage() {
               </div>
             )}
             <div className="card p-6 space-y-4">
-              <h3 className="font-body font-700 text-[#1B3D22]">Event Details</h3>
+              <h3 className="font-body font-700 text-deep">Event Details</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
                   <Calendar className="h-4 w-4 text-green-700 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-600 text-[#1B3D22]">Date & Time</p>
+                    <p className="font-600 text-deep">Date & Time</p>
                     <p className="text-muted">{formatDateTime(event.start_datetime)}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="h-4 w-4 text-green-700 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-600 text-[#1B3D22]">Location</p>
+                    <p className="font-600 text-deep">Location</p>
                     <p className="text-muted">{event.location}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="text-green-700 mt-0.5">🏷️</span>
                   <div>
-                    <p className="font-600 text-[#1B3D22]">Type</p>
+                    <p className="font-600 text-deep">Type</p>
                     <p className="text-muted">{EVENT_TYPE_LABELS[event.event_type]}</p>
                   </div>
                 </div>

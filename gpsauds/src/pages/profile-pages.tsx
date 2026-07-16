@@ -55,11 +55,11 @@ export function ProfilePage() {
 
       {/* Avatar */}
       <div className="card p-6 mb-6 flex items-center gap-5">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{background:"linear-gradient(90deg,#A8D5BA,#00B140)"}}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-legacy-gradient">
           <span className="text-xl font-bold text-white">{initials(user.full_name)}</span>
         </div>
         <div>
-          <p className="font-700 text-lg text-[#1B3D22]">{user.full_name}</p>
+          <p className="font-700 text-lg text-deep">{user.full_name}</p>
           <p className="text-sm text-muted">{user.email}</p>
           <div className="flex gap-2 mt-2">
             <Badge variant="green" className="capitalize">{user.role}</Badge>
@@ -72,7 +72,7 @@ export function ProfilePage() {
 
       {/* Form */}
       <div className="card p-8">
-        <h2 className="font-body font-700 text-[#1B3D22] mb-6">Edit Profile</h2>
+        <h2 className="font-body font-700 text-deep mb-6">Edit Profile</h2>
 
         {mutation.error && (
           <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl p-3.5 text-sm text-red-600">
@@ -95,7 +95,7 @@ export function ProfilePage() {
           </div>
           <div>
             <label className="form-label">Email Address</label>
-            <input value={user.email} disabled className="form-input opacity-60 cursor-not-allowed" />
+            <input value={user.email} disabled className="form-input cursor-not-allowed" style={{ color: 'var(--color-muted-foreground)' }} />
             <p className="form-error text-muted">Email cannot be changed.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -157,7 +157,7 @@ export function CertificatesPage() {
             <div key={cert.id} className="card p-6 flex items-center gap-5">
               <div className="w-12 h-12 rounded-2xl bg-gold-100 flex items-center justify-center text-2xl flex-shrink-0">🏅</div>
               <div className="flex-1">
-                <p className="font-700 text-[#1B3D22]">Certificate of Participation</p>
+                <p className="font-700 text-deep">Certificate of Participation</p>
                 <p className="text-sm text-muted">Issued {formatDate(cert.issued_at)}</p>
                 <p className="text-xs text-muted font-mono mt-0.5">{cert.verification_code}</p>
               </div>
@@ -269,7 +269,7 @@ export function SettingsPage() {
 
       {/* Change password */}
       <div className="card p-8">
-        <h2 className="font-body font-700 text-[#1B3D22] text-lg mb-5">Change Password</h2>
+        <h2 className="font-body font-700 text-deep text-lg mb-5">Change Password</h2>
         {pwDone && (
           <div className="mb-4 flex items-center gap-2 bg-green-gradient text-white border border-green-700 rounded-xl p-3.5 text-sm font-500">
             <CheckCircle className="h-4 w-4" /> Password changed. Please sign in again.
@@ -296,7 +296,7 @@ export function SettingsPage() {
 
       {/* Security */}
       <div className="card p-8">
-        <h2 className="font-body font-700 text-[#1B3D22] text-lg mb-2">Active Sessions</h2>
+        <h2 className="font-body font-700 text-deep text-lg mb-2">Active Sessions</h2>
         <p className="text-sm text-muted mb-5">Sign out from all other devices for security.</p>
         <Button
           variant="destructive" size="md"

@@ -1,4 +1,4 @@
-from sqlalchemy import SmallInteger, String
+from sqlalchemy import CheckConstraint, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -12,6 +12,9 @@ class Course(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     """
 
     __tablename__ = "courses"
+    __table_args__ = (
+        CheckConstraint("level >= 100 AND level <= 600", name="ck_courses_level_range"),
+    )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     code: Mapped[str | None] = mapped_column(String(20), unique=True, nullable=True)

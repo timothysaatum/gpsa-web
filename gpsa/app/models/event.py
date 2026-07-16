@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, SmallInteger, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, SmallInteger, String, Text, func
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,12 +14,14 @@ from app.models.enums import EventStatus, EventType
 
 if TYPE_CHECKING:
     from app.models.certificate import Certificate
-    from app.models.feedback import Feedback
     from app.models.user import User
 
 
 class Event(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "events"
+    __table_args__ = (
+        Index("ix_events_status_start", "status", "start_datetime"),
+    )
 
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -36,7 +38,7 @@ class Event(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     )
 
     # Scheduling
-    start_datetime: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    start_datetime: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_datetime: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     location: Mapped[str] = mapped_column(String(500), nullable=False)
 
@@ -63,29 +65,34 @@ class Event(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     certificates: Mapped[list["Certificate"]] = relationship(  # type: ignore[name-defined]
         back_populates="event", lazy="noload"
     )
-    feedback: Mapped[list["Feedback"]] = relationship(  # type: ignore[name-defined]
-        back_populates="event", lazy="noload"
-    )
 
     def __repr__(self) -> str:
         return f"<Event id={self.id} title={self.title!r} status={self.status}>"
 
 
-class EventRegistration(UUIDPrimaryKeyMixin, Base):
+class EventRegistration(UUIDPrimaryKeyMixin, SoftDeleteMixin, Base):
     __tablename__ = "event_registrations"
+    __table_args__ = (
+        Index("ix_event_registrations_event_user", "event_id", "user_id"),
+        Index(
+            "ix_event_registrations_active_unique",
+            "event_id",
+            "user_id",
+            unique=True,
+            postgresql_where=("user_id IS NOT NULL AND deleted_at IS NULL"),
+        ),
+    )
 
     event_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("events.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     # Nullable — guest registrations (non-logged-in) are allowed
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
-        index=True,
     )
 
     # Captured at registration time (denormalised intentionally — user data can change)
@@ -94,13 +101,12 @@ class EventRegistration(UUIDPrimaryKeyMixin, Base):
     contact: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    registered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )  # cancellation
+    registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     # Relationships
-    event: Mapped["Event"] = relationship(back_populates="registrations")
+    event: Mapped["Event | None"] = relationship(back_populates="registrations")
     user: Mapped["User | None"] = relationship(back_populates="event_registrations")  # type: ignore[name-defined]
     certificate: Mapped["Certificate | None"] = relationship(  # type: ignore[name-defined]
         back_populates="registration", uselist=False, lazy="noload"

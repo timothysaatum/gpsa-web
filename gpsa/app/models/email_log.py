@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -17,6 +17,9 @@ class EmailLog(UUIDPrimaryKeyMixin, Base):
     """
 
     __tablename__ = "email_logs"
+    __table_args__ = (
+        Index("ix_email_logs_status_created", "status", "created_at"),
+    )
 
     recipient: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     template: Mapped[EmailTemplate] = mapped_column(
@@ -28,6 +31,9 @@ class EmailLog(UUIDPrimaryKeyMixin, Base):
     # What triggered this email
     entity_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+    # The rendered HTML body — stored for retry purposes
+    html_body: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Delivery tracking
     status: Mapped[EmailStatus] = mapped_column(

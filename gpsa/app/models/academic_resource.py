@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, Enum as SAEnum, ForeignKey, SmallInteger, String
+from sqlalchemy import BigInteger, Boolean, Enum as SAEnum, ForeignKey, Index, SmallInteger, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,6 +17,9 @@ class AcademicResource(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Bas
     """
 
     __tablename__ = "academic_resources"
+    __table_args__ = (
+        Index("ix_academic_resources_course_level_trimester", "course_id", "level", "trimester"),
+    )
 
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     content_type: Mapped[ContentType] = mapped_column(
@@ -72,9 +75,5 @@ class AcademicResource(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Bas
         back_populates="uploaded_resources",
         foreign_keys=[uploaded_by],
     )
-    feedback: Mapped[list["Feedback"]] = relationship(  # type: ignore[name-defined]
-        back_populates="academic_resource", lazy="noload"
-    )
-
     def __repr__(self) -> str:
         return f"<AcademicResource id={self.id} title={self.title!r} type={self.content_type}>"

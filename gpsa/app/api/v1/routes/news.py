@@ -1,23 +1,16 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Annotated
 
-import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from pydantic import Field
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import CurrentUser, require_roles
-from app.core.permissions import assert_permission, can_publish_news, can_write_news
 from app.db.session import get_db
 from app.models.enums import NewsCategory, UserRole
-from app.models.news import NewsPost
-from app.repositories.base import BaseRepository
 from app.schemas.common import AppModel, MessageResponse, PaginatedResponse
-from app.services.audit import AuditService
-
-logger = structlog.get_logger(__name__)
+from app.services.news import NewsService
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -32,7 +25,7 @@ class NewsCreateRequest(AppModel):
     is_urgent: bool = False
     is_strip_announcement: bool = False
     attachments: list[str] | None = None
-    publish_immediately: bool = False  # admins can publish on create
+    publish_immediately: bool = False
 
 
 class NewsUpdateRequest(AppModel):
@@ -74,87 +67,6 @@ class NewsSummaryResponse(AppModel):
     published_at: datetime | None
 
 
-# ── Repository ────────────────────────────────────────────────────────────────
-
-class NewsRepository(BaseRepository[NewsPost]):
-    def __init__(self, db: AsyncSession) -> None:
-        super().__init__(NewsPost, db)
-
-    async def list_published(
-        self,
-        *,
-        category: NewsCategory | None = None,
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[NewsPost]:
-        q = (
-            self._base_query()
-            .where(NewsPost.published_at.is_not(None))
-        )
-        if category:
-            q = q.where(NewsPost.category == category)
-        q = q.order_by(NewsPost.published_at.desc()).offset(offset).limit(limit)
-        result = await self.db.execute(q)
-        return list(result.scalars().all())
-
-    async def count_published(
-        self,
-        *,
-        category: NewsCategory | None = None,
-    ) -> int:
-        q = (
-            select(func.count())
-            .select_from(NewsPost)
-            .where(
-                NewsPost.deleted_at.is_(None),
-                NewsPost.published_at.is_not(None),
-            )
-        )
-        if category:
-            q = q.where(NewsPost.category == category)
-        result = await self.db.execute(q)
-        return result.scalar_one()
-
-    async def get_featured(self) -> NewsPost | None:
-        result = await self.db.execute(
-            self._base_query()
-            .where(NewsPost.is_featured.is_(True), NewsPost.published_at.is_not(None))
-            .order_by(NewsPost.published_at.desc())
-            .limit(1)
-        )
-        return result.scalar_one_or_none()
-
-    async def get_strip_announcements(self) -> list[NewsPost]:
-        result = await self.db.execute(
-            self._base_query()
-            .where(
-                NewsPost.is_strip_announcement.is_(True),
-                NewsPost.published_at.is_not(None),
-            )
-            .order_by(NewsPost.published_at.desc())
-            .limit(10)
-        )
-        return list(result.scalars().all())
-
-    async def search(self, q_str: str, offset: int = 0, limit: int = 20) -> list[NewsPost]:
-        from sqlalchemy import or_
-        result = await self.db.execute(
-            self._base_query()
-            .where(
-                NewsPost.published_at.is_not(None),
-                or_(
-                    NewsPost.title.ilike(f"%{q_str}%"),
-                    NewsPost.summary.ilike(f"%{q_str}%"),
-                    NewsPost.body.ilike(f"%{q_str}%"),
-                ),
-            )
-            .order_by(NewsPost.published_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
-        return list(result.scalars().all())
-
-
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 router = APIRouter(tags=["News"])
@@ -171,9 +83,8 @@ async def list_news(
     offset: int = 0,
     limit: int = 20,
 ) -> PaginatedResponse[NewsSummaryResponse]:
-    repo = NewsRepository(db)
-    posts = await repo.list_published(category=category, offset=offset, limit=limit)
-    total = await repo.count_published(category=category)
+    svc = NewsService(db)
+    posts, total = await svc.list_published(category=category, offset=offset, limit=limit)
     return PaginatedResponse(
         items=[NewsSummaryResponse.model_validate(p) for p in posts],
         total=total,
@@ -190,7 +101,7 @@ async def list_news(
 async def get_featured_news(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> NewsResponse | None:
-    post = await NewsRepository(db).get_featured()
+    post = await NewsService(db).get_featured()
     return NewsResponse.model_validate(post) if post else None
 
 
@@ -202,7 +113,7 @@ async def get_featured_news(
 async def get_strip_announcements(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> list[NewsSummaryResponse]:
-    posts = await NewsRepository(db).get_strip_announcements()
+    posts = await NewsService(db).get_strip_announcements()
     return [NewsSummaryResponse.model_validate(p) for p in posts]
 
 
@@ -217,9 +128,7 @@ async def search_news(
     offset: int = 0,
     limit: int = 20,
 ) -> list[NewsSummaryResponse]:
-    if len(q.strip()) < 2:
-        raise HTTPException(status_code=400, detail="Search query must be at least 2 characters.")
-    posts = await NewsRepository(db).search(q.strip(), offset=offset, limit=limit)
+    posts = await NewsService(db).search(q, offset=offset, limit=limit)
     return [NewsSummaryResponse.model_validate(p) for p in posts]
 
 
@@ -228,9 +137,7 @@ async def get_news_post(
     post_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> NewsResponse:
-    post = await NewsRepository(db).get_by_id_or_404(post_id)
-    if not post.is_published:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found.")
+    post = await NewsService(db).get_by_id(post_id)
     return NewsResponse.model_validate(post)
 
 
@@ -246,32 +153,20 @@ async def create_news_post(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> NewsResponse:
-    assert_permission(can_write_news(current_user))
-    can_publish = can_publish_news(current_user)
-
-    if payload.publish_immediately and not can_publish:
-        raise HTTPException(status_code=403, detail="Only admins can publish immediately.")
-
-    published_at = datetime.now(UTC) if (payload.publish_immediately and can_publish) else None
-
-    post = await NewsRepository(db).create({
-        "title": payload.title,
-        "category": payload.category,
-        "summary": payload.summary,
-        "body": payload.body,
-        "banner_emoji": payload.banner_emoji,
-        "is_featured": payload.is_featured,
-        "is_urgent": payload.is_urgent,
-        "is_strip_announcement": payload.is_strip_announcement,
-        "attachments": payload.attachments,
-        "published_at": published_at,
-        "author_id": current_user.id,
-    })
-    await AuditService(db).log(
-        action="CREATE", entity_type="news_post", entity_id=post.id,
-        new_values={"title": post.title, "published": post.is_published}, request=request,
+    post = await NewsService(db).create(
+        title=payload.title,
+        category=payload.category,
+        summary=payload.summary,
+        body=payload.body,
+        actor=current_user,
+        request=request,
+        banner_emoji=payload.banner_emoji,
+        is_featured=payload.is_featured,
+        is_urgent=payload.is_urgent,
+        is_strip_announcement=payload.is_strip_announcement,
+        attachments=payload.attachments,
+        publish_immediately=payload.publish_immediately,
     )
-    await db.commit()
     return NewsResponse.model_validate(post)
 
 
@@ -283,18 +178,8 @@ async def update_news_post(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> NewsResponse:
-    assert_permission(can_write_news(current_user))
-    repo = NewsRepository(db)
-    post = await repo.get_by_id_or_404(post_id)
     updates = payload.model_dump(exclude_none=True)
-    old_values = {k: str(getattr(post, k)) for k in updates}
-    post = await repo.update(post, updates)
-    await AuditService(db).log(
-        action="UPDATE", entity_type="news_post", entity_id=post.id,
-        old_values=old_values, new_values={k: str(v) for k, v in updates.items()},
-        request=request,
-    )
-    await db.commit()
+    post = await NewsService(db).update(post_id, updates, current_user, request)
     return NewsResponse.model_validate(post)
 
 
@@ -309,15 +194,7 @@ async def publish_news_post(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> NewsResponse:
-    repo = NewsRepository(db)
-    post = await repo.get_by_id_or_404(post_id)
-    if post.is_published:
-        raise HTTPException(status_code=400, detail="Post is already published.")
-    post = await repo.update(post, {"published_at": datetime.now(UTC)})
-    await AuditService(db).log(
-        action="PUBLISH", entity_type="news_post", entity_id=post.id, request=request
-    )
-    await db.commit()
+    post = await NewsService(db).publish(post_id, request)
     return NewsResponse.model_validate(post)
 
 
@@ -331,11 +208,5 @@ async def delete_news_post(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> MessageResponse:
-    repo = NewsRepository(db)
-    post = await repo.get_by_id_or_404(post_id)
-    await repo.soft_delete(post)
-    await AuditService(db).log(
-        action="DELETE", entity_type="news_post", entity_id=post.id, request=request
-    )
-    await db.commit()
+    await NewsService(db).delete(post_id, request)
     return MessageResponse(message="Post deleted.")

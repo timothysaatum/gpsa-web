@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, Integer, SmallInteger, String
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum as SAEnum, Integer, SmallInteger, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,6 +12,9 @@ from app.models.enums import UserRole
 
 class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint("level IS NULL OR (level >= 100 AND level <= 600)", name="ck_users_level_range"),
+    )
 
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)

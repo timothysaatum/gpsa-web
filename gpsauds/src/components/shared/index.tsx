@@ -13,7 +13,7 @@ import { useCountdown } from '@/hooks/useCountdown'
 export function CountdownBlock({ targetDate, className }: { targetDate: string; className?: string }) {
   const { days, hours, minutes, seconds, isExpired } = useCountdown(targetDate)
 
-  if (isExpired) return null
+  if (isExpired || isNaN(days)) return null
 
   const blocks = [
     { value: days,    label: 'Days' },
@@ -29,7 +29,7 @@ export function CountdownBlock({ targetDate, className }: { targetDate: string; 
           <p className="font-display text-2xl font-bold text-white leading-none">
             {String(value).padStart(2, '0')}
           </p>
-          <p className="text-[10px] font-500 text-white/60 uppercase tracking-wider mt-0.5">{label}</p>
+          <p className="text-[10px] font-500 text-white/70 uppercase tracking-wider mt-0.5">{label}</p>
         </div>
       ))}
     </div>
@@ -80,32 +80,44 @@ interface EventCardProps {
 
 export function EventCard({ event, onRegister }: EventCardProps) {
   const navigate = useNavigate()
+  const startDate = new Date(event.start_datetime)
+  const day = startDate.getDate()
+  const month = startDate.toLocaleDateString('en-US', { month: 'short' })
 
   return (
-    <Card
-      hover
-      padding="none"
+    <div
       onClick={() => navigate(`/events/${event.id}`)}
-      className="overflow-hidden flex flex-col"
+      className="group relative bg-white rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-300 border border-cream-dark hover:-translate-y-1 hover:shadow-xl"
     >
-      {/* Banner */}
-      <div className={cn('h-32 flex items-center justify-center text-5xl', EVENT_BG[event.event_type] ?? 'bg-cream-dark')}>
-        {event.banner_emoji ?? '📅'}
-      </div>
+      {/* Top colour bar */}
+      <div className={cn('h-1.5', EVENT_BG[event.event_type] ?? 'bg-cream-dark')} />
 
       <div className="p-5 flex flex-col gap-3 flex-1">
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1.5">
-          <Badge variant="blue">{EVENT_TYPE_LABELS[event.event_type] ?? event.event_type}</Badge>
-          <EventUrgencyBadge start={event.start_datetime} />
-          {event.is_featured && <Badge variant="gold">⭐ Featured</Badge>}
+        {/* Date badge + type */}
+        <div className="flex items-start justify-between gap-3">
+          {/* Calendar-style date badge */}
+          <div className="flex-shrink-0 w-12 h-14 rounded-xl overflow-hidden border border-cream-dark flex flex-col items-center justify-center bg-white">
+            <span className="text-[10px] font-700 uppercase text-muted leading-none mt-1">{month}</span>
+            <span className="text-lg font-bold text-deep leading-none">{day}</span>
+          </div>
+
+          {/* Tags */}
+          <div className="flex flex-wrap gap-1.5 justify-end">
+            <Badge variant="blue">{EVENT_TYPE_LABELS[event.event_type] ?? event.event_type}</Badge>
+            <EventUrgencyBadge start={event.start_datetime} />
+          </div>
         </div>
 
-        <h3 className="font-body font-700 text-deep leading-snug line-clamp-2">
+        {/* Emoji */}
+        {event.banner_emoji && (
+          <div className="text-3xl">{event.banner_emoji}</div>
+        )}
+
+        <h3 className="font-display font-bold text-deep leading-snug line-clamp-2 group-hover:text-green-700 transition-colors">
           {event.title}
         </h3>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 mt-auto">
           <p className="flex items-center gap-1.5 text-xs text-muted">
             <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
             {formatDateTime(event.start_datetime)}
@@ -116,22 +128,21 @@ export function EventCard({ event, onRegister }: EventCardProps) {
           </p>
         </div>
 
-        <div className="mt-auto pt-2">
+        <div className="pt-3 border-t border-cream-dark mt-auto">
           {event.status !== 'past' ? (
-            <Button
-              variant="primary"
-              size="sm"
-              className="w-full"
+            <span
+              className="inline-flex items-center gap-1 text-xs font-600 text-green-700 group-hover:text-green-600 transition-colors"
               onClick={(e) => { e.stopPropagation(); onRegister?.() }}
             >
-              Register →
-            </Button>
+              View event
+              <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5" />
+            </span>
           ) : (
-            <span className="text-xs text-[#5a7060] font-500">Past event</span>
+            <span className="text-xs text-muted font-500">Past event</span>
           )}
         </div>
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -167,7 +178,7 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
         </p>
 
         {opportunity.location && (
-          <p className="flex items-center gap-1.5 text-xs text-[#5a7060]">
+          <p className="flex items-center gap-1.5 text-xs text-muted">
             <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
             {opportunity.location}
           </p>

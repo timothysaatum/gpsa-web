@@ -101,6 +101,7 @@ class EmailService:
             recipient=to,
             template=template,
             subject=subject,
+            html_body=html_body,
             entity_type=entity_type,
             status=EmailStatus.pending,
         )

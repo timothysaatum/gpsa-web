@@ -107,6 +107,7 @@ class EmailStatus(str, enum.Enum):
     pending = "pending"
     sent = "sent"
     failed = "failed"
+    permanent_failure = "permanent_failure"
 
 
 class EmailTemplate(str, enum.Enum):

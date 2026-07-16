@@ -1,27 +1,21 @@
 """
-Opportunities — schemas, repository, service, routes.
+Opportunities — schemas and routes.
+Business logic is delegated to OpportunityService.
 """
 
 import uuid
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import Annotated
 
-import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from pydantic import Field
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import CurrentUser, require_roles
-from app.core.permissions import assert_permission, can_post_opportunity, can_publish_opportunity
 from app.db.session import get_db
 from app.models.enums import OpportunityType, UserRole
-from app.models.opportunity import Opportunity
-from app.repositories.base import BaseRepository
 from app.schemas.common import AppModel, MessageResponse, PaginatedResponse
-from app.services.audit import AuditService
-
-logger = structlog.get_logger(__name__)
+from app.services.opportunity import OpportunityService
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -61,51 +55,6 @@ class OpportunityResponse(AppModel):
     created_at: datetime
 
 
-# ── Repository ────────────────────────────────────────────────────────────────
-
-class OpportunityRepository(BaseRepository[Opportunity]):
-    def __init__(self, db: AsyncSession) -> None:
-        super().__init__(Opportunity, db)
-
-    async def list_filtered(
-        self,
-        *,
-        opp_type: OpportunityType | None = None,
-        active_only: bool = True,
-        offset: int = 0,
-        limit: int = 20,
-    ) -> list[Opportunity]:
-        q = self._base_query().where(Opportunity.is_published.is_(True))
-        if active_only:
-            q = q.where(Opportunity.is_active.is_(True))
-        if opp_type:
-            q = q.where(Opportunity.opp_type == opp_type)
-        q = q.order_by(Opportunity.deadline.asc()).offset(offset).limit(limit)
-        result = await self.db.execute(q)
-        return list(result.scalars().all())
-
-    async def count_filtered(
-        self,
-        *,
-        opp_type: OpportunityType | None = None,
-        active_only: bool = True,
-    ) -> int:
-        q = (
-            select(func.count())
-            .select_from(Opportunity)
-            .where(
-                Opportunity.deleted_at.is_(None),
-                Opportunity.is_published.is_(True),
-            )
-        )
-        if active_only:
-            q = q.where(Opportunity.is_active.is_(True))
-        if opp_type:
-            q = q.where(Opportunity.opp_type == opp_type)
-        result = await self.db.execute(q)
-        return result.scalar_one()
-
-
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 router = APIRouter(tags=["Opportunities"])
@@ -123,13 +72,9 @@ async def list_opportunities(
     offset: int = 0,
     limit: int = 20,
 ) -> PaginatedResponse[OpportunityResponse]:
-    repo = OpportunityRepository(db)
-    opps = await repo.list_filtered(
-        opp_type=opp_type, active_only=not include_expired, offset=offset, limit=limit
-    )
-    total = await repo.count_filtered(
-        opp_type=opp_type,
-        active_only=not include_expired,
+    svc = OpportunityService(db)
+    opps, total = await svc.list_filtered(
+        opp_type=opp_type, include_expired=include_expired, offset=offset, limit=limit
     )
     return PaginatedResponse(
         items=[OpportunityResponse.model_validate(o) for o in opps],
@@ -144,9 +89,7 @@ async def get_opportunity(
     opp_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OpportunityResponse:
-    opp = await OpportunityRepository(db).get_by_id_or_404(opp_id)
-    if not opp.is_published:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found.")
+    opp = await OpportunityService(db).get_by_id(opp_id)
     return OpportunityResponse.model_validate(opp)
 
 
@@ -162,26 +105,11 @@ async def create_opportunity(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OpportunityResponse:
-    assert_permission(can_post_opportunity(current_user))
-    if payload.deadline < date.today():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Deadline cannot be in the past.",
-        )
-
-    opp = await OpportunityRepository(db).create({
-        **payload.model_dump(),
-        "is_active": True,
-        "is_published": current_user.role == UserRole.admin,
-        "posted_by": current_user.id,
-        "reviewed_by": current_user.id if current_user.role == UserRole.admin else None,
-        "reviewed_at": datetime.now(UTC) if current_user.role == UserRole.admin else None,
-    })
-    await AuditService(db).log(
-        action="CREATE", entity_type="opportunity",
-        entity_id=opp.id, new_values={"title": opp.title}, request=request,
+    opp = await OpportunityService(db).create(
+        payload=payload.model_dump(),
+        actor=current_user,
+        request=request,
     )
-    await db.commit()
     return OpportunityResponse.model_validate(opp)
 
 
@@ -193,22 +121,8 @@ async def update_opportunity(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OpportunityResponse:
-    assert_permission(can_post_opportunity(current_user))
-    repo = OpportunityRepository(db)
-    opp = await repo.get_by_id_or_404(opp_id)
     updates = payload.model_dump(exclude_none=True)
-
-    if "is_published" in updates and not can_publish_opportunity(current_user):
-        raise HTTPException(status_code=403, detail="Only admins can publish opportunities.")
-
-    old_values = {k: str(getattr(opp, k)) for k in updates}
-    opp = await repo.update(opp, updates)
-    await AuditService(db).log(
-        action="UPDATE", entity_type="opportunity", entity_id=opp.id,
-        old_values=old_values, new_values={k: str(v) for k, v in updates.items()},
-        request=request,
-    )
-    await db.commit()
+    opp = await OpportunityService(db).update(opp_id, updates, current_user, request)
     return OpportunityResponse.model_validate(opp)
 
 
@@ -222,11 +136,5 @@ async def delete_opportunity(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> MessageResponse:
-    repo = OpportunityRepository(db)
-    opp = await repo.get_by_id_or_404(opp_id)
-    await repo.soft_delete(opp)
-    await AuditService(db).log(
-        action="DELETE", entity_type="opportunity", entity_id=opp.id, request=request
-    )
-    await db.commit()
+    await OpportunityService(db).delete(opp_id, request)
     return MessageResponse(message="Opportunity removed.")

@@ -64,28 +64,25 @@ const PRINCIPLES = [
     icon: Target,
     title: 'Our Mission',
     desc: 'Empowering every pharmacy student to thrive academically, socially, and professionally.',
-    iconColor: '#fff',
-    iconBg: 'rgba(255,255,255,0.15)',
-    cardBg: 'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)',
-    textColor: '#fff',
+    iconColor: 'var(--color-text-on-primary)',
+    iconBg: 'color-mix(in srgb, var(--color-text-on-primary) 15%, transparent)',
+    textColor: 'var(--color-text-on-primary)',
   },
   {
     icon: Eye,
     title: 'Our Vision',
     desc: 'Ghana\'s most impactful pharmacy students\' body, known for excellence and community service.',
-    iconColor: '#fff',
-    iconBg: 'rgba(255,255,255,0.15)',
-    cardBg: 'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)',
-    textColor: '#fff',
+    iconColor: 'var(--color-text-on-primary)',
+    iconBg: 'color-mix(in srgb, var(--color-text-on-primary) 15%, transparent)',
+    textColor: 'var(--color-text-on-primary)',
   },
   {
     icon: Zap,
     title: 'Our Values',
     desc: 'Integrity, accountability, student-centric, innovative, collaborative, and advocacy-driven.',
-    iconColor: '#fff',
-    iconBg: 'rgba(255,255,255,0.15)',
-    cardBg: 'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)',
-    textColor: '#fff',
+    iconColor: 'var(--color-text-on-primary)',
+    iconBg: 'color-mix(in srgb, var(--color-text-on-primary) 15%, transparent)',
+    textColor: 'var(--color-text-on-primary)',
   },
 ]
 
@@ -94,24 +91,24 @@ const PILLARS = [
     icon: BookOpen,
     title: 'Academics',
     desc: 'Structured resources — past questions, lecture slides, lab reports, and tutorial videos — to help every student study smarter and perform better.',
-    iconColor: '#3CB559',
-    iconBg: 'rgba(60,181,89,0.09)',
+    iconColor: 'var(--green-light-old)',
+    iconBg: 'color-mix(in srgb, var(--green-light-old) 9%, transparent)',
     border: 'hover:border-green-300',
   },
   {
     icon: Heart,
     title: 'Welfare',
     desc: 'GPSA-UDS Welfare ensures every student has access to support — whether academic pressure, financial difficulty, health concerns, or personal struggles.',
-    iconColor: '#e05252',
-    iconBg: 'rgba(224,82,82,0.08)',
+    iconColor: 'var(--color-danger)',
+    iconBg: 'color-mix(in srgb, var(--color-danger) 8%, transparent)',
     border: 'hover:border-red-200',
   },
   {
     icon: Briefcase,
     title: 'Opportunities',
     desc: 'Internships, scholarships, jobs, and training programmes curated for pharmacy students — bridging the gap between campus and professional practice.',
-    iconColor: '#C8991A',
-    iconBg: 'rgba(242,193,46,0.10)',
+    iconColor: 'var(--gold-old-deep)',
+    iconBg: 'color-mix(in srgb, var(--gold-old) 10%, transparent)',
     border: 'hover:border-gold-200',
   },
   {
@@ -130,7 +127,7 @@ const PILLARS = [
 
 function TeamIntroSection() {
   return (
-    <section className="section-padding" style={{ background: '#f4f7f4' }}>
+    <section className="section-padding bg-cream-dark">
       <div className="section-container">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left: Team Photo */}
@@ -138,7 +135,7 @@ function TeamIntroSection() {
             <div className="relative w-full max-w-md">
               <div
                 className="aspect-[3/4] rounded-3xl overflow-hidden shadow-lg"
-                style={{ background: 'linear-gradient(145deg, #e8f5e9 0%, #f1f8f6 100%)' }}
+                style={{ background: 'color-mix(in srgb, var(--color-primary) 5%, var(--color-surface-alt))' }}
               >
                 {/* Placeholder for team photo */}
                 <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
@@ -149,19 +146,19 @@ function TeamIntroSection() {
               {/* Accent decoration */}
               <div
                 className="absolute -bottom-4 -right-4 w-32 h-32 rounded-full opacity-30 blur-3xl"
-                style={{ background: '#F2C12E' }}
+                style={{ background: 'var(--gold-old)' }}
               />
             </div>
           </div>
 
           {/* Right: Description */}
           <div>
-            <p className="text-xs font-700 uppercase tracking-widest mb-3" style={{ color: '#3CB559' }}>
+            <p className="text-xs font-700 uppercase tracking-widest mb-3" style={{ color: 'var(--green-light-old)' }}>
               about the gpsa-uds
             </p>
             <h2
-              className="font-display font-bold leading-snug mb-4"
-              style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', color: '#1B3D22' }}
+              className="font-display font-bold leading-snug mb-4 text-deep"
+              style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}
             >
               The official representation body of all students within the University of Medicine
             </h2>
@@ -172,24 +169,24 @@ function TeamIntroSection() {
               <div className="flex items-start gap-3">
                 <div
                   className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-1"
-                  style={{ background: 'rgba(60,181,89,0.15)' }}
+                  style={{ background: 'color-mix(in srgb, var(--green-light-old) 15%, transparent)' }}
                 >
-                  <BookOpen className="h-4 w-4" style={{ color: '#3CB559' }} />
+                  <BookOpen className="h-4 w-4" style={{ color: 'var(--green-light-old)' }} />
                 </div>
                 <div>
-                  <p className="font-body font-700 text-[#1B3D22] text-sm">Academic Excellence</p>
+                  <p className="font-body font-700 text-deep text-sm">Academic Excellence</p>
                   <p className="text-xs text-muted">Supporting student success through resources and mentorship</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div
                   className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-1"
-                  style={{ background: 'rgba(60,181,89,0.15)' }}
+                  style={{ background: 'color-mix(in srgb, var(--green-light-old) 15%, transparent)' }}
                 >
-                  <Heart className="h-4 w-4" style={{ color: '#3CB559' }} />
+                  <Heart className="h-4 w-4" style={{ color: 'var(--green-light-old)' }} />
                 </div>
                 <div>
-                  <p className="font-body font-700 text-[#1B3D22] text-sm">Student Welfare</p>
+                  <p className="font-body font-700 text-deep text-sm">Student Welfare</p>
                   <p className="text-xs text-muted">Ensuring holistic support for all members of our community</p>
                 </div>
               </div>
@@ -207,23 +204,22 @@ function BuiltOnPrinciple() {
       <div className="section-container">
         <div className="mb-10 text-center">
           <h2
-            className="font-display font-bold"
-            style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', color: '#1B3D22' }}
+            className="font-display font-bold text-deep"
+            style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}
           >
             Built on Principle
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PRINCIPLES.map(({ icon: Icon, title, desc, iconColor, iconBg, cardBg, textColor }) => (
+          {PRINCIPLES.map(({ icon: Icon, title, desc, iconColor, iconBg, textColor }) => (
             <div
               key={title}
-              className="rounded-2xl p-8 relative overflow-hidden transition-all hover:shadow-lg group"
-              style={{ background: cardBg }}
+              className="rounded-2xl p-8 relative overflow-hidden transition-all hover:shadow-lg group bg-legacy-gradient"
             >
               <div
                 className="absolute inset-0 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at 80% 0%, rgba(242,193,46,0.12) 0%, transparent 60%)' }}
+                style={{ background: 'radial-gradient(ellipse at 80% 0%, color-mix(in srgb, var(--gold-old) 12%, transparent) 0%, transparent 60%)' }}
               />
               <div className="relative z-10">
                 <div
@@ -256,10 +252,7 @@ function BuiltOnPrinciple() {
 
 function StatsBanner() {
   return (
-    <div
-      className="relative overflow-hidden"
-      style={{ background: 'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)' }}
-    >
+    <div className="relative overflow-hidden bg-legacy-gradient">
       {/* Pattern overlay */}
       <div
         className="absolute inset-0 opacity-[0.03]"
@@ -271,14 +264,14 @@ function StatsBanner() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-white/10">
           {STATS.map(({ value, label, icon: Icon }) => (
             <div key={label} className="flex flex-col items-center justify-center text-center px-6 py-4">
-              <Icon className="h-5 w-5 mb-3 opacity-50" style={{ color: '#7DD98A' }} />
+              <Icon className="h-5 w-5 mb-3 text-white/50" />
               <p
-                className="font-display font-bold leading-none mb-1"
-                style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', color: '#fff' }}
+                className="font-display font-bold leading-none mb-1 text-white"
+                style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}
               >
                 {value}
               </p>
-              <p className="text-xs font-500 uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              <p className="text-xs font-500 uppercase tracking-widest text-white/65">
                 {label}
               </p>
             </div>
@@ -295,8 +288,8 @@ function WhatWeDo() {
       <div className="section-container">
         <div className="mb-10 text-center">
           <h2
-            className="font-display font-bold"
-            style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', color: '#1B3D22' }}
+            className="font-display font-bold text-deep"
+            style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}
           >
             What We Do
           </h2>
@@ -317,7 +310,7 @@ function WhatWeDo() {
               >
                 <Icon className="h-5 w-5" style={{ color: iconColor }} />
               </div>
-              <h3 className="font-body font-700 text-[#1B3D22] text-base mb-2">{title}</h3>
+              <h3 className="font-body font-700 text-deep text-base mb-2">{title}</h3>
               <p className="text-sm text-muted leading-relaxed">{desc}</p>
             </div>
           ))}
@@ -333,8 +326,8 @@ function ExecutiveTeam() {
       <div className="section-container">
         <div className="mb-10 text-center">
           <h2
-            className="font-display font-bold"
-            style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', color: '#1B3D22' }}
+            className="font-display font-bold text-deep"
+            style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}
           >
             Meet Your SRC Executives
           </h2>
@@ -390,15 +383,13 @@ function ExecutiveCard({ exec, featured }: { exec: ExecData; featured?: boolean 
           featured ? 'w-24 h-24 rounded-2xl' : 'w-14 h-14 rounded-xl',
         )}
         style={{
-          border: featured ? '3px solid rgba(60,181,89,0.4)' : '2px solid rgba(60,181,89,0.2)',
-          boxShadow: featured ? '0 0 0 5px rgba(60,181,89,0.08)' : undefined,
+          border: featured ? '3px solid color-mix(in srgb, var(--green-light-old) 40%, transparent)' : '2px solid color-mix(in srgb, var(--green-light-old) 20%, transparent)',
+          boxShadow: featured ? '0 0 0 5px color-mix(in srgb, var(--green-light-old) 8%, transparent)' : undefined,
         }}
       >
         {/* Silhouette placeholder — delete when real photo available */}
         <div
-          className="w-full h-full flex flex-col items-end justify-end"
-          style={{ background: 'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)' }}
-        >
+          className="w-full h-full flex flex-col items-end justify-end bg-legacy-gradient">
           <svg
             viewBox="0 0 60 60"
             className="w-full opacity-25"
@@ -415,13 +406,13 @@ function ExecutiveCard({ exec, featured }: { exec: ExecData; featured?: boolean 
       {featured && (
         <div
           className="w-8 h-0.5 rounded-full mb-3"
-          style={{ background: 'linear-gradient(90deg,#F2C12E,#f5cf55)' }}
+          style={{ background: 'linear-gradient(90deg, var(--gold-old), var(--gold-old))' }}
         />
       )}
 
       <p
         className={cn(
-          'font-body font-700 text-[#1B3D22] leading-tight',
+          'font-body font-700 text-deep leading-tight',
           featured ? 'text-base mb-1' : 'text-xs mb-0.5',
         )}
       >
@@ -432,7 +423,7 @@ function ExecutiveCard({ exec, featured }: { exec: ExecData; featured?: boolean 
       </p>
       <span
         className="inline-block text-[10px] font-700 uppercase tracking-widest px-2 py-0.5 rounded-full"
-        style={{ background: 'rgba(60,181,89,0.08)', color: '#3CB559' }}
+        style={{ background: 'color-mix(in srgb, var(--green-light-old) 8%, transparent)', color: 'var(--green-light-old)' }}
       >
         Level {exec.level}
       </span>
@@ -442,12 +433,12 @@ function ExecutiveCard({ exec, featured }: { exec: ExecData; featured?: boolean 
 
 function History() {
   return (
-    <section className="section-padding" style={{ background: '#f4f7f4' }}>
+    <section className="section-padding bg-cream-dark">
       <div className="section-container">
         <div className="mb-10 text-center">
           <h2
-            className="font-display font-bold"
-            style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', color: '#1B3D22' }}
+            className="font-display font-bold text-deep"
+            style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)' }}
           >
             Our Journey
           </h2>
@@ -459,13 +450,14 @@ function History() {
               {/* Year column */}
               <div className="flex flex-col items-center flex-shrink-0 w-14">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-700 flex-shrink-0 z-10"
+                  className={cn(
+                    'w-10 h-10 rounded-xl flex items-center justify-center text-xs font-700 flex-shrink-0 z-10',
+                    i === 0 && 'bg-legacy-gradient',
+                  )}
                   style={{
-                    background: i === 0
-                      ? 'linear-gradient(90deg,#A8D5BA,#00B140)'
-                      : 'rgba(60,181,89,0.08)',
-                    color: i === 0 ? '#1B3D22' : '#3CB559',
-                    border: i !== 0 ? '1px solid rgba(60,181,89,0.2)' : undefined,
+                    background: i === 0 ? undefined : 'color-mix(in srgb, var(--green-light-old) 8%, transparent)',
+                    color: i === 0 ? 'var(--color-text-deep)' : 'var(--green-light-old)',
+                    border: i !== 0 ? '1px solid color-mix(in srgb, var(--green-light-old) 20%, transparent)' : undefined,
                   }}
                 >
                   {year.slice(2)}
@@ -473,17 +465,17 @@ function History() {
                 {i < TIMELINE.length - 1 && (
                   <div
                     className="w-px flex-1 mt-2 mb-0"
-                    style={{ background: 'rgba(60,181,89,0.15)', minHeight: '32px' }}
+                    style={{ background: 'color-mix(in srgb, var(--green-light-old) 15%, transparent)', minHeight: '32px' }}
                   />
                 )}
               </div>
 
               {/* Content */}
               <div className={cn('pb-8 flex-1', i === TIMELINE.length - 1 && 'pb-0')}>
-                <p className="text-[10px] font-700 uppercase tracking-widest mb-1" style={{ color: '#3CB559' }}>
+                <p className="text-[10px] font-700 uppercase tracking-widest mb-1" style={{ color: 'var(--green-light-old)' }}>
                   {year}
                 </p>
-                <h3 className="font-body font-700 text-[#1B3D22] text-sm mb-1">{title}</h3>
+                <h3 className="font-body font-700 text-deep text-sm mb-1">{title}</h3>
                 <p className="text-xs text-muted leading-relaxed">{body}</p>
               </div>
             </div>
@@ -565,8 +557,8 @@ function ContactSection() {
     <section className="section-padding">
       <div className="section-container">
         <div
-          className="rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-2"
-          style={{ background: 'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)', border: '1px solid #d1ead8' }}
+          className="rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 bg-legacy-gradient"
+          style={{ border: '1px solid color-mix(in srgb, var(--green-sage-old) 60%, white)' }}
         >
           {/* Left: CTA */}
           <div
@@ -579,7 +571,7 @@ function ContactSection() {
               }}
             />
             <div className="relative z-10">
-              <p className="text-xs font-700 uppercase tracking-widest mb-3" style={{ color: '#7DD98A' }}>
+              <p className="text-xs font-700 uppercase tracking-widest mb-3 text-white/80">
                 Get Involved
               </p>
               <h2
@@ -588,7 +580,7 @@ function ContactSection() {
               >
                 Ready to be part of something bigger?
               </h2>
-              <p className="text-sm leading-relaxed mb-7" style={{ color: 'rgba(255,255,255,0.60)' }}>
+              <p className="text-sm leading-relaxed mb-7 text-white/75">
                 Join thousands of pharmacy students who are already part of the GPSA-UDS community.
                 Register today and unlock access to academic resources, events, welfare support, and more.
               </p>
@@ -607,12 +599,12 @@ function ContactSection() {
           {/* Right: Social links */}
           <div
             className="p-10 lg:p-14 flex flex-col justify-center gap-4"
-            style={{ background: '#f4fbf6' }}
+            style={{ background: 'color-mix(in srgb, var(--green-light-old) 3%, white)' }}
           >
-            <p className="text-xs font-700 uppercase tracking-widest mb-1" style={{ color: '#3CB559' }}>
+            <p className="text-xs font-700 uppercase tracking-widest mb-1" style={{ color: 'var(--green-light-old)' }}>
               Reach Out
             </p>
-            <h3 className="font-body font-700 text-[#1B3D22] text-lg mb-2">Connect with us</h3>
+            <h3 className="font-body font-700 text-deep text-lg mb-2">Connect with us</h3>
             {SOCIALS.map(({ label, handle, href, iconBg, iconColor, svg }) => (
               <a
                 key={label}
@@ -629,7 +621,7 @@ function ContactSection() {
                   {svg}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-body font-700 text-[#1B3D22] text-sm">{label}</p>
+                  <p className="font-body font-700 text-deep text-sm">{label}</p>
                   <p className="text-xs text-muted truncate">{handle}</p>
                 </div>
                 <ArrowRight

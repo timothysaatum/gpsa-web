@@ -248,6 +248,52 @@ export interface CertificateVerify {
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
 
+// ── Hero Slides ──────────────────────────────────────────────────────────────
+
+export interface HeroSlide {
+  id: string
+  image_url: string
+  tag: string
+  heading: string
+  highlight: string
+  sub: string
+  primary_button_label: string
+  primary_button_path: string
+  secondary_button_label: string
+  secondary_button_path: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+}
+
+export interface HeroSlideCreateRequest {
+  image_url: string
+  tag: string
+  heading: string
+  highlight: string
+  sub: string
+  primary_button_label: string
+  primary_button_path: string
+  secondary_button_label: string
+  secondary_button_path: string
+  sort_order?: number
+  is_active?: boolean
+}
+
+export interface HeroSlideUpdateRequest {
+  image_url?: string
+  tag?: string
+  heading?: string
+  highlight?: string
+  sub?: string
+  primary_button_label?: string
+  primary_button_path?: string
+  secondary_button_label?: string
+  secondary_button_path?: string
+  sort_order?: number
+  is_active?: boolean
+}
+
 export interface Feedback {
   id: string
   entity_type: FeedbackEntityType

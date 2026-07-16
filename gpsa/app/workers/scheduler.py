@@ -118,7 +118,7 @@ async def prune_old_notifications() -> None:
 # ── Registration ──────────────────────────────────────────────────────────────
 
 def register_jobs() -> None:
-    from app.workers.tasks import send_event_reminders
+    from app.workers.tasks import retry_failed_emails, send_event_reminders
 
     scheduler.add_job(
         expire_opportunities,
@@ -150,5 +150,13 @@ def register_jobs() -> None:
         id="event_reminders_24h",
         replace_existing=True,
         misfire_grace_time=3600,
+    )
+    # Email retry — every 5 minutes, picks up failed sends with backoff
+    scheduler.add_job(
+        retry_failed_emails,
+        trigger=IntervalTrigger(minutes=5),
+        id="retry_failed_emails",
+        replace_existing=True,
+        misfire_grace_time=120,
     )
     logger.info("scheduler_jobs_registered", job_count=len(scheduler.get_jobs()))

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,6 +12,9 @@ from app.models.enums import OpportunityType
 
 class Opportunity(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "opportunities"
+    __table_args__ = (
+        Index("ix_opportunities_active_deadline", "is_active", "deadline"),
+    )
 
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     organization: Mapped[str] = mapped_column(String(255), nullable=False)

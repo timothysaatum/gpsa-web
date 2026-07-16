@@ -26,14 +26,14 @@ class Certificate(UUIDPrimaryKeyMixin, Base):
 
     event_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("events.id", ondelete="RESTRICT"),
+        ForeignKey("events.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=False,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     registration_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -58,7 +58,7 @@ class Certificate(UUIDPrimaryKeyMixin, Base):
 
     # Relationships
     event: Mapped["Event"] = relationship(back_populates="certificates")  # type: ignore[name-defined]
-    user: Mapped["User"] = relationship(back_populates="certificates")  # type: ignore[name-defined]
+    user: Mapped["User | None"] = relationship(back_populates="certificates")  # type: ignore[name-defined]
     registration: Mapped["EventRegistration | None"] = relationship(  # type: ignore[name-defined]
         back_populates="certificate",
     )

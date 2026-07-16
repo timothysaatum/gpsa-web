@@ -7,13 +7,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 
 class UUIDPrimaryKeyMixin:
-    """UUID v4 primary key — preferred over serial integers for security and portability."""
+    """UUID v4 primary key — generated server-side for better index performance."""
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        sort_order=-10,  # always renders first in CREATE TABLE
+        server_default=func.gen_random_uuid(),
+        sort_order=-10,
     )
 
 

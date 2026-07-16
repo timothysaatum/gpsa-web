@@ -12,6 +12,9 @@ import type {
   Feedback,
   FeedbackEntityType,
   FeedbackSummary,
+  HeroSlide,
+  HeroSlideCreateRequest,
+  HeroSlideUpdateRequest,
   LoginRequest,
   MessageResponse,
   NewsCategory,
@@ -27,6 +30,7 @@ import type {
   TokenResponse,
   Trimester,
   User,
+  UserRole,
   WelfareReport,
   WelfareSpotlight,
 } from '@/types'
@@ -74,6 +78,20 @@ export const authApi = {
 export const usersApi = {
   updateProfile: (data: Partial<Pick<User, 'full_name' | 'phone' | 'student_id' | 'level'>>) =>
     api.patch<User>('/users/me', data).then((r) => r.data),
+
+  getMe: () => api.get<User>('/users/me').then((r) => r.data),
+
+  listUsers: (params?: { offset?: number; limit?: number }) =>
+    api.get<PaginatedResponse<User>>('/users/', { params }).then((r) => r.data),
+
+  getUser: (id: string) =>
+    api.get<User>(`/users/${id}`).then((r) => r.data),
+
+  adminUpdateUser: (id: string, data: { role?: UserRole; is_active?: boolean }) =>
+    api.patch<User>(`/users/${id}`, data).then((r) => r.data),
+
+  deleteUser: (id: string) =>
+    api.delete<MessageResponse>(`/users/${id}`).then((r) => r.data),
 }
 
 // ── Academic Resources ────────────────────────────────────────────────────────
@@ -106,6 +124,27 @@ export const academicsApi = {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       .then((r) => r.data),
+
+  createCourse: (data: { name: string; code?: string; level: number }) =>
+    api.post<Course>('/academic-resources/courses', data).then((r) => r.data),
+
+  updateResource: (id: string, data: {
+    title?: string
+    content_type?: string
+    course_id?: string
+    level?: number
+    trimester?: Trimester
+    duration_mins?: number | null
+    is_featured?: boolean
+    is_published?: boolean
+  }) =>
+    api.patch<AcademicResource>(`/academic-resources/${id}`, data).then((r) => r.data),
+
+  publishResource: (id: string) =>
+    api.post<AcademicResource>(`/academic-resources/${id}/publish`).then((r) => r.data),
+
+  deleteResource: (id: string) =>
+    api.delete<MessageResponse>(`/academic-resources/${id}`).then((r) => r.data),
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -135,6 +174,41 @@ export const eventsApi = {
 
   cancelRegistration: (eventId: string) =>
     api.delete<MessageResponse>(`/events/${eventId}/register`).then((r) => r.data),
+
+  create: (data: {
+    title: string
+    description: string
+    event_type: EventType
+    start_datetime: string
+    end_datetime?: string | null
+    location: string
+    banner_emoji?: string | null
+    is_featured?: boolean
+    agenda?: Record<string, unknown> | null
+    speakers?: unknown[] | null
+  }) =>
+    api.post<Event>('/events/', data).then((r) => r.data),
+
+  update: (id: string, data: {
+    title?: string
+    description?: string
+    event_type?: EventType
+    status?: EventStatus
+    start_datetime?: string
+    end_datetime?: string | null
+    location?: string
+    banner_emoji?: string | null
+    is_featured?: boolean
+    agenda?: Record<string, unknown> | null
+    speakers?: unknown[] | null
+  }) =>
+    api.patch<Event>(`/events/${id}`, data).then((r) => r.data),
+
+  deleteEvent: (id: string) =>
+    api.delete<MessageResponse>(`/events/${id}`).then((r) => r.data),
+
+  listRegistrations: (eventId: string) =>
+    api.get<EventRegistration[]>(`/events/${eventId}/registrations`).then((r) => r.data),
 }
 
 // ── Welfare ───────────────────────────────────────────────────────────────────
@@ -165,6 +239,9 @@ export const welfareApi = {
 
   resolveReport: (id: string, data: { status: ReportStatus; admin_notes?: string }) =>
     api.patch<WelfareReport>(`/welfare/reports/${id}/resolve`, data).then((r) => r.data),
+
+  createSpotlight: (data: { summary: string; action_taken: string }) =>
+    api.post<WelfareSpotlight>('/welfare/spotlight', data).then((r) => r.data),
 }
 
 // ── Opportunities ─────────────────────────────────────────────────────────────
@@ -182,6 +259,32 @@ export const opportunitiesApi = {
 
   getById: (id: string) =>
     api.get<Opportunity>(`/opportunities/${id}`).then((r) => r.data),
+
+  create: (data: {
+    title: string
+    organization: string
+    opp_type: OpportunityType
+    description: string
+    location?: string | null
+    deadline: string
+    external_link: string
+  }) =>
+    api.post<Opportunity>('/opportunities/', data).then((r) => r.data),
+
+  update: (id: string, data: {
+    title?: string
+    organization?: string
+    opp_type?: OpportunityType
+    description?: string
+    location?: string | null
+    deadline?: string
+    external_link?: string
+    is_published?: boolean
+  }) =>
+    api.patch<Opportunity>(`/opportunities/${id}`, data).then((r) => r.data),
+
+  delete: (id: string) =>
+    api.delete<MessageResponse>(`/opportunities/${id}`).then((r) => r.data),
 }
 
 // ── News ──────────────────────────────────────────────────────────────────────
@@ -203,6 +306,39 @@ export const newsApi = {
 
   getById: (id: string) =>
     api.get<NewsPost>(`/news/${id}`).then((r) => r.data),
+
+  create: (data: {
+    title: string
+    category: NewsCategory
+    summary: string
+    body: string
+    banner_emoji?: string | null
+    is_featured?: boolean
+    is_urgent?: boolean
+    is_strip_announcement?: boolean
+    attachments?: string[] | null
+    publish_immediately?: boolean
+  }) =>
+    api.post<NewsPost>('/news/', data).then((r) => r.data),
+
+  update: (id: string, data: {
+    title?: string
+    category?: NewsCategory
+    summary?: string
+    body?: string
+    banner_emoji?: string | null
+    is_featured?: boolean
+    is_urgent?: boolean
+    is_strip_announcement?: boolean
+    attachments?: string[] | null
+  }) =>
+    api.patch<NewsPost>(`/news/${id}`, data).then((r) => r.data),
+
+  publish: (id: string) =>
+    api.post<NewsPost>(`/news/${id}/publish`).then((r) => r.data),
+
+  delete: (id: string) =>
+    api.delete<MessageResponse>(`/news/${id}`).then((r) => r.data),
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -227,6 +363,28 @@ export const certificatesApi = {
     api.get<CertificateVerify>(`/certificates/verify/${code}`).then((r) => r.data),
 
   mine: () => api.get<Certificate[]>('/certificates/mine').then((r) => r.data),
+
+  issue: (eventId: string) =>
+    api.post<Certificate[]>(`/certificates/issue/${eventId}`).then((r) => r.data),
+}
+
+// ── Hero Slides ───────────────────────────────────────────────────────────────
+
+export const heroApi = {
+  list: (includeInactive?: boolean) =>
+    api.get<HeroSlide[]>('/hero/', { params: { include_inactive: includeInactive } }).then((r) => r.data),
+
+  getById: (id: string) =>
+    api.get<HeroSlide>(`/hero/${id}`).then((r) => r.data),
+
+  create: (data: HeroSlideCreateRequest) =>
+    api.post<HeroSlide>('/hero/', data).then((r) => r.data),
+
+  update: (id: string, data: HeroSlideUpdateRequest) =>
+    api.patch<HeroSlide>(`/hero/${id}`, data).then((r) => r.data),
+
+  delete: (id: string) =>
+    api.delete<MessageResponse>(`/hero/${id}`).then((r) => r.data),
 }
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
@@ -242,5 +400,10 @@ export const feedbackApi = {
   getSummary: (entityType: FeedbackEntityType, entityId: string) =>
     api
       .get<FeedbackSummary>(`/feedback/${entityType}/${entityId}/summary`)
+      .then((r) => r.data),
+
+  list: (entityType: FeedbackEntityType, entityId: string, params?: { offset?: number; limit?: number }) =>
+    api
+      .get<Feedback[]>(`/feedback/${entityType}/${entityId}`, { params })
       .then((r) => r.data),
 }

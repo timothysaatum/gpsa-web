@@ -23,6 +23,7 @@ import { GalleryPage } from '@/pages/GalleryPage'
 import {
   ProfilePage, CertificatesPage, CertificateVerifyPage, SettingsPage
 } from '@/pages/profile-pages'
+import { HeroSlidesPage } from '@/pages/admin/HeroSlidesPage'
 import {
   LoginPage, RegisterPage, ForgotPasswordPage, VerifyEmailPage
 } from '@/pages/auth'
@@ -113,6 +114,11 @@ export default function App() {
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="certificates" element={<CertificatesPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+              </Route>
+
+              {/* ── Admin routes ─────────────────────────────────────────── */}
+              <Route element={<ProtectedRoute roles={['admin']} />}>
+                <Route path="admin/hero" element={<HeroSlidesPage />} />
               </Route>
             </Route>
 

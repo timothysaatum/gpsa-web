@@ -42,7 +42,7 @@ export function AnnouncementStrip({ items, speed = 28 }: AnnouncementStripProps)
 
   const resolved: string[] =
     items ??
-    (data?.items.map((p) => p.title) ?? []).filter(Boolean).slice(0, 6)
+    (data?.items?.map((p) => p.title) ?? []).filter(Boolean).slice(0, 6)
 
   const display = resolved.length > 0 ? resolved : DEFAULTS
 
@@ -53,39 +53,35 @@ export function AnnouncementStrip({ items, speed = 28 }: AnnouncementStripProps)
     <div
       className="relative overflow-hidden"
       style={{
-        // Same dark-green background as the rest of the navigation chrome
-        background: '#1B3D22',
+        background: 'var(--color-text-deep)',
         height: '34px',
         borderBottom: '1px solid rgba(255,255,255,0.06)',
       }}
       aria-label="Latest announcements"
     >
-      {/* "LIVE" label — hard left, masks the scroll origin */}
+      {/* "LIVE" label — flush left edge */}
       <div
         className="absolute left-0 top-0 bottom-0 z-10 flex items-center px-3.5 select-none flex-shrink-0"
         style={{
-          background: 'linear-gradient(90deg, #A8D5BA, #00B140)',
-          // Fade out to the right so the transition into text looks clean
-          boxShadow: '4px 0 12px 4px #1B3D22',
+          background: 'var(--legacy-gradient)',
+          boxShadow: '4px 0 12px 4px var(--color-text-deep)',
         }}
       >
         <span
           className="font-body font-700 uppercase tracking-widest"
-          style={{ fontSize: '10px', color: '#1B3D22', letterSpacing: '0.12em' }}
+          style={{ fontSize: '10px', color: 'var(--white)', letterSpacing: '0.12em' }}
         >
           LIVE
         </span>
       </div>
 
-      {/* Scrolling track */}
-      <div
-        className="flex items-center h-full"
-        style={{ paddingLeft: '72px' }} // clear the LIVE badge
-      >
+      {/* Scrolling track — padded via section-container */}
+      <div className="section-container h-full flex items-center">
         <div
           className="flex items-center gap-0 whitespace-nowrap"
           style={{
             animation: `announcementScroll ${speed}s linear infinite`,
+            paddingLeft: '80px',
           }}
         >
           {looped.map((item, i) => (
@@ -97,19 +93,17 @@ export function AnnouncementStrip({ items, speed = 28 }: AnnouncementStripProps)
                   width: '4px',
                   height: '4px',
                   borderRadius: '50%',
-                  background: '#29a329',
+                  background: 'var(--white)',
                   margin: '0 18px',
                   flexShrink: 0,
                   verticalAlign: 'middle',
                 }}
               />
-              {/* Item text — near-white so it pops on the dark green bg */}
+              {/* Item text */}
               <span
                 className="font-body font-500"
                 style={{
                   fontSize: '12.5px',
-                  // High-contrast: white at 92% opacity is easy to read and
-                  // softer than full white, matching the premium feel of the UI
                   color: 'rgba(255,255,255,0.92)',
                   letterSpacing: '0.01em',
                 }}

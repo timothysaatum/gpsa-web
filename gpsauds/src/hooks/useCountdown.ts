@@ -10,7 +10,11 @@ interface CountdownResult {
 
 export function useCountdown(targetDate: string): CountdownResult {
   const calculate = (): CountdownResult => {
-    const diff = new Date(targetDate).getTime() - Date.now()
+    const parsed = new Date(targetDate)
+    if (isNaN(parsed.getTime())) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true }
+    }
+    const diff = parsed.getTime() - Date.now()
     if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true }
     return {
       days:    Math.floor(diff / 86_400_000),

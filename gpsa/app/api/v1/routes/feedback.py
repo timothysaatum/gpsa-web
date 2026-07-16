@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import CurrentUser
 from app.db.session import get_db
+from app.domain.bus import bus as domain_bus
+from app.domain.events import FeedbackSubmitted
 from app.models.enums import FeedbackEntityType
 from app.repositories.feedback import FeedbackRepository
 from app.schemas.feedback import (
@@ -48,10 +50,6 @@ async def submit_feedback(
         "comment": payload.comment,
         "submitted_by": current_user.id,
     }
-    if payload.entity_type == FeedbackEntityType.event:
-        data["event_id"] = payload.entity_id
-    elif payload.entity_type == FeedbackEntityType.academic_resource:
-        data["academic_resource_id"] = payload.entity_id
 
     fb = await repo.create(data)
     await AuditService(db).log(
@@ -61,6 +59,12 @@ async def submit_feedback(
         request=request,
     )
     await db.commit()
+    await domain_bus.publish_async(FeedbackSubmitted(
+        feedback_id=fb.id,
+        entity_type=str(payload.entity_type),
+        entity_id=payload.entity_id,
+        rating=payload.rating,
+    ))
     return FeedbackResponse.model_validate(fb)
 
 

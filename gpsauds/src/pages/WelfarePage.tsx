@@ -133,7 +133,7 @@ export function WelfarePage() {
       <div
         className="relative overflow-hidden mt-16 lg:mt-[70px]"
         style={{
-          background: 'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)',
+          background: 'var(--legacy-gradient)',
           minHeight: '300px',
         }}
       >
@@ -150,7 +150,7 @@ export function WelfarePage() {
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              'radial-gradient(ellipse at 80% 20%, rgba(242,193,46,0.18) 0%, transparent 55%)',
+              'radial-gradient(ellipse at 80% 20%, color-mix(in srgb, var(--gold-old) 18%, transparent) 0%, transparent 55%)',
           }}
         />
 
@@ -205,14 +205,14 @@ export function WelfarePage() {
               <div className="w-7 h-7 rounded-lg bg-green-gradient flex items-center justify-center flex-shrink-0">
                 <Icon className="h-3.5 w-3.5 text-white" />
               </div>
-              <span className="text-xs font-700 text-[#1B3D22]">{text}</span>
+              <span className="text-xs font-700 text-deep">{text}</span>
             </div>
           ))}
         </div>
 
         {/* Section heading */}
         <div className="mb-6">
-          <h2 className="font-display text-2xl font-bold text-[#1B3D22] mb-1">
+          <h2 className="font-display text-2xl font-bold text-deep mb-1">
             How can we help?
           </h2>
           <p className="text-sm text-muted">
@@ -253,7 +253,7 @@ export function WelfarePage() {
                 <div>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xl">{c.icon}</span>
-                    <h3 className="font-body font-700 text-[#1B3D22] text-[17px] leading-snug">
+                    <h3 className="font-body font-700 text-deep text-[17px] leading-snug">
                       {c.title}
                     </h3>
                   </div>
@@ -297,7 +297,7 @@ export function WelfarePage() {
               {/* Form header (sticky) */}
               <div
                 className="sticky top-0 flex items-center justify-between px-8 py-6 border-b border-cream-dark"
-                style={{ background: 'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)' }}
+                style={{ background: 'var(--legacy-gradient)' }}
               >
                 <div>
                   <p className="text-green-300 text-[10px] font-700 uppercase tracking-widest mb-1">
@@ -440,7 +440,7 @@ export function WelfarePage() {
                               <span className="text-white text-[10px] font-bold">✓</span>
                             )}
                           </div>
-                          <span className="text-sm font-500 text-[#1B3D22]">
+                          <span className="text-sm font-500 text-deep">
                             Submit Anonymously
                           </span>
                         </label>
@@ -466,7 +466,7 @@ export function WelfarePage() {
         {/* ── TRUST QUOTE ── */}
         <div
           className="relative overflow-hidden rounded-3xl mb-12 p-8 lg:p-10"
-          style={{ background: 'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)' }}
+          style={{ background: 'var(--legacy-gradient)' }}
         >
           {/* Decorative large quote mark */}
           <div
@@ -522,12 +522,12 @@ export function WelfarePage() {
               <div className="h-px flex-1 bg-cream-dark" />
             </div>
 
-            <div className="bg-[#FFFBEB] border-2 border-[#F2C12E]/40 rounded-2xl overflow-hidden max-w-2xl">
+            <div className="border-2 border-[var(--gold-old)]/40 rounded-2xl overflow-hidden max-w-2xl" style={{ background: 'color-mix(in srgb, var(--gold-old) 6%, white)' }}>
               {/* Card header bar */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#F2C12E]/30 bg-[#F2C12E]/10">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--gold-old)]/30 bg-[var(--gold-old)]/10">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">📌</span>
-                  <h3 className="font-body font-700 text-[#1B3D22] text-sm">
+                    <h3 className="font-body font-700 text-deep text-sm">
                     Issue of the Week
                   </h3>
                 </div>
@@ -536,16 +536,16 @@ export function WelfarePage() {
 
               {/* Card body */}
               <div className="p-6 lg:p-7">
-                <blockquote className="text-sm lg:text-[15px] text-[#3a4a3a] italic leading-relaxed mb-5 border-l-3 border-[#F2C12E] pl-4">
+                <blockquote className="text-sm lg:text-[15px] italic leading-relaxed mb-5 border-l-3 border-[var(--gold-old)] pl-4" style={{ color: 'var(--color-text)' }}>
                   "{spotlight.summary}"
                 </blockquote>
 
                 {/* Action taken inset */}
-                <div className="bg-white/70 border border-[#F2C12E]/30 rounded-xl p-4 lg:p-5">
-                  <p className="text-[10px] font-700 text-[#8a6a00] uppercase tracking-widest mb-1.5">
+                <div className="bg-white/70 border border-[var(--gold-old)]/30 rounded-xl p-4 lg:p-5">
+                  <p className="text-[10px] font-700 uppercase tracking-widest mb-1.5" style={{ color: 'var(--color-accent-deep)' }}>
                     Action Taken
                   </p>
-                  <p className="text-sm text-[#1B3D22] leading-relaxed">
+                  <p className="text-sm text-deep leading-relaxed">
                     {spotlight.action_taken}
                   </p>
                 </div>

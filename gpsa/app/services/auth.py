@@ -30,7 +30,10 @@ from app.core.security import (
     hash_token,
     verify_password,
 )
-from app.models.enums import EmailTemplate, UserRole
+from app.domain.bus import bus as domain_bus
+from app.domain.events import EmailVerified, PasswordReset, UserRegistered
+from app.domain.kernel import DomainEventBus
+from app.models.enums import UserRole
 from app.repositories.user import (
     PasswordResetTokenRepository,
     RefreshTokenRepository,
@@ -54,13 +57,14 @@ logger = structlog.get_logger(__name__)
 
 
 class AuthService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, bus: DomainEventBus | None = None) -> None:
         self.db = db
         self.users = UserRepository(db)
         self.refresh_tokens = RefreshTokenRepository(db)
         self.reset_tokens = PasswordResetTokenRepository(db)
         self.audit = AuditService(db)
         self.email = EmailService(db)
+        self.bus = bus or domain_bus
 
     # ── Registration ──────────────────────────────────────────────────────────
 
@@ -110,6 +114,7 @@ class AuthService:
 
         await self.db.commit()
         logger.info("user_registered", user_id=str(user.id), email=user.email)
+        await self.bus.publish_async(UserRegistered(user_id=user.id, email=user.email, role=user.role))
         return UserPublicResponse.model_validate(user)
 
     # ── Login ─────────────────────────────────────────────────────────────────
@@ -306,6 +311,7 @@ class AuthService:
         )
         await self.db.commit()
         logger.info("email_verified", user_id=str(user.id))
+        await self.bus.publish_async(EmailVerified(user_id=user.id))
 
     async def resend_verification(self, email: str, request: Request) -> None:
         """Rate-limited resend — silently no-ops if email not found (security)."""
@@ -385,6 +391,7 @@ class AuthService:
         )
         await self.db.commit()
         logger.info("password_reset_completed", user_id=str(user.id))
+        await self.bus.publish_async(PasswordReset(user_id=user.id))
 
     # ── Change password (authenticated) ──────────────────────────────────────
 

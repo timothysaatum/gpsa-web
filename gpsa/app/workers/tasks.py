@@ -125,3 +125,70 @@ async def notify_all_users_new_opportunity(opp_id: str, opp_title: str) -> None:
         except Exception:
             await db.rollback()
             logger.exception("notify_all_users_new_opportunity_failed")
+
+
+async def retry_failed_emails(max_retries: int = 3) -> None:
+    """
+    Retry emails that failed to send, with exponential backoff.
+
+    Backoff schedule: 5 min, 25 min, 2 hours (roughly).
+    Emails that exhaust all retries are marked permanent_failure.
+    """
+    from datetime import UTC, datetime, timedelta
+
+    from app.core.config import settings
+    from app.models.email_log import EmailLog
+    from app.models.enums import EmailStatus
+
+    import resend
+
+    resend.api_key = settings.resend_api_key
+
+    async with AsyncSessionLocal() as db:
+        try:
+            now = datetime.now(UTC)
+            result = await db.execute(
+                select(EmailLog).where(
+                    EmailLog.status == EmailStatus.failed,
+                    EmailLog.retry_count < max_retries,
+                ).order_by(EmailLog.created_at.asc())
+            )
+            failed_logs = result.scalars().all()
+
+            for log in failed_logs:
+                # Exponential backoff: 5 min, 25 min, 2 hours
+                backoff_minutes = [5, 25, 120]
+                if log.retry_count < len(backoff_minutes):
+                    retry_delay = timedelta(minutes=backoff_minutes[log.retry_count])
+                    if log.created_at + retry_delay > now:
+                        continue
+
+                try:
+                    sender = f"{settings.email_from_name} <{settings.email_from_address}>"
+                    resp = resend.Emails.send({
+                        "from": sender,
+                        "to": [log.recipient],
+                        "subject": log.subject,
+                        "html": log.html_body or "",
+                    })
+                    log.status = EmailStatus.sent
+                    log.provider_message_id = resp.get("id")
+                    log.sent_at = datetime.now(UTC)
+                    log.error_message = None
+                    logger.info("email_retry_succeeded", log_id=str(log.id), attempt=log.retry_count + 1)
+                except Exception as exc:
+                    log.retry_count += 1
+                    log.error_message = str(exc)
+                    if log.retry_count >= max_retries:
+                        log.status = EmailStatus.permanent_failure
+                        logger.warning("email_retry_exhausted", log_id=str(log.id))
+                    else:
+                        logger.info("email_retry_failed_will_retry", log_id=str(log.id), attempt=log.retry_count)
+
+            await db.commit()
+            if failed_logs:
+                logger.info("email_retry_cycle_complete", processed=len(failed_logs))
+
+        except Exception:
+            await db.rollback()
+            logger.exception("retry_failed_emails_failed")

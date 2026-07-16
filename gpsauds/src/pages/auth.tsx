@@ -27,7 +27,7 @@ function AuthCard({ children, title, subtitle }: {
         </div>
         <div className="text-white">
           <p className="font-display text-2xl font-700 leading-none">GPSA-UDS</p>
-          <p className="text-xs text-white/50 tracking-widest uppercase">Student Portal</p>
+          <p className="text-xs text-white/70 tracking-widest uppercase">Student Portal</p>
         </div>
       </Link>
 

@@ -1,11 +1,9 @@
 import { Outlet } from 'react-router-dom'
 import { Footer, Navbar } from './index'
-import { AnnouncementStrip } from './AnnouncementStrip'
 
 export function RootLayout() {
   return (
     <div className="min-h-screen flex flex-col">
-      <AnnouncementStrip />
       <Navbar />
       <main className="flex-1">
         <Outlet />
@@ -19,7 +17,7 @@ export function RootLayout() {
 
 export function AuthLayout() {
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{background:"#29a329"}}>
+    <div className="min-h-screen relative overflow-hidden" style={{background:"var(--green-bright-old)"}}>
       {/* Background pattern */}
       <div
         className="absolute inset-0 opacity-[0.04]"
@@ -30,7 +28,7 @@ export function AuthLayout() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at 70% 30%, rgba(200,153,26,0.15) 0%, transparent 55%)',
+          background: 'radial-gradient(ellipse at 70% 30%, color-mix(in srgb, var(--gold-old-deep) 15%, transparent) 0%, transparent 55%)',
         }}
       />
       <div className="relative min-h-screen flex flex-col items-center justify-center p-6">

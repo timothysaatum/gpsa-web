@@ -10,11 +10,13 @@ export function cn(...inputs: ClassValue[]) {
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
-export function formatDate(dateStr: string, fmt = 'MMM d, yyyy'): string {
+export function formatDate(dateStr: string | null | undefined, fmt = 'MMM d, yyyy'): string {
+  if (!dateStr) return ''
   return format(new Date(dateStr), fmt)
 }
 
-export function formatDateTime(dateStr: string): string {
+export function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return ''
   return format(new Date(dateStr), "MMM d, yyyy 'at' h:mm a")
 }
 
