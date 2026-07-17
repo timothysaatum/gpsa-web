@@ -5,14 +5,16 @@ import {
   ArrowRight, BookOpen, Heart, Newspaper, Users, ChevronLeft, ChevronRight,
   GraduationCap, CalendarRange, Library, Award, Mail,
 } from 'lucide-react'
-import { eventsApi, heroApi, newsApi, opportunitiesApi, statsApi, welfareApi } from '@/api/services'
-import { Button, Badge, Card, CardSkeleton, EmptyState, SectionHeader, Skeleton } from '@/components/ui'
+import { eventsApi, heroApi, statsApi, welfareApi } from '@/api/services'
+import { Button, Badge, CardSkeleton, EmptyState, SectionHeader, Skeleton } from '@/components/ui'
+
 import { EventCard, CountdownBlock } from '@/components/shared'
-import { cn, formatDateTime, NEWS_CATEGORY_LABELS, OPP_TYPE_LABELS, formatDate } from '@/utils'
+
+import { cn, formatDateTime, relativeTime } from '@/utils'
 import slide1 from '@/assets/KCP_4243.jpg'
 import slide2 from '@/assets/KCP_4248.jpg'
 import slide3 from '@/assets/KCP_4495.jpg'
-import type { HeroSlide, Opportunity } from '@/types'
+import type { HeroSlide } from '@/types'
 
 // ── Hero Carousel ─────────────────────────────────────────────────────────────
 
@@ -199,7 +201,7 @@ function Hero() {
               {slide.sub}
             </p>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 mb-8 lg:mb-10">
               <Button
                 variant="gold"
                 size="lg"
@@ -450,139 +452,223 @@ function QuickActions() {
 
 // ── Today at GPSA ─────────────────────────────────────────────────────────────
 
+function SpotlightSkeleton() {
+  return (
+    <div className="rounded-3xl overflow-hidden animate-pulse" style={{ background: '#003800' }}>
+      <div className="flex flex-col lg:flex-row min-h-[300px] lg:min-h-[360px]">
+        <div className="flex-1 flex flex-col gap-5 p-8 lg:p-10 xl:p-12">
+          <div className="h-6 w-36 rounded-full bg-white/20" />
+          <div className="flex-1 flex flex-col gap-4">
+            <div className="h-9 w-3/4 rounded-lg bg-white/10" />
+            <div className="h-9 w-1/2 rounded-lg bg-white/10" />
+            <div className="h-4 w-full rounded bg-white/5 mt-2" />
+            <div className="h-4 w-5/6 rounded bg-white/5" />
+          </div>
+          <div className="flex gap-6">
+            <div className="h-4 w-28 rounded bg-white/5" />
+            <div className="h-4 w-24 rounded bg-white/5" />
+            <div className="h-4 w-20 rounded bg-white/5" />
+          </div>
+          <div className="h-11 w-36 rounded-xl bg-white/20" />
+        </div>
+        <div className="w-full lg:w-72 xl:w-80 shrink-0 min-h-[160px] lg:min-h-0 bg-black/20" />
+      </div>
+    </div>
+  )
+}
+
+function EmptySpotlightCard({ onBrowse }: { onBrowse: () => void }) {
+  return (
+    <div className="bg-brand text-white rounded-3xl relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
+      <div className="relative flex flex-col lg:flex-row min-h-[300px] lg:min-h-[360px]">
+        {/* Left: content */}
+        <div className="flex-1 flex flex-col gap-5 p-8 lg:p-10 xl:p-12">
+          <Badge variant="gold" className="self-start">Issue of the Week</Badge>
+
+          <div className="flex-1 flex flex-col gap-4 justify-center">
+            <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-3xl mb-1">
+              📌
+            </div>
+            <h3 className="font-display text-2xl lg:text-3xl font-bold text-white leading-tight">
+              No featured issue this week
+            </h3>
+            <p className="text-[15px] lg:text-base text-white/60 leading-relaxed max-w-lg">
+              Everything on campus is running smoothly, or no issue has been selected as the featured issue yet. Check back later for updates.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-white/40">
+            <span className="flex items-center gap-1.5">Status: No Active Feature</span>
+          </div>
+
+          <div>
+            <Button
+              variant="gold"
+              size="md"
+              rightIcon={<ArrowRight className="h-4 w-4" />}
+              onClick={onBrowse}
+              aria-label="Browse all issues"
+            >
+              Browse All Issues
+            </Button>
+          </div>
+        </div>
+
+        {/* Right: decorative panel */}
+        <div className="relative w-full lg:w-72 xl:w-80 shrink-0 min-h-[160px] lg:min-h-0 overflow-hidden">
+          <div className="absolute inset-0" style={{ background: 'color-mix(in srgb, var(--green-primary) 85%, black)' }} />
+          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-15"
+            style={{ background: 'radial-gradient(circle, var(--gold-old) 0%, transparent 70%)' }}
+          />
+          <div className="absolute top-1/2 -translate-y-1/2 -left-12 w-48 h-48 rounded-full opacity-10"
+            style={{ background: 'radial-gradient(circle, var(--green-mint) 0%, transparent 70%)' }}
+          />
+          <svg className="absolute inset-0 w-full h-full opacity-[0.04]" viewBox="0 0 200 200" preserveAspectRatio="none">
+            <line x1="0" y1="0" x2="200" y2="200" stroke="white" strokeWidth="0.5" />
+            <line x1="200" y1="0" x2="0" y2="200" stroke="white" strokeWidth="0.5" />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl"
+                style={{ background: 'color-mix(in srgb, var(--gold-old) 15%, transparent)', backdropFilter: 'blur(4px)' }}>
+                🏛️
+              </div>
+              <span className="text-[11px] font-700 uppercase tracking-widest opacity-40"
+                style={{ color: 'var(--gold-old)' }}>
+                GPSA-UDS
+              </span>
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+            style={{ background: 'linear-gradient(to top, color-mix(in srgb, var(--green-primary) 85%, black) 0%, transparent 100%)' }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function TodayAtGPSA() {
   const navigate = useNavigate()
 
-  const { data: featuredNews, isLoading: newsLoading } = useQuery({
-    queryKey: ['news', 'featured'],
-    queryFn: newsApi.getFeatured,
-    staleTime: 2 * 60 * 1000,
-  })
-
-  const { data: featuredOpp, isLoading: oppLoading } = useQuery({
-    queryKey: ['opportunities', 'featured'],
-    queryFn: () => opportunitiesApi.list({ limit: 1, include_expired: false }),
-    staleTime: 2 * 60 * 1000,
-  })
-
-  const { data: spotlight, isLoading: spotLoading } = useQuery({
+  const { data: spotlight, isLoading } = useQuery({
     queryKey: ['welfare', 'spotlight'],
     queryFn: welfareApi.getSpotlight,
     staleTime: 5 * 60 * 1000,
   })
 
-  const opportunity: Opportunity | undefined = featuredOpp?.items?.[0]
-  const hasAnyData = featuredNews || opportunity || spotlight
-  const loading = newsLoading || oppLoading || spotLoading
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <section className="section-padding">
+      <section className="py-10 lg:py-14">
         <div className="section-container">
           <SectionHeader title="Today at GPSA-UDS" subtitle="What's happening right now" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
-          </div>
+          <SpotlightSkeleton />
         </div>
       </section>
     )
   }
 
-  if (!hasAnyData) return null
-
   return (
-    <section className="section-padding">
+    <section className="py-10 lg:py-14" style={{ animation: 'fadeUp 0.5s ease-out' }}>
       <div className="section-container">
         <SectionHeader title="Today at GPSA-UDS" subtitle="What's happening right now" />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {spotlight ? (
+          <div className="bg-brand text-white rounded-3xl relative overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5">
+            <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              }}
+            />
+            <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              style={{ background: 'radial-gradient(ellipse at 30% 50%, color-mix(in srgb, var(--gold-old) 15%, transparent) 0%, transparent 60%)' }}
+            />
 
-          {/* Featured News */}
-          {featuredNews && (
-            <Card
-              hover
-              padding="none"
-              onClick={() => navigate(`/news/${featuredNews.id}`)}
-              className="overflow-hidden flex flex-col"
-            >
-              <div className="h-36 flex items-center justify-center text-5xl bg-brand">
-                {featuredNews.banner_emoji ?? '📰'}
-              </div>
-              <div className="p-5 flex flex-col gap-2 flex-1">
-                <div className="flex gap-1.5">
-                  <Badge variant="green">{NEWS_CATEGORY_LABELS[featuredNews.category]}</Badge>
-                  {featuredNews.is_urgent && <Badge variant="red">Urgent</Badge>}
-                </div>
-                <h3 className="font-display font-bold text-deep leading-snug line-clamp-2">
-                  {featuredNews.title}
-                </h3>
-                <p className="text-sm text-muted line-clamp-2 leading-relaxed flex-1">
-                  {featuredNews.summary}
-                </p>
-                <span className="text-xs font-600 text-green-700 flex items-center gap-1 mt-2">
-                  Read More <ArrowRight className="h-3 w-3" />
-                </span>
-              </div>
-            </Card>
-          )}
+            <div className="relative flex flex-col lg:flex-row min-h-[300px] lg:min-h-[360px]">
+              {/* ── Left: Content ── */}
+              <div className="flex-1 flex flex-col gap-5 p-8 lg:p-10 xl:p-12">
+                <Badge variant="gold" className="self-start">Issue of the Week</Badge>
 
-          {/* Spotlight Opportunity */}
-          {opportunity && (
-            <Card padding="none" className="overflow-hidden flex flex-col border-green-200">
-              <div className="p-5 flex flex-col gap-3 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <Badge variant="gold" className="mb-1">
-                    {OPP_TYPE_LABELS[opportunity.opp_type]}
-                  </Badge>
-                  {!opportunity.is_active && <Badge variant="gray">Expired</Badge>}
+                <div className="flex-1 flex flex-col gap-4">
+                  <h3 className="font-display text-3xl lg:text-4xl font-bold text-white leading-tight tracking-tight max-w-2xl">
+                    {spotlight.summary}
+                  </h3>
+
+                  {spotlight.action_taken && (
+                    <p className="text-[15px] lg:text-base text-white/70 leading-relaxed max-w-xl line-clamp-3">
+                      {spotlight.action_taken}
+                    </p>
+                  )}
                 </div>
-                <h3 className="font-display font-bold text-deep leading-snug line-clamp-2">
-                  {opportunity.title}
-                </h3>
-                <p className="text-xs text-muted font-500">🏢 {opportunity.organization}</p>
-                <p className="text-sm text-muted line-clamp-2 leading-relaxed flex-1">
-                  {opportunity.description}
-                </p>
-                <div className="flex items-center justify-between pt-2 border-t border-cream-dark mt-auto">
-                  <div>
-                    <p className="text-[10px] text-muted uppercase tracking-wide font-700 mb-1">Deadline</p>
-                    <span className="text-xs text-muted">{formatDate(opportunity.deadline)}</span>
-                  </div>
+
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 text-sm text-white/60">
+                  <span className="flex items-center gap-1.5">📍 Main Campus</span>
+                  <span className="flex items-center gap-1.5">📅 {relativeTime(spotlight.created_at)}</span>
+                  <span className="flex items-center gap-1.5">🏷 Welfare</span>
+                  <span className={cn('flex items-center gap-1.5', spotlight.is_active ? 'text-green-300' : 'text-white/40')}>
+                    <span className={cn('w-2 h-2 rounded-full', spotlight.is_active ? 'bg-green-400' : 'bg-white/30')} />
+                    {spotlight.is_active ? 'Active' : 'Resolved'}
+                  </span>
+                </div>
+
+                <div>
                   <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); navigate('/opportunities') }}
+                    variant="gold"
+                    size="md"
+                    rightIcon={<ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />}
+                    onClick={() => navigate('/welfare')}
+                    aria-label="Read more about this issue"
                   >
-                    View
+                    Read More
                   </Button>
                 </div>
               </div>
-            </Card>
-          )}
 
-          {/* Welfare Spotlight */}
-          {spotlight && (
-            <Card padding="none" className="overflow-hidden flex flex-col bg-brand text-white border-none">
-              <div className="p-5 flex flex-col gap-3 flex-1 relative">
-                <div className="absolute inset-0 pointer-events-none opacity-[0.06]"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                  }}
+              {/* ── Right: Decorative panel ── */}
+              <div className="relative w-full lg:w-72 xl:w-80 shrink-0 min-h-[160px] lg:min-h-0 overflow-hidden">
+                <div className="absolute inset-0" style={{ background: 'color-mix(in srgb, var(--green-primary) 85%, black)' }} />
+                <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-15"
+                  style={{ background: 'radial-gradient(circle, var(--gold-old) 0%, transparent 70%)' }}
                 />
-                <div className="relative">
-                  <Badge variant="gold" className="mb-2">Issue of the Week</Badge>
-                  <h3 className="font-display text-xl font-bold text-white leading-snug mb-2">
-                    {spotlight.summary}
-                  </h3>
-                  <p className="text-sm text-white/70 leading-relaxed line-clamp-3">
-                    {spotlight.action_taken}
-                  </p>
+                <div className="absolute top-1/2 -translate-y-1/2 -left-12 w-48 h-48 rounded-full opacity-10"
+                  style={{ background: 'radial-gradient(circle, var(--green-mint) 0%, transparent 70%)' }}
+                />
+                <div className="absolute top-1/3 right-8 w-3 h-3 rounded-full opacity-40" style={{ background: 'var(--gold-old)' }} />
+                <svg className="absolute inset-0 w-full h-full opacity-[0.04]" viewBox="0 0 200 200" preserveAspectRatio="none">
+                  <line x1="0" y1="0" x2="200" y2="200" stroke="white" strokeWidth="0.5" />
+                  <line x1="200" y1="0" x2="0" y2="200" stroke="white" strokeWidth="0.5" />
+                  <line x1="100" y1="0" x2="100" y2="200" stroke="white" strokeWidth="0.3" />
+                  <line x1="0" y1="100" x2="200" y2="100" stroke="white" strokeWidth="0.3" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl"
+                      style={{ background: 'color-mix(in srgb, var(--gold-old) 15%, transparent)', backdropFilter: 'blur(4px)' }}>
+                      🏛️
+                    </div>
+                    <span className="text-[11px] font-700 uppercase tracking-widest opacity-40" style={{ color: 'var(--gold-old)' }}>
+                      GPSA-UDS
+                    </span>
+                  </div>
                 </div>
+                <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+                  style={{ background: 'linear-gradient(to top, color-mix(in srgb, var(--green-primary) 85%, black) 0%, transparent 100%)' }}
+                />
+                <div className="absolute top-0 bottom-0 right-0 w-32 pointer-events-none"
+                  style={{ background: 'linear-gradient(to left, color-mix(in srgb, var(--green-primary) 85%, black) 0%, transparent 100%)' }}
+                />
               </div>
-            </Card>
-          )}
-
-        </div>
+            </div>
+          </div>
+        ) : (
+          <EmptySpotlightCard onBrowse={() => navigate('/welfare')} />
+        )}
       </div>
     </section>
   )

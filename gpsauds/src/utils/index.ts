@@ -20,8 +20,11 @@ export function formatDateTime(dateStr: string | null | undefined): string {
   return format(new Date(dateStr), "MMM d, yyyy 'at' h:mm a")
 }
 
-export function relativeTime(dateStr: string): string {
-  return formatDistanceToNow(new Date(dateStr), { addSuffix: true })
+export function relativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return 'Recently'
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return 'Recently'
+  return formatDistanceToNow(d, { addSuffix: true })
 }
 
 export function deadlineUrgency(deadline: string): 'expired' | 'closing_today' | 'closing_soon' | 'open' {

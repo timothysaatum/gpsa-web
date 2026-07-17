@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm, Path } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,20 +21,20 @@ function AuthCard({ children, title, subtitle }: {
   return (
     <div className="w-full max-w-md animate-fade-up">
       {/* Logo */}
-      <Link to="/" className="flex items-center justify-center gap-3 mb-10">
-        <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-gold-400 shadow-lg">
+      <Link to="/" className="flex items-center justify-center gap-3 mb-6">
+        <div className="w-14 h-14 rounded-full overflow-hidden border-4 border-gold-400 shadow-lg">
           <img src={gpsaLogo} alt="GPSA-UDS Logo" className="w-full h-full object-cover" />
         </div>
         <div className="text-white">
-          <p className="font-display text-2xl font-700 leading-none">GPSA-UDS</p>
-          <p className="text-xs text-white/70 tracking-widest uppercase">Student Portal</p>
+          <p className="font-display text-xl font-700 leading-none">GPSA-UDS</p>
+          <p className="text-[11px] text-white/70 tracking-widest uppercase">Student Portal</p>
         </div>
       </Link>
 
-      <div className="bg-white rounded-3xl shadow-card-lg p-8">
-        <div className="mb-7">
-          <h1 className="font-display text-3xl font-bold text-green-700">{title}</h1>
-          {subtitle && <p className="text-sm text-muted mt-1.5">{subtitle}</p>}
+      <div className="bg-white rounded-3xl shadow-card-lg p-6">
+        <div className="mb-5">
+          <h1 className="font-display text-2xl font-bold text-green-700">{title}</h1>
+          {subtitle && <p className="text-sm text-muted mt-1">{subtitle}</p>}
         </div>
         {children}
       </div>
@@ -67,6 +67,7 @@ function PasswordInput<T extends Record<string, any>>({
           onClick={() => setShow((s) => !s)}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-green-700 transition-colors"
           tabIndex={-1}
+          aria-label={show ? 'Hide password' : 'Show password'}
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
@@ -107,20 +108,20 @@ export function LoginPage() {
   return (
     <AuthCard title="Welcome back" subtitle="Sign in to your GPSA-UDS account">
       {sessionExpired && (
-        <div className="mb-5 flex items-center gap-2.5 bg-gold-50 border border-gold-200 rounded-xl p-3.5 text-sm text-gold-700">
+        <div className="mb-4 flex items-center gap-2.5 bg-gold-50 border border-gold-200 rounded-xl p-3 text-sm text-gold-700">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           Your session has expired. Please sign in again.
         </div>
       )}
 
       {mutation.error && (
-        <div className="mb-5 flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3.5 text-sm text-red-600">
+        <div className="mb-4 flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           {extractError(mutation.error)}
         </div>
       )}
 
-      <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+      <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-3">
         <div>
           <label className="form-label">Email Address</label>
           <input
@@ -150,13 +151,13 @@ export function LoginPage() {
           variant="primary"
           size="lg"
           loading={mutation.isPending}
-          className="w-full mt-2"
+          className="w-full"
         >
           Sign In
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted mt-6">
+      <p className="text-center text-sm text-muted mt-5">
         Don't have an account?{' '}
         <Link to="/register" className="text-green-700 font-600 hover:text-green-600">
           Join GPSA →
@@ -176,9 +177,18 @@ const registerSchema = z.object({
     .min(8, 'At least 8 characters')
     .regex(/[A-Z]/, 'Must contain an uppercase letter')
     .regex(/[0-9]/, 'Must contain a digit'),
-  phone: z.string().min(1, 'Phone number is required'),
+  confirm_password: z.string(),
+  phone: z
+    .string()
+    .regex(/^(?:\+233|0)[2-9]\d{8}$/, 'Enter a valid Ghanaian phone number (e.g. +233 XX XXX XXXX)'),
   student_id: z.string().min(1, 'Student ID is required'),
-  level: z.string().min(1, 'Level is required'),
+  level: z.preprocess(
+    (v) => (v === '' ? undefined : Number(v)),
+    z.number({ required_error: 'Level is required' }).min(100, 'Level is required').max(600),
+  ),
+}).refine((d) => d.password === d.confirm_password, {
+  message: 'Passwords do not match',
+  path: ['confirm_password'],
 })
 type RegisterForm = z.infer<typeof registerSchema>
 
@@ -193,8 +203,12 @@ export function RegisterPage() {
   const mutation = useMutation({
     mutationFn: (data: RegisterForm) =>
       authApi.register({
-        ...data,
-        level: data.level ? parseInt(data.level) : undefined,
+        full_name: data.full_name,
+        email: data.email,
+        password: data.password,
+        phone: data.phone,
+        student_id: data.student_id,
+        level: data.level,
       }),
     onSuccess: () => setSuccess(true),
   })
@@ -206,7 +220,7 @@ export function RegisterPage() {
           <div className="w-16 h-16 bg-green-gradient rounded-full flex items-center justify-center mx-auto mb-5">
             <CheckCircle className="h-8 w-8 text-green-700" />
           </div>
-          <p className="text-sm text-muted leading-relaxed mb-6">
+          <p className="text-sm text-muted leading-relaxed mb-5">
             We've sent a verification link to your email. Click it to activate your account and log in.
           </p>
           <Button variant="primary" size="md" onClick={() => navigate('/login')} className="w-full">
@@ -220,13 +234,13 @@ export function RegisterPage() {
   return (
     <AuthCard title="Join GPSA-UDS" subtitle="Create your student portal account">
       {mutation.error && (
-        <div className="mb-5 flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3.5 text-sm text-red-600">
+        <div className="mb-4 flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           {extractError(mutation.error)}
         </div>
       )}
 
-      <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+      <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-3">
         <div>
           <label className="form-label">Full Name</label>
           <input {...register('full_name')} placeholder="Kwame Asante" className={cn('form-input', errors.full_name && 'form-input-error')} />
@@ -240,8 +254,13 @@ export function RegisterPage() {
         </div>
 
         <PasswordInput register={register} name="password" label="Password" error={errors.password?.message} />
+        <p className="-mt-1.5 text-[11px] text-muted leading-relaxed">
+          At least 8 characters · one uppercase letter · one digit
+        </p>
 
-        <div className="grid grid-cols-2 gap-3">
+        <PasswordInput register={register} name="confirm_password" label="Confirm Password" error={errors.confirm_password?.message} />
+
+        <div className="grid grid-cols-2 gap-2">
           <div>
           <label className="form-label">Student ID</label>
             <input {...register('student_id')} placeholder="UDS/PHARM/…" className={cn('form-input', errors.student_id && 'form-input-error')} />
@@ -265,12 +284,12 @@ export function RegisterPage() {
           {errors.phone && <p className="form-error">{errors.phone.message}</p>}
         </div>
 
-        <Button type="submit" variant="primary" size="lg" loading={mutation.isPending} className="w-full mt-2">
+        <Button type="submit" variant="primary" size="lg" loading={mutation.isPending} className="w-full">
           Create Account
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted mt-6">
+      <p className="text-center text-sm text-muted mt-5">
         Already have an account?{' '}
         <Link to="/login" className="text-green-700 font-600 hover:text-green-600">
           Sign in →
@@ -303,7 +322,7 @@ export function ForgotPasswordPage() {
           <Link to="/login" className="text-green-700 font-600 text-sm">Back to Sign In →</Link>
         </div>
       ) : (
-        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-3">
           <div>
             <label className="form-label">Email Address</label>
             <input {...register('email')} type="email" placeholder="you@student.uds.edu.gh"
@@ -325,7 +344,7 @@ export function ForgotPasswordPage() {
 // ── Verify Email ──────────────────────────────────────────────────────────────
 
 export function VerifyEmailPage() {
-  const [searchParams] = [new URLSearchParams(window.location.search)]
+  const searchParams = new URLSearchParams(window.location.search)
   const token = searchParams.get('token') ?? ''
   const navigate = useNavigate()
 
@@ -333,7 +352,9 @@ export function VerifyEmailPage() {
     mutationFn: () => authApi.verifyEmail(token),
   })
 
-  useState(() => { if (token) mutation.mutate() })
+  useEffect(() => {
+    if (token) mutation.mutate()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <AuthCard title="Verifying email…" subtitle="">

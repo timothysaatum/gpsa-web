@@ -607,7 +607,7 @@ export function EventDetailPage() {
               <div className="flex flex-wrap gap-2 mb-4">
                 <Badge variant="blue">{EVENT_TYPE_LABELS[event.event_type]}</Badge>
                 <Badge variant={event.status === 'upcoming' ? 'green' : event.status === 'ongoing' ? 'gold' : 'gray'}>
-                  {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                  {event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Unknown'}
                 </Badge>
                 {event.is_featured && <Badge variant="gold">⭐ Featured</Badge>}
               </div>

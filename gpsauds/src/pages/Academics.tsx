@@ -201,7 +201,7 @@ export function AcademicsPage() {
     staleTime: 10 * 60 * 1000,
   })
 
-  const courses: Course[] = coursesData ?? []
+  const courses: Course[] = Array.isArray(coursesData) ? coursesData : []
   const totalResults = data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
