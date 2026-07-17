@@ -3,7 +3,7 @@ import type { Config } from 'tailwindcss'
 // ─────────────────────────────────────────────────────────────────────────────
 // GPSA-UDS Design Tokens — v3 (semantic)
 //
-//  Primary:   #10A606  bold green — energetic, vibrant
+//  Primary:   #004D00  bold green — energetic, vibrant
 //  Accent:    #C8912E  warm amber — sophisticated, not yellow
 //  Neutral:   warm greys, clean whites
 //
@@ -34,21 +34,21 @@ export default {
           foreground: '#9CA3AF',
         },
         link: {
-          DEFAULT: '#0E8D05',
-          hover: '#0A6C04',
+          DEFAULT: '#004400',
+          hover: '#003800',
         },
         green: {
-          DEFAULT: '#10A606',
-          50:  '#E8F5E6',
-          100: '#C8EAC4',
-          200: '#96D98F',
-          300: '#5CC452',
-          400: '#2DB81F',
-          500: '#10A606',
-          600: '#0E8D05',
-          700: '#0A6C04',
-          800: '#074B03',
-          900: '#032101',
+          DEFAULT: '#004D00',
+          50:  '#E6F2E6',
+          100: '#B3D9B3',
+          200: '#80BF80',
+          300: '#4DA64D',
+          400: '#1A8C1A',
+          500: '#004D00',
+          600: '#004400',
+          700: '#003800',
+          800: '#002D00',
+          900: '#001A00',
         },
         gold: {
           DEFAULT: '#C8912E',
@@ -79,9 +79,9 @@ export default {
       },
       boxShadow: {
         'card':      '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
-        'card-md':   '0 4px 16px -2px rgb(16 166 6 / 0.10), 0 2px 6px -2px rgb(16 166 6 / 0.06)',
-        'card-lg':   '0 12px 40px -4px rgb(16 166 6 / 0.12), 0 4px 16px -4px rgb(16 166 6 / 0.07)',
-        'glow':      '0 0 0 3px rgb(16 166 6 / 0.18)',
+        'card-md':   '0 4px 16px -2px rgb(0 77 0 / 0.10), 0 2px 6px -2px rgb(0 77 0 / 0.06)',
+        'card-lg':   '0 12px 40px -4px rgb(0 77 0 / 0.12), 0 4px 16px -4px rgb(0 77 0 / 0.07)',
+        'glow':      '0 0 0 3px rgb(0 77 0 / 0.18)',
         'glow-gold': '0 0 0 3px rgb(200 145 46 / 0.22)',
       },
       borderRadius: {
@@ -90,10 +90,10 @@ export default {
       },
       backgroundImage: {
         'hero-pattern': "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-        'brand-gradient':    'linear-gradient(135deg, #10A606 0%, #0E8D05 100%)',
-        'brand-gradient-h':  'linear-gradient(135deg, #0E8D05 0%, #0A6C04 100%)',
-        'legacy-gradient':   'linear-gradient(90deg, #A8D5BA 0%, #00B140 100%)',
-        'legacy-gradient-h': 'linear-gradient(90deg, #98CAAA 0%, #009933 100%)',
+        'brand-gradient':    'linear-gradient(135deg, #004D00 0%, #004400 100%)',
+        'brand-gradient-h':  'linear-gradient(135deg, #004400 0%, #003800 100%)',
+        'legacy-gradient':   'linear-gradient(90deg, #006633 0%, #004D00 100%)',
+        'legacy-gradient-h': 'linear-gradient(90deg, #005526 0%, #004400 100%)',
       },
       animation: {
         'fade-in':    'fadeIn 0.4s ease-out',

@@ -11,11 +11,11 @@
 
 :root {
   /* ── Base palette (raw values — do NOT use directly in components) ───── */
-  --green-primary:     #10A606;
-  --green-hover:       #0E8D05;
-  --green-active:      #0A6C04;
-  --green-deep:        #074B03;
-  --green-mint:        #5CC452;
+  --green-primary:     #004D00;
+  --green-hover:       #004400;
+  --green-active:      #003800;
+  --green-deep:        #002D00;
+  --green-mint:        #1A8C1A;
   --amber:             #C8912E;
   --amber-hover:       #A07020;
   --amber-light:       #DFB075;
@@ -34,10 +34,10 @@
   --red-dark:          #b91c1c;
   --red-light:         #f87171;
   --red-lighter:       #fee2e2;
-  --green-light-old:   #3CB559;     /* legacy — used in icons, badges */
-  --green-bright-old:  #29a329;     /* legacy — used in hero, tags */
-  --green-sage-old:    #A8D5BA;     /* legacy — gradient light end */
-  --green-emerald-old: #00B140;     /* legacy — gradient dark end */
+  --green-light-old:   #006600;     /* legacy — used in icons, badges */
+  --green-bright-old:  #004D00;     /* legacy — used in hero, tags */
+  --green-sage-old:    #006633;     /* legacy — gradient light end */
+  --green-emerald-old: #004D00;     /* legacy — gradient dark end */
   --gold-old:          #F2C12E;     /* legacy — logo, gallery items */
   --gold-old-deep:     #C8991A;     /* legacy — icon colours */
   --text-deep-old:     #1B3D22;     /* legacy — dark green text */
@@ -109,9 +109,9 @@
 
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-primary: 0 4px 16px rgba(16,166,6,0.13), 0 2px 6px rgba(16,166,6,0.07);
-  --shadow-primary-lg: 0 12px 40px rgba(16,166,6,0.17), 0 4px 16px rgba(16,166,6,0.09);
-  --shadow-glow: 0 0 0 3px rgba(16,166,6,0.22);
+  --shadow-primary: 0 4px 16px rgba(0,77,0,0.13), 0 2px 6px rgba(0,77,0,0.07);
+  --shadow-primary-lg: 0 12px 40px rgba(0,77,0,0.17), 0 4px 16px rgba(0,77,0,0.09);
+  --shadow-glow: 0 0 0 3px rgba(0,77,0,0.22);
   --shadow-glow-accent: 0 0 0 3px rgba(200,145,46,0.28);
 }
 
