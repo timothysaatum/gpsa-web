@@ -12,6 +12,8 @@ import type {
   Feedback,
   FeedbackEntityType,
   FeedbackSummary,
+  GalleryCategory,
+  GalleryItem,
   HeroSlide,
   HeroSlideCreateRequest,
   HeroSlideUpdateRequest,
@@ -398,6 +400,35 @@ export const heroApi = {
 
   delete: (id: string) =>
     api.delete<MessageResponse>(`/hero/${id}`).then((r) => r.data),
+}
+
+// ── Gallery ──────────────────────────────────────────────────────────────────
+
+export const galleryApi = {
+  list: (params?: { category?: GalleryCategory; offset?: number; limit?: number }) =>
+    api.get<GalleryItem[]>('/gallery/', { params }).then((r) => r.data),
+
+  getById: (id: string) =>
+    api.get<GalleryItem>(`/gallery/${id}`).then((r) => r.data),
+
+  create: (formData: FormData) =>
+    api
+      .post<GalleryItem>('/gallery/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data),
+
+  update: (id: string, data: {
+    title?: string
+    description?: string | null
+    category?: GalleryCategory
+    event_date?: string | null
+    sort_order?: number
+  }) =>
+    api.patch<GalleryItem>(`/gallery/${id}`, data).then((r) => r.data),
+
+  delete: (id: string) =>
+    api.delete<MessageResponse>(`/gallery/${id}`).then((r) => r.data),
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────

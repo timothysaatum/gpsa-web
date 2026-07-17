@@ -37,6 +37,8 @@ export type NotificationType =
   | 'news_published'
   | 'general'
 
+export type GalleryCategory = 'events' | 'academic' | 'health' | 'outreach' | 'social' | 'welfare'
+
 export type FeedbackEntityType = 'event' | 'academic_resource' | 'opportunity'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -264,6 +266,20 @@ export interface CertificateVerify {
 }
 
 // ── Feedback ──────────────────────────────────────────────────────────────────
+
+// ── Gallery ──────────────────────────────────────────────────────────────────
+
+export interface GalleryItem {
+  id: string
+  image_url: string
+  thumbnail_url: string | null
+  title: string
+  description: string | null
+  category: GalleryCategory
+  event_date: string | null
+  sort_order: number
+  created_at: string
+}
 
 // ── Hero Slides ──────────────────────────────────────────────────────────────
 

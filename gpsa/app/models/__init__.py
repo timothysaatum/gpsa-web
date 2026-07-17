@@ -23,6 +23,7 @@ from app.models.enums import (
     EventType,
     FeedbackEntityType,
     FileType,
+    GalleryCategory,
     NewsCategory,
     NotificationType,
     OpportunityType,
@@ -34,6 +35,7 @@ from app.models.enums import (
 )
 from app.models.event import Event, EventRegistration
 from app.models.feedback import Feedback
+from app.models.gallery import GalleryImage
 from app.models.hero_slide import HeroSlide
 from app.models.news import NewsPost
 from app.models.notification import Notification
@@ -56,6 +58,8 @@ __all__ = [
     # Events
     "Event",
     "EventRegistration",
+    # Gallery
+    "GalleryImage",
     # Welfare
     "WelfareReport",
     "WelfareSpotlight",
@@ -85,6 +89,7 @@ __all__ = [
     "NewsCategory",
     "NotificationType",
     "FeedbackEntityType",
+    "GalleryCategory",
     "EmailStatus",
     "EmailTemplate",
 ]

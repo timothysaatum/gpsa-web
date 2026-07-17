@@ -1,0 +1,14 @@
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+**/.git
+**/.env
+**/.env.*
+**/*.log
+**/htmlcov
+**/.coverage
+gpsa/.venv
+gpsauds/node_modules
+gpsauds/dist

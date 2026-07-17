@@ -148,28 +148,59 @@ export function EventCard({ event, onRegister }: EventCardProps) {
 
 // ── Opportunity card ──────────────────────────────────────────────────────────
 
+const OPP_TYPE_STYLE: Record<string, { icon: string; bar: string; badge: string }> = {
+  internship:  { icon: '💼', bar: 'bg-blue-500',   badge: 'badge-blue' },
+  scholarship: { icon: '🎓', bar: 'bg-yellow-500', badge: 'badge-gold' },
+  job:         { icon: '💻', bar: 'bg-green-600',  badge: 'badge-green' },
+  training:    { icon: '🛠️', bar: 'bg-purple-500', badge: 'badge-purple' },
+}
+
+function DaysRemaining({ deadline }: { deadline: string }) {
+  const d = new Date(deadline)
+  const now = new Date()
+  const days = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  const isPast = days <= 0
+
+  if (isPast) return <span className="text-xs text-gray-400 font-500">Expired</span>
+
+  const color = days === 0 ? 'text-red-600' : days <= 3 ? 'text-orange-600' : days <= 7 ? 'text-yellow-600' : 'text-green-600'
+
+  return (
+    <span className={cn('text-xs font-700', color)}>
+      {days === 0 ? 'Today' : `${days}d left`}
+    </span>
+  )
+}
+
 interface OpportunityCardProps {
   opportunity: Opportunity
   onApply?: () => void
 }
 
 export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) {
+  const style = OPP_TYPE_STYLE[opportunity.opp_type] ?? OPP_TYPE_STYLE.internship
+
   return (
-    <Card padding="none" className="flex flex-col hover:shadow-card-md transition-shadow">
+    <Card padding="none" className="flex flex-col hover:shadow-card-md transition-all duration-300 hover:-translate-y-0.5 overflow-hidden">
+      <div className={cn('h-1', style.bar)} />
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <Badge variant="green" className="mb-2">
-              {OPP_TYPE_LABELS[opportunity.opp_type]}
-            </Badge>
-            <h3 className="font-body font-700 text-deep leading-snug line-clamp-2">
-              {opportunity.title}
-            </h3>
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl flex-shrink-0">{style.icon}</span>
+            <div>
+              <span className={cn('text-[11px] font-700 uppercase tracking-wider', style.badge.split(' ')[0] === 'badge-blue' ? 'text-blue-700' : style.badge.split(' ')[0] === 'badge-gold' ? 'text-yellow-700' : style.badge.split(' ')[0] === 'badge-purple' ? 'text-purple-700' : 'text-green-700')}>
+                {OPP_TYPE_LABELS[opportunity.opp_type]}
+              </span>
+            </div>
           </div>
           {!opportunity.is_active && (
             <Badge variant="gray">Expired</Badge>
           )}
         </div>
+
+        <h3 className="font-display font-bold text-deep leading-snug line-clamp-2 text-lg">
+          {opportunity.title}
+        </h3>
 
         <p className="text-sm text-muted font-500">🏢 {opportunity.organization}</p>
 
@@ -184,10 +215,13 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
           </p>
         )}
 
-        <div className="flex items-center justify-between mt-auto pt-2 border-t border-cream-dark">
-          <div>
-            <p className="text-[10px] text-muted uppercase tracking-wide font-700 mb-1">Deadline</p>
-            <DeadlineBadge deadline={opportunity.deadline} />
+        <div className="flex items-center justify-between mt-auto pt-3 border-t border-cream-dark">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-[10px] text-muted uppercase tracking-wide font-700 mb-1">Deadline</p>
+              <DeadlineBadge deadline={opportunity.deadline} />
+            </div>
+            <DaysRemaining deadline={opportunity.deadline} />
           </div>
           <p className="text-xs text-muted">{formatDate(opportunity.deadline)}</p>
         </div>
@@ -212,13 +246,13 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
 
 // ── News card ─────────────────────────────────────────────────────────────────
 
-const NEWS_BG: Record<string, string> = {
-  announcement:   'bg-gold-50',
-  academic_update:'bg-green-gradient',
-  welfare_update: 'bg-green-gradient',
-  events_recap:   'bg-cream-dark',
-  opportunities:  'bg-gold-50',
-  general:        'bg-cream-dark',
+export const CATEGORY_STYLE: Record<string, { bar: string; dot: string; text: string }> = {
+  announcement:    { bar: 'bg-gold-500', dot: 'bg-gold-500', text: 'text-gold-700' },
+  academic_update: { bar: 'bg-green-500', dot: 'bg-green-500', text: 'text-green-700' },
+  welfare_update:  { bar: 'bg-teal-500', dot: 'bg-teal-500', text: 'text-teal-700' },
+  events_recap:    { bar: 'bg-blue-500', dot: 'bg-blue-500', text: 'text-blue-700' },
+  opportunities:   { bar: 'bg-purple-500', dot: 'bg-purple-500', text: 'text-purple-700' },
+  general:         { bar: 'bg-slate-400', dot: 'bg-slate-400', text: 'text-slate-600' },
 }
 
 interface NewsCardProps {
@@ -227,34 +261,24 @@ interface NewsCardProps {
 }
 
 export function NewsCard({ post, onClick }: NewsCardProps) {
+  const style = CATEGORY_STYLE[post.category] ?? CATEGORY_STYLE.general
   return (
     <Card hover padding="none" onClick={onClick} className="overflow-hidden flex flex-col">
-      <div className={cn('h-40 flex items-center justify-center text-6xl', NEWS_BG[post.category] ?? 'bg-cream-dark')}>
-        {post.banner_emoji ?? '📰'}
-      </div>
-
-      <div className="p-5 flex flex-col gap-3 flex-1">
-        <div className="flex flex-wrap gap-1.5">
-          <Badge variant="green">{NEWS_CATEGORY_LABELS[post.category] ?? post.category}</Badge>
-          {post.is_urgent && <Badge variant="red">🔴 Urgent</Badge>}
+      <div className={cn('h-1.5', style.bar)} />
+      <div className="p-5 flex flex-col gap-2 flex-1">
+        <div className="flex items-center gap-2">
+          <span className={cn('w-2 h-2 rounded-full', style.dot)} />
+          <span className={cn('text-[11px] font-700 uppercase tracking-wider', style.text)}>
+            {NEWS_CATEGORY_LABELS[post.category] ?? post.category}
+          </span>
+          {post.is_urgent && <span className="text-[11px] font-700 text-red-600">● Urgent</span>}
         </div>
-
-        <h3 className="font-body font-700 text-deep leading-snug line-clamp-2">
+        <h3 className="font-display font-bold text-deep leading-snug line-clamp-2">
           {post.title}
         </h3>
-
-        <p className="text-sm text-muted line-clamp-3 leading-relaxed">
-          {post.summary}
-        </p>
-
-        <div className="flex items-center justify-between mt-auto pt-2">
-          {post.published_at && (
-            <span className="text-xs text-muted">{formatDate(post.published_at)}</span>
-          )}
-          <span className="text-xs font-700 text-green-700 flex items-center gap-1">
-            Read More <ArrowRight className="h-3 w-3" />
-          </span>
-        </div>
+        {post.published_at && (
+          <span className="text-xs text-muted mt-auto">{formatDate(post.published_at)}</span>
+        )}
       </div>
     </Card>
   )

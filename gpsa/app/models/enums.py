@@ -102,6 +102,16 @@ class FeedbackEntityType(str, enum.Enum):
     opportunity = "opportunity"
 
 
+# ── Gallery ──────────────────────────────────────────────────────────────────
+class GalleryCategory(str, enum.Enum):
+    events = "events"
+    academic = "academic"
+    health = "health"
+    outreach = "outreach"
+    social = "social"
+    welfare = "welfare"
+
+
 # ── Email Logs ────────────────────────────────────────────────────────────────
 class EmailStatus(str, enum.Enum):
     pending = "pending"

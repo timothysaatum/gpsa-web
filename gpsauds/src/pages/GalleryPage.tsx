@@ -1,93 +1,33 @@
-/**
- *
- * ── Backend integration checklist ──────────────────────────────────────────
- * 1. API FETCH:    Replace the GALLERY_ITEMS static array with a useQuery()
- *                 call to your gallery API. Suggested shape:
- *                   { id, title, category, photo_url, thumbnail_url,
- *                     event_date, description? }
- *
- * 2. PHOTO SWAP:  Each GalleryCard renders a photo <img> when `photo_url`
- *                 is truthy; otherwise it shows a gradient placeholder.
- *                 No code changes needed — just populate the field.
- *
- * 3. UPLOAD:      Add an admin-gated upload button that calls your
- *                 galleryApi.upload() endpoint. Hook in at the top of
- *                 the page next to the filter bar.
- *
- * 4. PAGINATION:  Replace `slice(0, visibleCount)` with cursor / page-based
- *                 API pagination when you have enough photos.
- * ───────────────────────────────────────────────────────────────────────────
- */
-
 import { useState, useEffect, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { X, ChevronLeft, ChevronRight, ZoomIn, Calendar} from 'lucide-react'
+import { galleryApi } from '@/api/services'
 import { Button } from '@/components/ui'
 import { PageHeader } from '@/components/shared'
 import { cn } from '@/utils'
+import type { GalleryCategory, GalleryItem } from '@/types'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
-
-type GalleryCategory = 'events' | 'academic' | 'health' | 'outreach' | 'social' | 'welfare'
-
-interface GalleryItem {
-  id: number
-  title: string
-  category: GalleryCategory
-  /**
-   * When populated from the API, set this to the full-resolution URL.
-   * The component automatically switches from the gradient placeholder
-   * to the real photo — no other changes required.
-   */
-  photo_url?: string
-  thumbnail_url?: string
-  event_date?: string        // ISO date string, e.g. "2024-11-03"
-  description?: string
-  /** Used for the placeholder gradient when photo_url is absent */
-  _gradient?: string
-  _accent?: string
+const CATEGORY_LABEL: Record<GalleryCategory, string> = {
+  events:   'Events',
+  academic: 'Academic',
+  health:   'Health',
+  outreach: 'Outreach',
+  social:   'Social',
+  welfare:  'Welfare',
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Static data — replace with useQuery(() => galleryApi.list()) when ready
-// ─────────────────────────────────────────────────────────────────────────────
-
-const GALLERY_ITEMS: GalleryItem[] = [
-  { id: 1,  title: 'Graduation Ceremony 2024',      category: 'events',   event_date: '2024-11-03', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-sage-old)' },
-  { id: 2,  title: 'Health Week 2024',              category: 'health',   event_date: '2024-09-15', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 3,  title: 'Academic Symposium',            category: 'academic', event_date: '2024-07-20', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 4,  title: 'Community Outreach Drive',      category: 'outreach', event_date: '2024-06-08', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-sage-old)' },
-  { id: 5,  title: 'Public Speaking Contest',       category: 'events',   event_date: '2024-05-12', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 6,  title: 'Field Trip — Herbarium',        category: 'academic', event_date: '2024-04-03', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 7,  title: 'Inter-Level Sports Day',        category: 'social',   event_date: '2024-03-22', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 8,  title: 'End-of-Year Dinner 2023',       category: 'social',   event_date: '2023-12-14', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 9,  title: 'Lab Skills Workshop',           category: 'academic', event_date: '2023-11-18', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 10, title: 'GPSA Induction Ceremony',       category: 'events',   event_date: '2023-09-02', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-sage-old)' },
-  { id: 11, title: 'Drug Awareness Campaign',       category: 'health',   event_date: '2023-08-25', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 12, title: 'Blood Donation Drive',          category: 'outreach', event_date: '2023-07-14', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 13, title: 'Welfare Sensitisation Week',    category: 'welfare',  event_date: '2023-06-05', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-sage-old)' },
-  { id: 14, title: 'MYC 2024 — Opening Ceremony',  category: 'events',   event_date: '2024-02-10', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-  { id: 15, title: 'Pharmacology Quiz Bowl',        category: 'academic', event_date: '2024-01-28', _gradient: 'var(--legacy-gradient)', _accent: 'var(--green-primary)' },
-]
-
-const CATEGORIES: { value: GalleryCategory | 'all'; label: string; count?: number }[] = [
+const CATEGORIES: { value: GalleryCategory | 'all'; label: string }[] = [
   { value: 'all',      label: 'All' },
-  { value: 'events',   label: 'Events' },
-  { value: 'academic', label: 'Academic' },
-  { value: 'health',   label: 'Health' },
-  { value: 'outreach', label: 'Outreach' },
-  { value: 'social',   label: 'Social' },
-  { value: 'welfare',  label: 'Welfare' },
+  ...Object.entries(CATEGORY_LABEL).map(([value, label]) => ({ value: value as GalleryCategory, label })),
 ]
 
-const CATEGORY_STYLES: Record<GalleryCategory, { bg: string; text: string }> = {
-  events:   { bg: 'color-mix(in srgb, var(--green-light-old) 15%, transparent)',   text: 'var(--green-light-old)' },
-  academic: { bg: 'rgba(24,95,165,0.15)',   text: '#378ADD' },
-  health:   { bg: 'color-mix(in srgb, var(--gold-old-deep) 15%, transparent)',  text: 'var(--gold-old-deep)' },
-  outreach: { bg: 'color-mix(in srgb, var(--green-light-old) 12%, transparent)',   text: 'var(--color-primary-active)' },
-  social:   { bg: 'rgba(124,58,237,0.12)', text: '#7c3aed' },
-  welfare:  { bg: 'rgba(220,38,38,0.10)',   text: '#dc2626' },
+const CATEGORY_VISUALS: Record<GalleryCategory, { bg: string; text: string; gradient: string; accent: string }> = {
+  events:   { bg: 'bg-emerald-100',        text: 'text-emerald-700',       gradient: 'from-emerald-700 to-green-800', accent: 'text-emerald-400' },
+  academic: { bg: 'bg-blue-100',           text: 'text-blue-700',          gradient: 'from-blue-700 to-blue-800',    accent: 'text-blue-400' },
+  health:   { bg: 'bg-amber-100',          text: 'text-amber-700',         gradient: 'from-amber-700 to-amber-800',  accent: 'text-amber-400' },
+  outreach: { bg: 'bg-green-100',          text: 'text-green-700',         gradient: 'from-green-700 to-green-800',  accent: 'text-green-400' },
+  social:   { bg: 'bg-purple-100',         text: 'text-purple-700',        gradient: 'from-purple-700 to-purple-800', accent: 'text-purple-400' },
+  welfare:  { bg: 'bg-red-100',            text: 'text-red-700',           gradient: 'from-red-700 to-red-800',      accent: 'text-red-400' },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -101,41 +41,43 @@ function GalleryCard({
   item: GalleryItem
   onClick: () => void
 }) {
-  const catStyle = CATEGORY_STYLES[item.category]
-  const hasPhoto = Boolean(item.photo_url ?? item.thumbnail_url)
+  const visual = CATEGORY_VISUALS[item.category]
+  const hasPhoto = Boolean(item.image_url ?? item.thumbnail_url)
 
   return (
     <div
       onClick={onClick}
       className="relative rounded-2xl overflow-hidden cursor-pointer group select-none"
-      style={{ paddingBottom: '75%' /* 4:3 aspect ratio */ }}
+      style={{ paddingBottom: '75%' }}
     >
       <div className="absolute inset-0">
         {hasPhoto ? (
           <img
-            src={item.thumbnail_url ?? item.photo_url}
+            src={item.thumbnail_url ?? item.image_url}
             alt={item.title}
             className="w-full h-full object-cover object-center
                        group-hover:scale-105 transition-transform duration-500 ease-out"
             loading="lazy"
           />
         ) : (
-          /* Gradient placeholder shown until real photo is provided */
           <div
-            className="w-full h-full"
-            style={{ background: item._gradient }}
+            className={cn('w-full h-full bg-gradient-to-br', visual.gradient)}
           >
-            {/* Subtle dot-pattern texture */}
             <div
-              className="absolute inset-0 opacity-[0.05]"
+              className="absolute inset-0 opacity-[0.06]"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='1' fill='white'/%3E%3C/svg%3E")`,
               }}
             />
+            {!hasPhoto && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-4xl opacity-20">🖼️</span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Bottom scrim — always present so labels are readable over photos */}
+        {/* Bottom scrim */}
         <div
           className="absolute inset-0"
           style={{
@@ -147,22 +89,19 @@ function GalleryCard({
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
           style={{ background: 'rgba(255,255,255,0.05)' }} />
 
-        {/* Category pill — top left */}
+        {/* Category pill */}
         <div className="absolute top-3 left-3 z-10">
           <span
-            className="text-[10px] font-700 uppercase tracking-widest px-2.5 py-1 rounded-full"
-            style={{
-              background: catStyle.bg,
-              color: item.photo_url ? '#fff' : catStyle.text,
-              backdropFilter: 'blur(6px)',
-              border: `1px solid ${catStyle.text}33`,
-            }}
+            className={cn(
+              'text-[10px] font-700 uppercase tracking-widest px-2.5 py-1 rounded-full backdrop-blur-sm',
+              visual.bg, visual.text,
+            )}
           >
-            {item.category}
+            {CATEGORY_LABEL[item.category]}
           </span>
         </div>
 
-        {/* Zoom icon — top right, reveals on hover */}
+        {/* Zoom icon */}
         <div
           className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center
                      opacity-0 group-hover:opacity-100 transition-all duration-200
@@ -172,7 +111,7 @@ function GalleryCard({
           <ZoomIn className="h-3.5 w-3.5 text-white" />
         </div>
 
-        {/* Title + date — bottom */}
+        {/* Title + date */}
         <div className="absolute bottom-0 left-0 right-0 p-3.5 z-10">
           <p className="text-white font-700 text-sm leading-snug drop-shadow-sm line-clamp-2">
             {item.title}
@@ -208,8 +147,8 @@ function Lightbox({
   onNext: () => void
 }) {
   const item = items[index]
-  const catStyle = CATEGORY_STYLES[item.category]
-  const hasPhoto = Boolean(item.photo_url)
+  const visual = CATEGORY_VISUALS[item.category]
+  const hasPhoto = Boolean(item.image_url ?? item.thumbnail_url)
 
   // Keyboard navigation
   useEffect(() => {
@@ -284,20 +223,16 @@ function Lightbox({
       >
         {hasPhoto ? (
           <img
-            src={item.photo_url}
+            src={item.thumbnail_url ?? item.image_url}
             alt={item.title}
             className="w-full object-contain"
             style={{ maxHeight: '80vh' }}
           />
         ) : (
           <div
-            className="w-full flex items-center justify-center"
-            style={{
-              background: item._gradient,
-              height: 'min(60vh, 480px)',
-            }}
+            className={cn('w-full flex items-center justify-center bg-gradient-to-br', visual.gradient)}
+            style={{ height: 'min(60vh, 480px)' }}
           >
-            {/* Dot pattern */}
             <div
               className="absolute inset-0 opacity-[0.04]"
               style={{
@@ -311,7 +246,7 @@ function Lightbox({
               >
                 {item.title}
               </p>
-              <p className="text-sm font-500" style={{ color: item._accent }}>
+              <p className={cn('text-sm font-500', visual.accent)}>
                 Photo coming soon
               </p>
             </div>
@@ -324,10 +259,9 @@ function Lightbox({
           style={{ background: 'var(--near-black)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
         >
           <span
-            className="text-[11px] font-700 uppercase tracking-widest px-2.5 py-1 rounded-full"
-            style={{ background: catStyle.bg, color: catStyle.text }}
+            className={cn('text-[11px] font-700 uppercase tracking-widest px-2.5 py-1 rounded-full', visual.bg, visual.text)}
           >
-            {item.category}
+            {CATEGORY_LABEL[item.category]}
           </span>
           <p className="text-white font-700 text-sm flex-1 min-w-0 truncate">
             {item.title}
@@ -362,10 +296,16 @@ export function GalleryPage() {
   const [lightboxIndex, setLightboxIndex]   = useState<number | null>(null)
   const [visibleCount, setVisibleCount]     = useState(LOAD_MORE_STEP)
 
+  const { data, isLoading } = useQuery({
+    queryKey: ['gallery', 'list'],
+    queryFn: () => galleryApi.list(),
+  })
+  const allItems = Array.isArray(data) ? data : []
+
   // Filter
   const filtered = activeCategory === 'all'
-    ? GALLERY_ITEMS
-    : GALLERY_ITEMS.filter((g) => g.category === activeCategory)
+    ? allItems
+    : allItems.filter((g) => g.category === activeCategory)
 
   const visible = filtered.slice(0, visibleCount)
   const hasMore = visibleCount < filtered.length
@@ -391,8 +331,8 @@ export function GalleryPage() {
   // Count per category for the filter bar
   const countFor = (cat: GalleryCategory | 'all') =>
     cat === 'all'
-      ? GALLERY_ITEMS.length
-      : GALLERY_ITEMS.filter((g) => g.category === cat).length
+      ? allItems.length
+      : allItems.filter((g) => g.category === cat).length
 
   return (
     <>
@@ -440,7 +380,11 @@ export function GalleryPage() {
         </div>
 
         {/* ── Grid ── */}
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="h-8 w-8 rounded-full border-2 border-green-600 border-t-transparent animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <span className="text-5xl mb-5">🖼️</span>
             <h3 className="font-display text-xl font-semibold text-green-700 mb-2">No photos yet</h3>
@@ -450,11 +394,9 @@ export function GalleryPage() {
           </div>
         ) : (
           <>
-            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-3 space-y-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {visible.map((item, idx) => (
-                <div key={item.id} className="break-inside-avoid mb-3">
-                  <GalleryCard item={item} onClick={() => openLightbox(idx)} />
-                </div>
+                <GalleryCard key={item.id} item={item} onClick={() => openLightbox(idx)} />
               ))}
             </div>
 
@@ -476,11 +418,6 @@ export function GalleryPage() {
           </>
         )}
 
-        {/* ── Backend note ── */}
-        <p className="text-center text-xs text-muted mt-8 max-w-sm mx-auto leading-relaxed">
-          Gradient placeholders are shown until real photos are uploaded via the admin panel
-          and returned by the gallery API.
-        </p>
       </div>
 
       {/* ── Lightbox ── */}

@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Welfare Page
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ExternalLink, Search, Bell, BellOff, ChevronRight} from 'lucide-react'
+  ExternalLink, Search, Bell, BellOff, ChevronRight, ArrowRight} from 'lucide-react'
 import { opportunitiesApi, newsApi, notificationsApi } from '@/api/services'
 
 // Import more detailed pages from dedicated files. These will replace
@@ -18,70 +18,194 @@ import { GalleryPage as DetailedGalleryPage } from './GalleryPage'
 export { WelfarePage } from './WelfarePage'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Badge, CardSkeleton, EmptyState, Skeleton } from '@/components/ui'
-import { FilterBar, PageHeader, NewsCard, OpportunityCard } from '@/components/shared'
+import { FilterBar, PageHeader, NewsCard, OpportunityCard, CATEGORY_STYLE } from '@/components/shared'
 import {
   cn, formatDate, deadlineUrgency,
   NEWS_CATEGORY_LABELS, relativeTime,
 } from '@/utils'
-import type { OpportunityType, NewsCategory } from '@/types'
+import type { Opportunity, OpportunityType, NewsCategory } from '@/types'
 
 // ── Opportunities ─────────────────────────────────────────────────────────────
+
+const SEARCH_SUGGESTIONS = ['Ghana', 'MoH', 'NSS', 'Scholarship', 'Remote', 'Accra']
+
+const SORT_OPTIONS = [
+  { value: 'deadline', label: 'Deadline ↑' },
+  { value: 'newest',   label: 'Newest' },
+] as const
+
+type SortKey = (typeof SORT_OPTIONS)[number]['value']
 
 export function OpportunitiesPage() {
   const [typeFilter, setTypeFilter] = useState<OpportunityType | 'all'>('all')
   const [deadlineFilter, setDeadlineFilter] = useState<'all' | 'closing_soon' | 'open'>('all')
   const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<SortKey>('deadline')
+  const [showFilters, setShowFilters] = useState(false)
   const [redirectOpp, setRedirectOpp] = useState<{ title: string; url: string } | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['opportunities', { type: typeFilter }],
-    queryFn: () => opportunitiesApi.list({ opp_type: typeFilter !== 'all' ? typeFilter : undefined, limit: 24 }),
+    queryFn: () => opportunitiesApi.list({ opp_type: typeFilter !== 'all' ? typeFilter : undefined, limit: 48 }),
     staleTime: 2 * 60 * 1000,
   })
 
-  const filtered = (data?.items ?? []).filter((o) => {
-    const matchSearch = !search || o.title.toLowerCase().includes(search.toLowerCase()) || o.organization.toLowerCase().includes(search.toLowerCase())
-    const urgency = deadlineUrgency(o.deadline)
-    const matchDeadline = deadlineFilter === 'all'
-      || (deadlineFilter === 'closing_soon' && (urgency === 'closing_today' || urgency === 'closing_soon'))
-      || (deadlineFilter === 'open' && urgency === 'open')
-    return matchSearch && matchDeadline
-  })
+  const allItems = data?.items ?? []
+
+  const { closingSoon, remaining } = useMemo(() => {
+    const cs: Opportunity[] = []
+    const rem: Opportunity[] = []
+    for (const o of allItems) {
+      const u = deadlineUrgency(o.deadline)
+      if (u === 'closing_today' || u === 'closing_soon') cs.push(o)
+      else rem.push(o)
+    }
+    return { closingSoon: cs, remaining: rem }
+  }, [allItems])
+
+  const filtered = useMemo(() => {
+    let list = allItems
+    if (deadlineFilter === 'closing_soon') {
+      list = closingSoon
+    } else if (deadlineFilter === 'open') {
+      list = remaining.filter((o) => deadlineUrgency(o.deadline) === 'open')
+    }
+    if (search) {
+      const q = search.toLowerCase()
+      list = list.filter((o) => o.title.toLowerCase().includes(q) || o.organization.toLowerCase().includes(q))
+    }
+    const sorted = [...list].sort((a, b) => {
+      if (sort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+    })
+    return sorted
+  }, [allItems, deadlineFilter, closingSoon, remaining, search, sort])
+
+  const showSpotlight = deadlineFilter === 'all' && !search && closingSoon.length > 0
 
   const typeOptions: { value: OpportunityType | 'all'; label: string }[] = [
     { value: 'all',         label: 'All Types' },
-    { value: 'internship',  label: 'Internship' },
-    { value: 'scholarship', label: 'Scholarship' },
-    { value: 'job',         label: 'Job' },
-    { value: 'training',    label: 'Training' },
+    { value: 'internship',  label: '💼 Internship' },
+    { value: 'scholarship', label: '🎓 Scholarship' },
+    { value: 'job',         label: '💻 Job' },
+    { value: 'training',    label: '🛠️ Training' },
   ]
 
   const deadlineOptions: { value: 'all' | 'closing_soon' | 'open'; label: string }[] = [
     { value: 'all',          label: 'All Deadlines' },
-    { value: 'closing_soon', label: '🔴 Closing Soon' },
-    { value: 'open',         label: '🟢 Open' },
+    { value: 'closing_soon', label: '🔥 Closing Soon' },
+    { value: 'open',         label: '✅ Open' },
   ]
+
+  const activeFilterCount = (typeFilter !== 'all' ? 1 : 0) + (deadlineFilter !== 'all' ? 1 : 0) + (search ? 1 : 0)
+  const totalCount = allItems.length
 
   return (
     <>
       <PageHeader title="Opportunities Hub" subtitle="Discover internships, scholarships, and career opportunities tailored for you." />
 
       <div className="section-container section-padding">
-        <div className="relative max-w-lg mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder='Search e.g. "internship" or "Ghana MoH"'
-            className="form-input pl-11" />
+        {/* ── Mini stats ── */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <StatCard icon="📋" value={totalCount} label="Total" />
+          <StatCard icon="🔥" value={closingSoon.length} label="Closing Soon" />
+          <StatCard icon="✅" value={remaining.filter((o) => deadlineUrgency(o.deadline) === 'open').length} label="Open" />
+          <StatCard icon="⏰" value={allItems.filter((o) => deadlineUrgency(o.deadline) === 'expired').length} label="Expired" />
         </div>
 
-        <div className="flex flex-wrap gap-6 mb-8">
-          <div>
-          <p className="text-xs font-700 text-muted uppercase tracking-wide mb-2">Type</p>
-            <FilterBar options={typeOptions} value={typeFilter} onChange={setTypeFilter} />
+        {/* ── Sticky controls ── */}
+        <div className="sticky top-[70px] z-30 bg-white/90 backdrop-blur-md rounded-2xl border border-cream-dark shadow-sm -mx-2 px-4 py-4 mb-6 transition-shadow">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder='Search opportunities...'
+                className="form-input pl-10 h-10 text-sm"
+              />
+            </div>
+
+            {/* Sort */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted font-600 whitespace-nowrap">Sort by</span>
+              <div className="flex rounded-xl border border-cream-dark overflow-hidden">
+                {SORT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setSort(opt.value)}
+                    className={cn(
+                      'px-3 py-1.5 text-xs font-600 transition-all',
+                      sort === opt.value
+                        ? 'bg-green-gradient text-white'
+                        : 'bg-white text-muted hover:text-green-700'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filters toggle */}
+            <button
+              onClick={() => setShowFilters((o) => !o)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-600 border transition-all',
+                showFilters || activeFilterCount > 0
+                  ? 'bg-green-gradient text-white border-green-700'
+                  : 'bg-white text-muted border-cream-dark hover:border-green-300 hover:text-green-700'
+              )}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-white/20">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
           </div>
-          <div>
-          <p className="text-xs font-700 text-muted uppercase tracking-wide mb-2">Deadline</p>
-            <FilterBar options={deadlineOptions} value={deadlineFilter} onChange={setDeadlineFilter} />
+
+          {/* Collapsible filter panel */}
+          {showFilters && (
+            <div className="flex flex-wrap items-center gap-3 mt-3 animate-fade-in">
+              <FilterBar options={typeOptions} value={typeFilter} onChange={setTypeFilter} />
+              <FilterBar options={deadlineOptions} value={deadlineFilter} onChange={setDeadlineFilter} />
+
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={() => { setTypeFilter('all'); setDeadlineFilter('all'); setSearch(''); setSort('deadline') }}
+                  className="text-xs text-red-600 font-600 hover:text-red-700 transition-colors whitespace-nowrap"
+                >
+                  Clear all ({activeFilterCount})
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Search chips */}
+          {!search && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              <span className="text-[11px] text-muted font-500 mr-1 self-center">Quick:</span>
+              {SEARCH_SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSearch(s)}
+                  className="text-[11px] px-2.5 py-1 rounded-full border border-cream-dark bg-white text-muted hover:border-green-300 hover:text-green-700 hover:bg-green-50 transition-all"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Result count */}
+          <div className="mt-3 text-xs text-muted font-500">
+            Showing <strong className="text-deep">{filtered.length}</strong> of <strong className="text-deep">{totalCount}</strong> opportunities
           </div>
         </div>
 
@@ -90,17 +214,61 @@ export function OpportunitiesPage() {
             {[1,2,3,4,5,6].map((i) => <CardSkeleton key={i} />)}
           </div>
         ) : !filtered.length ? (
-          <EmptyState icon="💼" title="No opportunities found" description="Try adjusting your filters." />
+          <EmptyState
+            icon="💼"
+            title="No opportunities found"
+            description={search ? `Nothing matches "${search}". Try different keywords.` : 'Try adjusting your filters.'}
+            action={
+              activeFilterCount > 0 ? (
+                <Button variant="outline" size="sm" onClick={() => { setTypeFilter('all'); setDeadlineFilter('all'); setSearch('') }}>
+                  Reset Filters
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((o) => (
-              <OpportunityCard
-                key={o.id}
-                opportunity={o}
-                onApply={() => setRedirectOpp({ title: o.title, url: o.external_link })}
-              />
-            ))}
-          </div>
+          <>
+            {/* Spotlight section: closing soon items at the top */}
+            {showSpotlight && (
+              <div className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-lg">🔥</span>
+                  <h2 className="font-display text-xl font-bold text-deep">Closing Soon</h2>
+                  <span className="text-xs text-muted font-500">Apply before the deadline</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {closingSoon.slice(0, 3).map((o) => (
+                    <OpportunityCard
+                      key={o.id}
+                      opportunity={o}
+                      onApply={() => setRedirectOpp({ title: o.title, url: o.external_link })}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Main results */}
+            <div>
+              {showSpotlight && filtered.length > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-lg">📋</span>
+                  <h2 className="font-display text-xl font-bold text-deep">
+                    {deadlineFilter === 'all' ? 'All Opportunities' : deadlineFilter === 'closing_soon' ? 'Closing Soon' : 'Open'}
+                  </h2>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filtered.map((o) => (
+                  <OpportunityCard
+                    key={o.id}
+                    opportunity={o}
+                    onApply={() => setRedirectOpp({ title: o.title, url: o.external_link })}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -130,6 +298,18 @@ export function OpportunitiesPage() {
         </div>
       )}
     </>
+  )
+}
+
+function StatCard({ icon, value, label }: { icon: string; value: number; label: string }) {
+  return (
+    <div className="flex items-center gap-2.5 bg-white rounded-xl border border-cream-dark px-4 py-2.5 shadow-sm min-w-[100px]">
+      <span className="text-lg">{icon}</span>
+      <div>
+        <p className="text-lg font-bold text-deep leading-none">{value}</p>
+        <p className="text-[11px] text-muted font-500 leading-tight">{label}</p>
+      </div>
+    </div>
   )
 }
 
@@ -179,10 +359,10 @@ export function NewsPage() {
   const safePage    = Math.min(page, totalPages)
   const paginated   = allFiltered.slice((safePage - 1) * NEWS_PAGE_SIZE, safePage * NEWS_PAGE_SIZE)
 
-  // Split first page into magazine layout: 1 hero + 2 secondary + rest in grid
+  // Split first page into: 1 hero + 4 latest + rest in grid
   const heroPost      = safePage === 1 ? paginated[0]    : undefined
-  const secondaryPosts= safePage === 1 ? paginated.slice(1, 3) : []
-  const gridPosts     = safePage === 1 ? paginated.slice(3) : paginated
+  const latestPosts   = safePage === 1 ? paginated.slice(1, 5) : []
+  const gridPosts     = safePage === 1 ? paginated.slice(5) : paginated
 
   return (
     <>
@@ -193,22 +373,42 @@ export function NewsPage() {
         {/* Featured pinned post (server-selected) */}
         {featured && safePage === 1 && !search && catFilter === 'all' && (
           <div
-            className="bg-green-gradient rounded-3xl p-8 lg:p-10 mb-10 flex flex-col lg:flex-row gap-8 items-start cursor-pointer hover:shadow-card-lg transition-all group"
+            className="relative overflow-hidden rounded-3xl mb-10 cursor-pointer group bg-gradient-to-br from-green-700 to-green-900"
             onClick={() => navigate(`/news/${featured.id}`)}
           >
-            <div className="text-7xl flex-shrink-0 group-hover:scale-110 transition-transform">{featured.banner_emoji ?? '📢'}</div>
-            <div className="flex-1">
-              <div className="flex gap-2 mb-3">
-                <Badge variant="gold">📌 Pinned</Badge>
-                <Badge variant="green">{NEWS_CATEGORY_LABELS[featured.category]}</Badge>
-                {featured.is_urgent && <Badge variant="red">🔴 Urgent</Badge>}
+            <div className="absolute inset-0 bg-hero-pattern opacity-[0.06]" />
+            <div className="relative p-8 lg:p-12">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-700 bg-white/20 text-white backdrop-blur-sm">
+                    📌 Pinned
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-700 bg-white/20 text-white backdrop-blur-sm">
+                    {NEWS_CATEGORY_LABELS[featured.category]}
+                  </span>
+                  {featured.is_urgent && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-700 bg-red-500/20 text-red-200 backdrop-blur-sm">
+                      🔴 Urgent
+                    </span>
+                  )}
+                </div>
+                <h2 className="font-display text-3xl lg:text-4xl font-bold text-white mb-3 leading-tight">
+                  {featured.title}
+                </h2>
+                {featured.summary && (
+                  <p className="text-white/70 text-base leading-relaxed mb-6 line-clamp-2 max-w-xl">
+                    {featured.summary}
+                  </p>
+                )}
+                <div className="flex items-center gap-4">
+                  {featured.published_at && (
+                    <span className="text-sm text-white/50">{formatDate(featured.published_at)}</span>
+                  )}
+                  <span className="text-sm font-600 text-white/70 group-hover:text-white transition-colors flex items-center gap-1">
+                    Read story <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
               </div>
-              <h2 className="font-display text-2xl lg:text-3xl font-bold text-white mb-2 leading-snug">{featured.title}</h2>
-              {featured.published_at && (
-                <p className="text-white/50 text-xs mb-3">{formatDate(featured.published_at)}</p>
-              )}
-              <p className="text-white/70 text-sm line-clamp-2 leading-relaxed mb-5">{featured.summary}</p>
-              <Button variant="gold" size="md">Read Full Story →</Button>
             </div>
           </div>
         )}
@@ -247,26 +447,22 @@ export function NewsPage() {
           <EmptyState icon="📰" title="No posts found" description="Try a different search or category." />
         ) : (
           <>
-            {/* ── Magazine layout (page 1 only, no active search) ── */}
+            {/* ── Hero post ── */}
             {heroPost && (
-              <div className="mb-8">
-                {/* Hero post — large horizontal card */}
+              <div className="mb-10">
                 <div
-                  className="card card-hover overflow-hidden mb-6 flex flex-col lg:flex-row"
+                  className="card card-hover overflow-hidden flex flex-col lg:flex-row"
                   onClick={() => navigate(`/news/${heroPost.id}`)}
                 >
-                  <div className={cn(
-                    'lg:w-64 h-48 lg:h-auto flex items-center justify-center text-7xl flex-shrink-0',
-                    heroPost.category === 'announcement' ? 'bg-gold-50' :
-                    heroPost.category === 'academic_update' ? 'bg-green-gradient' :
-                    heroPost.category === 'welfare_update' ? 'bg-green-gradient' : 'bg-cream-dark'
-                  )}>
+                  <div className="lg:w-72 h-48 lg:h-auto flex items-center justify-center text-6xl lg:text-7xl flex-shrink-0 bg-cream-dark">
                     {heroPost.banner_emoji ?? '📰'}
                   </div>
                   <div className="p-6 lg:p-8 flex flex-col justify-center flex-1">
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <Badge variant="green">{NEWS_CATEGORY_LABELS[heroPost.category]}</Badge>
-                      {heroPost.is_urgent && <Badge variant="red">🔴 Urgent</Badge>}
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className={cn('w-2.5 h-2.5 rounded-full', CATEGORY_STYLE[heroPost.category]?.dot)} />
+                      <span className={cn('text-xs font-700 uppercase tracking-wider', CATEGORY_STYLE[heroPost.category]?.text)}>
+                        {NEWS_CATEGORY_LABELS[heroPost.category]}
+                      </span>
                     </div>
                     <h2 className="font-display text-2xl lg:text-3xl font-bold text-deep mb-3 leading-snug">
                       {heroPost.title}
@@ -276,53 +472,66 @@ export function NewsPage() {
                       {heroPost.published_at && (
                         <span className="text-xs text-muted">{formatDate(heroPost.published_at)}</span>
                       )}
-                      <span className="text-sm font-700 text-green-700">Read More →</span>
+                      <span className="text-sm font-600 text-green-700 hover:text-green-600 transition-colors flex items-center gap-1">
+                        Read More <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Two secondary posts side by side */}
-                {secondaryPosts.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {secondaryPosts.map((p) => (
-                      <div
-                        key={p.id}
-                        className="card card-hover overflow-hidden flex gap-4 p-5"
-                        onClick={() => navigate(`/news/${p.id}`)}
-                      >
-                        <div className={cn(
-                          'w-16 h-16 rounded-xl flex items-center justify-center text-3xl flex-shrink-0',
-                          p.category === 'announcement' ? 'bg-gold-50' :
-                          p.category === 'academic_update' ? 'bg-green-gradient' : 'bg-cream-dark'
-                        )}>
-                          {p.banner_emoji ?? '📰'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex gap-1.5 mb-1.5 flex-wrap">
-                            <Badge variant="green">{NEWS_CATEGORY_LABELS[p.category]}</Badge>
-                            {p.is_urgent && <Badge variant="red">Urgent</Badge>}
+                {/* Latest — compact cards */}
+                {latestPosts.length > 0 && (
+                  <div className="mt-8">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-lg">⚡</span>
+                      <h2 className="font-display text-xl font-bold text-deep">Latest</h2>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {latestPosts.map((p) => {
+                        const s = CATEGORY_STYLE[p.category] ?? CATEGORY_STYLE.general
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => navigate(`/news/${p.id}`)}
+                            className="flex items-start gap-4 bg-white rounded-2xl p-4 border border-cream-dark cursor-pointer hover:shadow-card-md transition-all group"
+                          >
+                            <div className={cn('w-1 self-stretch rounded-full flex-shrink-0', s.bar)} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={cn('w-1.5 h-1.5 rounded-full', s.dot)} />
+                                <span className={cn('text-[10px] font-700 uppercase tracking-wider', s.text)}>
+                                  {NEWS_CATEGORY_LABELS[p.category]}
+                                </span>
+                              </div>
+                              <h3 className="font-body font-600 text-deep text-sm leading-snug line-clamp-2 group-hover:text-green-700 transition-colors">
+                                {p.title}
+                              </h3>
+                              {p.published_at && (
+                                <p className="text-xs text-muted mt-1">{formatDate(p.published_at)}</p>
+                              )}
+                            </div>
                           </div>
-                          <h3 className="font-body font-700 text-deep text-sm leading-snug line-clamp-2 mb-1">
-                            {p.title}
-                          </h3>
-                          {p.published_at && (
-                            <p className="text-xs text-muted">{formatDate(p.published_at)}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Standard card grid for remaining posts */}
+            {/* More News grid */}
             {gridPosts.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {gridPosts.map((p) => (
-                  <NewsCard key={p.id} post={p} onClick={() => navigate(`/news/${p.id}`)} />
-                ))}
-              </div>
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-lg">📰</span>
+                  <h2 className="font-display text-xl font-bold text-deep">More News</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {gridPosts.map((p) => (
+                    <NewsCard key={p.id} post={p} onClick={() => navigate(`/news/${p.id}`)} />
+                  ))}
+                </div>
+              </>
             )}
 
             {/* ── Pagination ── */}
@@ -403,14 +612,7 @@ export function NewsDetailPage() {
   })
   const relatedPosts = (related?.items ?? []).filter((p) => p.id !== id).slice(0, 3)
 
-  const NEWS_BG: Record<string, string> = {
-    announcement:    'bg-gold-50',
-    academic_update: 'bg-green-gradient',
-    welfare_update:  'bg-green-gradient',
-    events_recap:    'bg-cream-dark',
-    opportunities:   'bg-gold-50',
-    general:         'bg-cream-dark',
-  }
+  const newsStyle = post ? CATEGORY_STYLE[post.category] ?? CATEGORY_STYLE.general : null
 
   if (isLoading) return (
     <div className="section-container py-20 max-w-3xl">
@@ -442,8 +644,15 @@ export function NewsDetailPage() {
         </button>
 
         {/* Banner */}
-        <div className={cn('h-56 rounded-3xl flex items-center justify-center text-9xl mb-8', NEWS_BG[post.category] ?? 'bg-cream-dark')}>
-          {post.banner_emoji ?? '📰'}
+        <div className={cn(
+          'h-48 rounded-3xl flex flex-col items-center justify-center mb-8 relative overflow-hidden',
+          newsStyle?.bar ?? 'bg-cream-dark'
+        )}>
+          <div className="absolute inset-0 bg-hero-pattern opacity-[0.06]" />
+          <span className="text-5xl mb-2 opacity-30 relative">{post.banner_emoji ?? '📰'}</span>
+          <span className="text-xs font-700 uppercase tracking-wider text-white/60 relative">
+            {NEWS_CATEGORY_LABELS[post.category]}
+          </span>
         </div>
 
         {/* Meta */}

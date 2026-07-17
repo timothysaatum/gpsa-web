@@ -5,6 +5,7 @@ from app.api.v1.routes.auth import router as auth_router
 from app.api.v1.routes.certificates import router as certs_router
 from app.api.v1.routes.events import router as events_router
 from app.api.v1.routes.feedback import router as feedback_router
+from app.api.v1.routes.gallery import router as gallery_router
 from app.api.v1.routes.health import router as health_router
 from app.api.v1.routes.hero import router as hero_router
 from app.api.v1.routes.stats import router as stats_router
@@ -33,4 +34,5 @@ api_router.include_router(news_router,      prefix="/news")
 api_router.include_router(notifs_router,    prefix="/notifications")
 api_router.include_router(certs_router,     prefix="/certificates")
 api_router.include_router(feedback_router,  prefix="/feedback")
+api_router.include_router(gallery_router,   prefix="/gallery")
 api_router.include_router(hero_router,      prefix="/hero")
