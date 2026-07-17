@@ -42,14 +42,15 @@ async def list_events(
     db: Annotated[AsyncSession, Depends(get_db)],
     event_status: EventStatus | None = None,
     event_type: EventType | None = None,
+    search: str | None = None,
     offset: int = 0,
     limit: int = 20,
 ) -> PaginatedResponse[EventSummaryResponse]:
     repo = EventRepository(db)
     events = await repo.list_filtered(
-        status=event_status, event_type=event_type, offset=offset, limit=limit
+        status=event_status, event_type=event_type, search=search, offset=offset, limit=limit
     )
-    total = await repo.count_filtered(status=event_status, event_type=event_type)
+    total = await repo.count_filtered(status=event_status, event_type=event_type, search=search)
     return PaginatedResponse(
         items=[EventSummaryResponse.model_validate(e) for e in events],
         total=total,

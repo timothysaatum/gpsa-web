@@ -17,6 +17,7 @@ class EventRepository(BaseRepository[Event]):
         *,
         status: EventStatus | None = None,
         event_type: EventType | None = None,
+        search: str | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> list[Event]:
@@ -25,6 +26,8 @@ class EventRepository(BaseRepository[Event]):
             q = q.where(Event.status == status)
         if event_type:
             q = q.where(Event.event_type == event_type)
+        if search:
+            q = q.where(Event.title.ilike(f"%{search}%"))
         q = q.order_by(Event.start_datetime.asc()).offset(offset).limit(limit)
         result = await self.db.execute(q)
         return list(result.scalars().all())
@@ -34,12 +37,15 @@ class EventRepository(BaseRepository[Event]):
         *,
         status: EventStatus | None = None,
         event_type: EventType | None = None,
+        search: str | None = None,
     ) -> int:
         q = select(func.count()).select_from(Event).where(Event.deleted_at.is_(None))
         if status:
             q = q.where(Event.status == status)
         if event_type:
             q = q.where(Event.event_type == event_type)
+        if search:
+            q = q.where(Event.title.ilike(f"%{search}%"))
         result = await self.db.execute(q)
         return result.scalar_one()
 

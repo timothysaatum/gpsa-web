@@ -27,12 +27,15 @@ import type {
   RegisterRequest,
   ReportStatus,
   ReportType,
+  SiteStats,
   TokenResponse,
   Trimester,
   User,
   UserRole,
+  WelfareConfig,
   WelfareReport,
   WelfareSpotlight,
+  WelfareStats,
 } from '@/types'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -108,6 +111,9 @@ export const academicsApi = {
     content_type?: string
     course_id?: string
     search?: string
+    is_featured?: boolean
+    sort_by?: 'title' | 'level' | 'created_at' | 'file_size'
+    sort_order?: 'asc' | 'desc'
     offset?: number
     limit?: number
   }) =>
@@ -153,6 +159,7 @@ export const eventsApi = {
   list: (params?: {
     event_status?: EventStatus
     event_type?: EventType
+    search?: string
     offset?: number
     limit?: number
   }) =>
@@ -242,6 +249,12 @@ export const welfareApi = {
 
   createSpotlight: (data: { summary: string; action_taken: string }) =>
     api.post<WelfareSpotlight>('/welfare/spotlight', data).then((r) => r.data),
+
+  getConfig: () =>
+    api.get<WelfareConfig>('/welfare/config').then((r) => r.data),
+
+  getStats: () =>
+    api.get<WelfareStats>('/welfare/stats').then((r) => r.data),
 }
 
 // ── Opportunities ─────────────────────────────────────────────────────────────
@@ -385,6 +398,13 @@ export const heroApi = {
 
   delete: (id: string) =>
     api.delete<MessageResponse>(`/hero/${id}`).then((r) => r.data),
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+export const statsApi = {
+  get: () =>
+    api.get<SiteStats>('/stats').then((r) => r.data),
 }
 
 // ── Feedback ──────────────────────────────────────────────────────────────────

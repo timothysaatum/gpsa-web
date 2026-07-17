@@ -319,8 +319,8 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
   return (
-    <div className="page-header mt-16 lg:mt-[70px] py-14 lg:py-20">
-      <div className="section-container relative">
+    <div className="page-header mt-16 lg:mt-[70px] py-14 lg:py-20 mx-5 sm:mx-8 lg:mx-10 rounded-2xl">
+      <div className="max-w-7xl mx-auto relative px-5 sm:px-8 lg:px-10">
         <div className="max-w-2xl">
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4">
             {title}

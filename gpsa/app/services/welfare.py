@@ -223,3 +223,46 @@ class WelfareService:
         )
         await self.db.commit()
         return spotlight
+
+    async def get_config(self) -> dict:
+        total = await self.reports.count_filtered()
+        resolved = await self.reports.count_filtered(status=ReportStatus.resolved)
+        today = datetime.now(UTC)
+        first_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        resolved_this_month_q = (
+            select(func.count())
+            .select_from(WelfareReport)
+            .where(
+                WelfareReport.deleted_at.is_(None),
+                WelfareReport.status == ReportStatus.resolved,
+                WelfareReport.resolved_at >= first_of_month,
+            )
+        )
+        result = await self.db.execute(resolved_this_month_q)
+        resolved_this_month = result.scalar_one()
+        return {
+            "emergency_contact": "+233 XXX XXX XXX",
+            "avg_response_time_hours": 48,
+            "confidential_percent": 100,
+            "total_reports": total,
+            "total_resolved": resolved,
+            "resolved_this_month": resolved_this_month,
+            "trust_items": [
+                {"icon": "shield", "text": "End-to-End Confidential"},
+                {"icon": "heart_handshake", "text": "Welfare Committee Review"},
+                {"icon": "clock", "text": "48-Hour Response"},
+                {"icon": "phone", "text": "Direct Officer Line"},
+            ],
+        }
+
+    async def get_stats(self) -> dict:
+        total = await self.reports.count_filtered()
+        pending = await self.reports.count_filtered(status=ReportStatus.pending)
+        in_review = await self.reports.count_filtered(status=ReportStatus.in_review)
+        resolved = await self.reports.count_filtered(status=ReportStatus.resolved)
+        return {
+            "total_reports": total,
+            "pending": pending,
+            "in_review": in_review,
+            "resolved": resolved,
+        }

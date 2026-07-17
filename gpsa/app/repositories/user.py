@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.mixins import SoftDeleteMixin
@@ -33,6 +33,14 @@ class UserRepository(BaseRepository[User]):
             self._base_query().where(User.verification_token == token_hash)
         )
         return result.scalar_one_or_none()
+
+    async def count_verified(self) -> int:
+        q = select(func.count()).select_from(User).where(
+            User.deleted_at.is_(None),
+            User.email_verified.is_(True),
+        )
+        result = await self.db.execute(q)
+        return result.scalar_one()
 
     # ── Auth state mutations ───────────────────────────────────────────────────
 

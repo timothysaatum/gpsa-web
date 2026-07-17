@@ -9,6 +9,21 @@ from app.models.course import Course
 from app.models.enums import ContentType, Trimester
 from app.repositories.base import BaseRepository
 
+SORTABLE_FIELDS = {
+    "title": AcademicResource.title,
+    "level": AcademicResource.level,
+    "created_at": AcademicResource.created_at,
+    "file_size": AcademicResource.file_size_bytes,
+}
+
+
+def _apply_sort(q, sort_by: str | None, sort_order: str | None):
+    column = SORTABLE_FIELDS.get(sort_by) if sort_by else None
+    if column is None:
+        return q.order_by(AcademicResource.created_at.desc())
+    order_fn = getattr(column, sort_order if sort_order in ("asc", "desc") else "desc")
+    return q.order_by(order_fn())
+
 
 class CourseRepository(BaseRepository[Course]):
     def __init__(self, db: AsyncSession) -> None:
@@ -42,6 +57,9 @@ class AcademicResourceRepository(BaseRepository[AcademicResource]):
         course_id: uuid.UUID | None = None,
         published_only: bool = True,
         search: str | None = None,
+        is_featured: bool | None = None,
+        sort_by: str | None = None,
+        sort_order: str | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> list[AcademicResource]:
@@ -59,8 +77,11 @@ class AcademicResourceRepository(BaseRepository[AcademicResource]):
             q = q.where(AcademicResource.course_id == course_id)
         if search:
             q = q.where(AcademicResource.title.ilike(f"%{search}%"))
+        if is_featured is not None:
+            q = q.where(AcademicResource.is_featured.is_(is_featured))
 
-        q = q.order_by(AcademicResource.created_at.desc()).offset(offset).limit(limit)
+        q = _apply_sort(q, sort_by, sort_order)
+        q = q.offset(offset).limit(limit)
         result = await self.db.execute(q)
         return list(result.scalars().all())
 
@@ -73,6 +94,7 @@ class AcademicResourceRepository(BaseRepository[AcademicResource]):
         course_id: uuid.UUID | None = None,
         published_only: bool = True,
         search: str | None = None,
+        is_featured: bool | None = None,
     ) -> int:
         q = select(func.count()).select_from(AcademicResource).where(
             AcademicResource.deleted_at.is_(None)
@@ -90,6 +112,8 @@ class AcademicResourceRepository(BaseRepository[AcademicResource]):
             q = q.where(AcademicResource.course_id == course_id)
         if search:
             q = q.where(AcademicResource.title.ilike(f"%{search}%"))
+        if is_featured is not None:
+            q = q.where(AcademicResource.is_featured.is_(is_featured))
 
         result = await self.db.execute(q)
         return result.scalar_one()

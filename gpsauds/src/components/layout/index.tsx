@@ -330,11 +330,12 @@ export function Footer() {
   ]
 
   return (
-    <footer className="relative overflow-hidden">
-      <div className="h-1 w-full" style={{ background: 'var(--legacy-gradient)' }} />
+    <div className="section-container">
+      <footer className="relative overflow-hidden rounded-2xl">
+        <div className="h-1 w-full" style={{ background: 'var(--legacy-gradient)' }} />
 
-      <div className="text-white" style={{ background: 'var(--green-deep)' }}>
-        <div className="section-container py-14">
+        <div className="text-white" style={{ background: 'var(--green-deep)' }}>
+          <div className="py-14 px-6 lg:px-10">
           {/* Newsletter / CTA strip */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-10 mb-12 border-b border-white/10">
             <div>
@@ -431,8 +432,9 @@ export function Footer() {
               <Link to="/terms" className="hover:text-white/60 transition-colors">Terms of Use</Link>
             </div>
           </div>
+          </div>
         </div>
-      </div>
-    </footer>
+      </footer>
+    </div>
   )
 }

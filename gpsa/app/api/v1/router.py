@@ -7,6 +7,7 @@ from app.api.v1.routes.events import router as events_router
 from app.api.v1.routes.feedback import router as feedback_router
 from app.api.v1.routes.health import router as health_router
 from app.api.v1.routes.hero import router as hero_router
+from app.api.v1.routes.stats import router as stats_router
 from app.api.v1.routes.news import router as news_router
 from app.api.v1.routes.notifications import router as notifs_router
 from app.api.v1.routes.opportunities import router as opps_router
@@ -17,6 +18,7 @@ api_router = APIRouter()
 
 # ── Infrastructure ────────────────────────────────────────────────────────────
 api_router.include_router(health_router)
+api_router.include_router(stats_router)
 
 # ── Auth & Users ──────────────────────────────────────────────────────────────
 api_router.include_router(auth_router,  prefix="/auth")

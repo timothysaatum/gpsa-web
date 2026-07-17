@@ -170,6 +170,23 @@ export interface WelfareSpotlight {
   created_at: string
 }
 
+export interface WelfareConfig {
+  emergency_contact: string
+  avg_response_time_hours: number
+  confidential_percent: number
+  total_reports: number
+  total_resolved: number
+  resolved_this_month: number
+  trust_items: { icon: string; text: string }[]
+}
+
+export interface WelfareStats {
+  total_reports: number
+  pending: number
+  in_review: number
+  resolved: number
+}
+
 // ── Opportunities ─────────────────────────────────────────────────────────────
 
 export interface Opportunity {
@@ -321,6 +338,13 @@ export interface PaginatedResponse<T> {
 
 export interface MessageResponse {
   message: string
+}
+
+export interface SiteStats {
+  total_users: number
+  active_members: number
+  total_events: number
+  total_resources: number
 }
 
 export interface ApiError {

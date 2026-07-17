@@ -154,6 +154,28 @@ async def get_spotlight(
     return SpotlightResponse.model_validate(spotlight) if spotlight else None
 
 
+@router.get(
+    "/config",
+    response_model=dict,
+    summary="Welfare page configuration (emergency contact, trust items, stats)",
+)
+async def get_welfare_config(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    return await WelfareService(db).get_config()
+
+
+@router.get(
+    "/stats",
+    response_model=dict,
+    summary="Welfare report statistics",
+)
+async def get_welfare_stats(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    return await WelfareService(db).get_stats()
+
+
 @router.post(
     "/spotlight",
     response_model=SpotlightResponse,

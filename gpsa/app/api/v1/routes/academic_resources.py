@@ -63,6 +63,9 @@ async def list_resources(
     content_type: ContentType | None = None,
     course_id: uuid.UUID | None = None,
     search: str | None = None,
+    is_featured: bool | None = None,
+    sort_by: str | None = None,
+    sort_order: str | None = None,
     offset: int = 0,
     limit: int = 20,
 ) -> PaginatedResponse[AcademicResourceResponse]:
@@ -73,6 +76,9 @@ async def list_resources(
         content_type=content_type,
         course_id=course_id,
         search=search,
+        is_featured=is_featured,
+        sort_by=sort_by,
+        sort_order=sort_order,
         offset=offset,
         limit=limit,
     )
@@ -82,6 +88,7 @@ async def list_resources(
         content_type=content_type,
         course_id=course_id,
         search=search,
+        is_featured=is_featured,
     )
     items = []
     for r in resources:
