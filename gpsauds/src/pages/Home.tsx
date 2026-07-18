@@ -164,8 +164,8 @@ function Hero() {
           }}
         />
 
-        <div className="relative w-full min-h-[34rem] sm:min-h-[32rem] md:min-h-0 md:h-full flex flex-col px-5 sm:px-8 lg:px-14 py-6 sm:py-8 md:pt-16 md:pb-10 lg:pt-20 lg:pb-12">
-          <div className="max-w-2xl relative z-50"
+        <div className="relative w-full min-h-[34rem] sm:min-h-[32rem] md:min-h-0 md:h-full flex flex-col px-5 sm:px-8 lg:px-14 py-6 sm:py-8 md:pt-12 md:pb-8 lg:pt-14 lg:pb-8">
+          <div className="max-w-3xl relative z-50"
             style={{
               opacity: animating ? 0 : 1,
               transform: animating ? 'translateY(20px)' : 'translateY(0)',
@@ -181,7 +181,7 @@ function Hero() {
             </span>
 
             <h1
-              className="font-display font-bold text-white text-[2.15rem] sm:text-5xl md:text-6xl lg:text-7xl xl:text-[5rem] leading-[1.02] tracking-tight mb-3 sm:mb-4"
+              className="font-display font-bold text-white text-[2.15rem] sm:text-5xl md:text-[3.5rem] lg:text-[4rem] xl:text-[4.25rem] leading-[1.02] tracking-tight mb-3 sm:mb-4"
             >
               {slide.heading}{' '}
               <span
@@ -196,7 +196,7 @@ function Hero() {
               </span>
             </h1>
 
-            <p className="text-sm sm:text-base lg:text-lg text-white/80 leading-relaxed mb-5 sm:mb-7 lg:mb-8 max-w-xl">
+            <p className="text-sm sm:text-base lg:text-lg text-white/80 leading-relaxed mb-5 sm:mb-7 lg:mb-8 max-w-2xl">
               {slide.sub}
             </p>
 
