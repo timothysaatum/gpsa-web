@@ -128,9 +128,9 @@ function Hero() {
   }, [current, go, slides.length])
 
   return (
-    <section className="pb-16 lg:pb-24 pt-6 sm:pt-8 lg:pt-12 px-3 sm:px-8 lg:px-10">
+    <section className="relative z-0 pb-16 lg:pb-24 pt-6 sm:pt-8 lg:pt-10 px-3 sm:px-8 lg:px-10">
       <div className="max-w-7xl mx-auto">
-        <div className="relative overflow-hidden z-40 rounded-2xl sm:rounded-3xl min-h-[34rem] sm:min-h-[32rem] md:min-h-0 md:aspect-[16/10] lg:aspect-[21/9]">
+        <div className="relative isolate overflow-hidden rounded-2xl sm:rounded-3xl min-h-[34rem] sm:min-h-[32rem] md:min-h-0 md:aspect-[16/10] lg:aspect-[21/9]">
 
         <div className="absolute inset-0 rounded-3xl overflow-hidden">
           <div className="absolute inset-0 transition-transform duration-[800ms] ease-out"
