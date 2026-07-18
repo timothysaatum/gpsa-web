@@ -14,6 +14,31 @@ The admin site should support:
 - Clear operational workflows for admins and executives.
 - Responsive, fast, production-ready UI.
 
+## Standards And Success Criteria
+
+The implementation should target:
+
+- OWASP ASVS Level 2 for application security controls.
+- OWASP Top 10 and API Security Top 10 coverage.
+- WCAG 2.2 AA accessibility.
+- Secure software-development lifecycle checks in CI.
+- Tested backup, recovery, monitoring, and incident procedures.
+
+Initial performance objectives, measured in a production-like environment:
+
+```txt
+Admin route usable at p75:              <= 2.5 seconds
+Normal API reads at p95:                <= 300 milliseconds
+Normal API writes at p95:               <= 500 milliseconds
+Dashboard summary at p95:               <= 800 milliseconds
+Search feedback after debounce:         <= 100 milliseconds
+API 5xx error rate:                     < 0.5 percent
+```
+
+Before implementation, document expected concurrent users, record volumes,
+monthly upload volume, maximum file sizes, data-retention periods, and supported
+browsers. Revisit the targets after production traffic is measured.
+
 ## Recommended Admin Routes
 
 Frontend routes:
@@ -40,6 +65,10 @@ Use the existing auth system and protect routes with role guards.
 ```tsx
 <ProtectedRoute roles={['admin', 'exec']} />
 ```
+
+Frontend guards improve usability but are not a security boundary. Every API
+operation must independently authenticate the caller and authorize the action
+and target object.
 
 Restrict high-risk pages to `admin` only:
 
@@ -109,6 +138,11 @@ Existing domain endpoints should continue to power content modules:
 /api/v1/welfare
 ```
 
+List endpoints must implement server-side filtering, sorting, bounded pagination,
+and maximum page sizes. Prefer cursor pagination for audit logs and other
+high-growth datasets. Never load an entire audit, user, gallery, or welfare
+dataset into the browser.
+
 Every write endpoint should include:
 
 - Authentication
@@ -118,9 +152,74 @@ Every write endpoint should include:
 - Soft delete where appropriate
 - Publish/unpublish/archive status where appropriate
 
+Publishing, revision creation, and audit insertion must occur in one database
+transaction. Enforce high-value domain invariants with database constraints
+where possible.
+
+## Content Lifecycle And Revisioning
+
+Use an explicit workflow rather than independent status flags:
+
+```txt
+draft -> in_review -> approved -> scheduled/published -> archived
+             |            |
+             v            v
+          rejected      draft
+
+published -> unpublished
+```
+
+For each transition, define:
+
+- Roles and permissions allowed to perform it.
+- Required fields and validation.
+- Whether a second person must approve it.
+- Whether authors may approve their own changes.
+- Notifications and audit events created.
+- Which immutable revision becomes public.
+- Reversal, scheduling, expiration, and timezone behavior.
+
+Editing a published item must create a new draft revision without modifying the
+currently published revision. Add a reusable revision model:
+
+```txt
+content_revisions
+- id
+- entity_type
+- entity_id
+- revision_number
+- content_json
+- created_by
+- created_at
+- change_summary
+```
+
+Publishing records `published_revision_id`, `published_at`, and `published_by`.
+The admin UI must support revision comparison, preview, and rollback by creating
+a new revision from an earlier version.
+
+Use optimistic concurrency through a version number or ETag/`If-Match` header.
+Reject stale updates with `409 Conflict` and show a conflict-resolution UI;
+never silently overwrite another administrator's work.
+
 ## Authentication And Permissions
 
-Use the existing JWT auth system.
+Use the existing JWT auth system only after verifying that it meets the session,
+revocation, storage, and MFA requirements below; harden or replace deficient parts.
+
+Document and test the complete session design:
+
+- Prefer `HttpOnly`, `Secure`, and appropriately `SameSite` cookies for browser
+  tokens instead of JavaScript-accessible storage.
+- If cookies authenticate writes, require CSRF protection.
+- Use short-lived access tokens and rotating refresh tokens with reuse detection.
+- Revoke all relevant sessions after password, email, role, or account-status changes.
+- Require multi-factor authentication for admins.
+- Require recent reauthentication for role changes, sensitive exports, permanent
+  deletion, and security-setting changes.
+- Apply progressive delays or lockout protections to repeated authentication failures.
+- Rate-limit login, password-reset, MFA, upload, export, and sensitive write endpoints.
+- Do not reveal whether an account exists through login or recovery errors.
 
 Add explicit permission helpers:
 
@@ -138,6 +237,12 @@ can_manage_users(user)
 can_view_audit_logs(user)
 can_manage_site_settings(user)
 ```
+
+Back these helpers with a centralized, deny-by-default policy model. Use granular
+permissions such as `news.create`, `news.update`, `news.publish`,
+`users.role.change`, `welfare.confidential.read`, and `audit.read`; map roles to
+permissions rather than spreading role-name checks throughout the codebase.
+Enforce object-level authorization to prevent IDOR/BOLA vulnerabilities.
 
 Suggested permissions:
 
@@ -163,6 +268,9 @@ student:
 - No admin access
 ```
 
+Create and approve a permission matrix covering every resource, action, state
+transition, export, and sensitive field before module implementation begins.
+
 ## Audit Logging
 
 Every admin write action should create an audit log.
@@ -176,13 +284,26 @@ actor_role
 action
 entity_type
 entity_id
+result
+reason
 old_values
 new_values
 ip_address
 user_agent
 request_id
+session_id
 created_at
 ```
+
+Audit records must be append-only and unavailable to normal CRUD operations.
+Capture the actor role at the time of the action. Log denied operations, reads
+of confidential welfare data, audit-log viewing, and exports as well as writes.
+
+Never log passwords, tokens, secrets, complete confidential welfare reports, or
+unnecessary personal data. Redact protected fields before persistence. Define
+retention, archival, and access policies, and forward high-risk events such as
+role changes and repeated failed logins to centralized monitoring. Use
+tamper-evident storage if legal or compliance requirements demand it.
 
 Actions should include:
 
@@ -262,13 +383,19 @@ site_pages
 - id
 - slug
 - title
-- content_json
-- is_published
+- status
+- published_revision_id
 - updated_by
 - published_at
+- published_by
+- scheduled_for
 - created_at
 - updated_at
+- version
 ```
+
+Page body content belongs in `content_revisions.content_json`; the page record
+tracks workflow state and the currently published revision.
 
 About content structure:
 
@@ -315,8 +442,11 @@ Recommended statuses:
 
 ```txt
 draft
-review
+in_review
+approved
+scheduled
 published
+unpublished
 archived
 ```
 
@@ -380,6 +510,17 @@ Welfare admin should support:
 - Update welfare config/contact.
 - Protect anonymous and confidential data carefully.
 
+Treat welfare as a separately threat-modeled sensitive module. Require:
+
+- Field-level permissions and least-privilege access.
+- Encryption at rest for sensitive fields and private attachment storage.
+- Audit logging of reads, exports, and changes without copying report contents.
+- Redacted notifications that never include confidential report details.
+- A documented retention and secure-deletion policy.
+- Protection against identity leakage through filenames, metadata, IP addresses,
+  logs, exports, or attachments.
+- Explicit rules for anonymous reports and emergency escalation.
+
 ### 11. User Management
 
 Admin only.
@@ -439,18 +580,60 @@ Admin UI principles:
 - Responsive sidebar and tables.
 - Avoid marketing-style layouts.
 
+Frontend performance and reliability requirements:
+
+- Route-level code splitting for admin modules and large editors.
+- Debounced search with cancellation of stale requests.
+- Query caching with targeted invalidation after mutations.
+- Virtualized rows only when bounded pagination is insufficient.
+- Upload progress, cancellation, retry, and interrupted-upload recovery.
+- Protection against duplicate submissions.
+- Unsaved-change warnings and session-expiry recovery.
+- Explicit handling of `409 Conflict` from concurrent editing.
+- Independent dashboard widgets so one failed query does not blank the page.
+
+## Accessibility Requirements
+
+Meet WCAG 2.2 AA and include accessibility acceptance criteria in every module:
+
+- Complete keyboard navigation with visible focus states.
+- Correct landmarks, headings, labels, table headers, and captions.
+- Programmatic association of validation errors and form controls.
+- Screen-reader announcements for save, publish, loading, and error states.
+- Focus trapping and restoration for drawers and dialogs.
+- Text and controls that meet contrast requirements and do not rely on color alone.
+- Support for 200 percent zoom, reduced motion, and appropriate touch targets.
+- Keyboard-accessible move-up/move-down alternatives to drag-and-drop reordering.
+
+Automated accessibility checks are required in CI, supplemented by keyboard and
+screen-reader testing for critical workflows.
+
+## Performance And Scalability Design
+
+- Use server-side pagination, filtering, search, and sorting for data tables.
+- Return bounded dashboard summaries instead of complete records.
+- Run independent summary queries concurrently where supported and briefly cache
+  non-sensitive aggregates.
+- Monitor slow database queries and add indexes based on measured query plans.
+- Use asynchronous jobs for large exports, image processing, notifications,
+  certificate generation, scheduled publishing, and malware scanning.
+- Serve optimized image variants through object storage/CDN; generate thumbnails
+  and WebP/AVIF variants where supported.
+- Load-test dashboard summaries, audit logs, search, exports, and bulk uploads
+  against agreed production-like data volumes.
+
 ## Backend Implementation
 
-Recommended order:
+Required backend foundations, implemented in the Delivery Sequence below:
 
-1. Add audit log listing endpoint.
-2. Add admin dashboard summary endpoint.
-3. Add editable site settings/page content model.
-4. Ensure every content write route logs old/new values.
-5. Add missing publish/unpublish/archive actions.
-6. Add file upload support where missing.
-7. Add CSV export for registrations/resources where useful.
-8. Add permission and audit tests.
+1. Central authentication and permission-policy enforcement.
+2. Append-only audit writer, redaction rules, and paginated listing endpoint.
+3. Content revision and validated workflow-transition services.
+4. Secure media upload and processing pipeline.
+5. Editable page and schema-validated site-settings models.
+6. Bounded dashboard summary endpoint.
+7. Asynchronous and audited export jobs where justified.
+8. Permission, audit, security, transaction, and performance tests for every slice.
 
 ## Recommended Database Additions
 
@@ -465,29 +648,57 @@ site_pages
 - slug
 - title
 - content_json
-- is_published
+- status
+- published_revision_id
 - updated_by
 - published_at
+- published_by
+- scheduled_for
 - created_at
 - updated_at
+- version
 
 media_assets
 - file_key
-- public_url
+- visibility
 - filename
 - mime_type
 - size_bytes
+- checksum
+- scan_status
+- processing_status
+- width
+- height
 - uploaded_by
 - entity_type
 - entity_id
 - created_at
+- deleted_at
+- retention_until
 ```
 
 A central `media_assets` table will make uploads easier to reuse across hero slides, news, gallery, leaders, events, and about-page content.
 
+Store provider-neutral object keys rather than assuming every asset has a
+permanent public URL. Generate public or short-lived signed URLs according to
+visibility. Add `deleted_at`, `deleted_by`, and `deletion_reason` to soft-deleted
+domain records, and define restoration, retention, and permanent-deletion rules.
+
+Add database constraints and indexes for real query patterns. At minimum,
+consider indexes for content status/publish time, event start time, opportunity
+deadline, welfare status/category/date, media entity references, and audit date,
+actor, and entity. Enforce invariants such as one current leadership term,
+unique page slugs, valid date ordering, and valid published revision references.
+
 ## Security Requirements
 
-- Validate file MIME type and size.
+- Validate upload extension, declared MIME type, magic bytes, size, and image dimensions.
+- Generate random storage keys; normalize display names and prevent path traversal.
+- Quarantine uploads until malware scanning and processing succeed.
+- Re-encode raster images, strip unnecessary metadata, and block or sanitize active
+  formats such as SVG and HTML.
+- Protect against decompression/archive bombs and enforce per-user quotas.
+- Store confidential attachments privately and use short-lived signed downloads.
 - Use soft delete for public content.
 - Require confirmation for destructive actions.
 - Restrict user management to admins only.
@@ -497,6 +708,20 @@ A central `media_assets` table will make uploads easier to reuse across hero sli
 - Rate-limit sensitive admin endpoints.
 - Log failed login attempts.
 - Avoid leaking internal errors to the frontend.
+- Sanitize rich text on the server with an allowlist before storing or rendering it.
+- Validate external links, allow only approved protocols, and add safe link attributes.
+- Do not let the backend freely fetch submitted URLs; if link checking is required,
+  defend against SSRF, redirects, DNS rebinding, and private-network targets.
+- Apply CSP, HSTS, `X-Content-Type-Options`, referrer policy, frame restrictions,
+  and an appropriate permissions policy.
+- Validate request body size, structure, types, identifiers, and unexpected fields.
+- Prevent spreadsheet formula injection in CSV exports.
+- Store secrets in an approved secret manager, never in `site_settings` or source code.
+- Scan dependencies, containers, source, and commits for known vulnerabilities and secrets.
+
+The generic `site_settings` store must use an allowlist of known keys with schemas,
+size limits, visibility classification, and per-setting permissions. It must not
+serve as unrestricted application configuration or secret storage.
 
 ## Testing Plan
 
@@ -512,6 +737,20 @@ Backend tests:
 - File upload rejects oversized files.
 - Soft-deleted content does not appear publicly.
 - Confidential welfare reports remain protected.
+- Permission-matrix tests cover every role, resource, action, export, and transition.
+- Object-level authorization prevents access by changing resource identifiers.
+- Draft edits cannot alter the currently published revision.
+- Invalid state transitions and self-approval rules are rejected.
+- Stale concurrent writes return `409 Conflict` without losing data.
+- Publish, revision, and audit transactions roll back together on failure.
+- Pagination limits, filtering, sorting, and search behave correctly.
+- Uploads reject spoofed MIME types, executable content, malicious SVG, malware,
+  excessive image dimensions, unsafe filenames, and archive bombs.
+- Stored XSS, CSRF where applicable, SSRF, and CSV formula-injection tests pass.
+- Audit logs redact protected fields and cannot be changed through normal APIs.
+- Welfare reads, exports, retention, redaction, and access logging are enforced.
+- Scheduled publishing and expiration work across timezone and clock-edge cases.
+- Session revocation, refresh rotation, MFA, and step-up authentication work as designed.
 ```
 
 Frontend checks:
@@ -525,21 +764,76 @@ Frontend checks:
 - Tables handle loading, empty, and error states.
 - Publish/unpublish controls update content correctly.
 - Production build passes.
+- Keyboard-only workflows and focus management work.
+- Screen readers receive useful labels, errors, and status announcements.
+- Unsaved changes, session expiry, duplicate submit, and stale-edit conflicts are handled.
+- Partial dashboard failure and slow/offline network states remain usable.
+- Interrupted uploads can be safely retried without duplicate assets.
+- Supported browsers, mobile layouts, 200 percent zoom, and reduced motion are verified.
+
+Non-functional and release checks:
+
+```txt
+- API and UI performance budgets pass with production-like data.
+- Load tests cover dashboard, audit logs, search, exports, and bulk uploads.
+- Automated WCAG checks and manual critical-flow accessibility checks pass.
+- Static analysis, dependency/container scanning, and secret scanning pass.
+- Security testing follows the agreed OWASP ASVS Level 2 controls.
+- Database migration upgrade and rollback paths are tested.
+- Backup restoration is successfully exercised.
+- Logs and error reports are verified not to leak sensitive data.
+- Critical alerts and incident runbooks are exercised in staging.
+```
+
+## Operations And Reliability
+
+Production readiness requires:
+
+- Structured application and security logs with correlation/request IDs.
+- Metrics for latency, error rates, authorization denials, background jobs,
+  failed logins, uploads, exports, and publishing failures.
+- Alerts for sustained errors, slow queries, queue backlog, repeated login failures,
+  role changes, and security-control failures.
+- Health and readiness endpoints that do not expose secrets.
+- Error tracking with personal and confidential data scrubbing.
+- Automated database and media backups with documented retention.
+- Defined recovery-time and recovery-point objectives and tested restoration.
+- Background-job idempotency, retry limits, dead-letter handling, and monitoring.
+- Feature flags and a rollback plan for risky modules and migrations.
+- Production-like staging with representative permissions and sanitized data.
+- Data-retention, legal deletion, and incident-response procedures.
+
+Large CSV exports should run asynchronously, be access-controlled and audited,
+expire automatically, and notify the requesting administrator without attaching
+sensitive data to email or notifications.
 ```
 
 ## Delivery Sequence
 
-1. Build admin layout and route shell.
-2. Build admin dashboard summary.
-3. Build audit log backend and UI.
-4. Build leadership admin fully.
-5. Build gallery admin with uploads.
-6. Build news admin.
-7. Build events admin.
-8. Build opportunities admin.
-9. Build academics admin.
-10. Build welfare admin.
-11. Build users and settings admin.
-12. Add final permission/audit/security tests.
+1. Confirm data classification, record volumes, retention, performance objectives,
+   permission matrix, and content state machines.
+2. Threat-model authentication, publishing, uploads, exports, users, settings, and
+   the welfare module; map required OWASP ASVS controls.
+3. Harden sessions, MFA, CSRF where applicable, API authorization, rate limits,
+   and step-up authentication.
+4. Build append-only audit infrastructure, redaction, retention, and security alerts.
+5. Build content revisions, workflow transitions, preview, rollback, scheduling,
+   transactions, and optimistic concurrency.
+6. Build secure media upload, scanning, private/public delivery, processing, and cleanup.
+7. Build the accessible admin shell and shared components.
+8. Deliver one complete vertical slice, preferably News or Leadership, including
+   schema, API, UI, authorization, audit, accessibility, and performance tests.
+9. Validate the vertical slice with security and load testing, then apply lessons
+   to Events, Opportunities, Gallery, and Academic Resources.
+10. Build dashboard summaries from the proven module APIs with bounded queries and
+    independent widget failure handling.
+11. Build Welfare as a separately reviewed sensitive-data module.
+12. Build Users and Settings with MFA, step-up authentication, session revocation,
+    and strict audit controls.
+13. Complete cross-module accessibility, disaster-recovery, migration, security,
+    performance, and production-readiness testing before launch.
 
-This sequence creates a deployable admin foundation early, then expands module by module without breaking the public website.
+Each vertical slice must meet its authorization, audit, accessibility, security,
+performance, observability, and rollback acceptance criteria before the next module
+is treated as complete. Security and test work is continuous rather than deferred
+to the end of delivery.

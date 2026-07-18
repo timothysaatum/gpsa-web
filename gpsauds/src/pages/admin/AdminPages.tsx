@@ -17,11 +17,13 @@ import type {
 } from '@/types'
 import { AdminPageHeader, AdminStatCard } from './AdminLayout'
 import { HeroSlidesPage } from './HeroSlidesPage'
+import { useAuthStore } from '@/store/authStore'
 
 const input = 'form-input'
 const label = 'form-label'
 
 export function AdminDashboardPage() {
+  const isAdmin = useAuthStore((state) => state.user?.role === 'admin')
   const { data, isLoading, refetch } = useQuery({ queryKey: ['admin-dashboard'], queryFn: adminApi.dashboard })
   const stats = [
     { label: 'Users', value: data?.users ?? 0, icon: Users },
@@ -46,15 +48,15 @@ export function AdminDashboardPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">{stats.map((s) => <AdminStatCard key={s.label} {...s} />)}</div>
       )}
-      <div className="grid grid-cols-1 xl:grid-cols-[0.72fr_1fr] gap-5 mt-6">
+      <div className={isAdmin ? 'grid grid-cols-1 xl:grid-cols-[0.72fr_1fr] gap-5 mt-6' : 'mt-6'}>
         <QuickActions />
-        <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+        {isAdmin && <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-3xl font-bold text-deep">Recent audit activity</h3>
             <Link to="/admin/audit-logs" className="text-sm font-700 text-green-700">View all</Link>
           </div>
           <AuditList items={data?.recent_audit ?? []} compact />
-        </div>
+        </div>}
       </div>
     </>
   )
@@ -85,20 +87,40 @@ function QuickActions() {
 }
 
 export function AdminAuditLogsPage() {
-  const [filters, setFilters] = useState({ action: '', entity_type: '' })
+  const [filters, setFilters] = useState({ action: '', entity_type: '', role: '', search: '', date_from: '', date_to: '' })
+  const [offset, setOffset] = useState(0)
+  const limit = 50
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-audit', filters],
-    queryFn: () => adminApi.auditLogs({ ...filters, offset: 0, limit: 80 }),
+    queryKey: ['admin-audit', filters, offset],
+    queryFn: () => adminApi.auditLogs({
+      ...filters,
+      role: filters.role ? filters.role as UserRole : undefined,
+      date_from: filters.date_from ? new Date(`${filters.date_from}T00:00:00`).toISOString() : undefined,
+      date_to: filters.date_to ? new Date(`${filters.date_to}T23:59:59.999`).toISOString() : undefined,
+      offset,
+      limit,
+    }),
   })
   return (
     <>
       <AdminPageHeader title="Audit Logs" description="Review who changed what, when, and from where." />
       <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Field label="Action" value={filters.action} onChange={(v) => setFilters((f) => ({ ...f, action: v }))} placeholder="CREATE, UPDATE..." />
-        <Field label="Entity" value={filters.entity_type} onChange={(v) => setFilters((f) => ({ ...f, entity_type: v }))} placeholder="news_post, event..." />
+        <Field label="Search" value={filters.search} onChange={(v) => { setOffset(0); setFilters((f) => ({ ...f, search: v })) }} placeholder="Actor, action, request id..." />
+        <Field label="Action" value={filters.action} onChange={(v) => { setOffset(0); setFilters((f) => ({ ...f, action: v })) }} placeholder="CREATE, UPDATE..." />
+        <Field label="Entity" value={filters.entity_type} onChange={(v) => { setOffset(0); setFilters((f) => ({ ...f, entity_type: v })) }} placeholder="news_post, event..." />
+        <Select label="Actor role" value={filters.role} onChange={(v) => { setOffset(0); setFilters((f) => ({ ...f, role: v })) }} options={[{ label: 'All roles', value: '' }, 'admin', 'exec', 'student']} />
+        <Field label="From" type="date" value={filters.date_from} onChange={(v) => { setOffset(0); setFilters((f) => ({ ...f, date_from: v })) }} />
+        <Field label="To" type="date" value={filters.date_to} onChange={(v) => { setOffset(0); setFilters((f) => ({ ...f, date_to: v })) }} />
       </div>
       <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
         {isLoading ? <Skeleton className="h-96 rounded-xl" /> : <AuditList items={data?.items ?? []} />}
+        {!!data?.total && <div className="mt-5 pt-4 border-t border-cream-dark flex items-center justify-between gap-3">
+          <p className="text-sm text-muted">Showing {offset + 1}–{Math.min(offset + limit, data.total)} of {data.total}</p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))}>Previous</Button>
+            <Button size="sm" variant="outline" disabled={offset + limit >= data.total} onClick={() => setOffset(offset + limit)}>Next</Button>
+          </div>
+        </div>}
       </div>
     </>
   )

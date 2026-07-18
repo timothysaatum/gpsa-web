@@ -61,6 +61,10 @@ export const adminApi = {
     actor_id?: string
     action?: string
     entity_type?: string
+    role?: UserRole
+    search?: string
+    date_from?: string
+    date_to?: string
     offset?: number
     limit?: number
   }) =>

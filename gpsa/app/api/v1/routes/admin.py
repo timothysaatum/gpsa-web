@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -19,6 +19,7 @@ from app.models.user import User
 from app.models.welfare import WelfareReport
 from app.models.enums import ReportStatus, UserRole
 from app.schemas.common import AppModel, PaginatedResponse
+from app.services.audit import AuditService
 
 
 router = APIRouter(tags=["Admin"])
@@ -67,15 +68,22 @@ async def _count(db: AsyncSession, model, *criteria) -> int:
     "/dashboard",
     response_model=AdminDashboardResponse,
     summary="Admin dashboard summary",
-    dependencies=[Depends(require_roles(UserRole.admin, UserRole.exec))],
 )
-async def dashboard(db: Annotated[AsyncSession, Depends(get_db)]) -> AdminDashboardResponse:
-    recent = await db.execute(
-        select(AuditLog)
-        .options(selectinload(AuditLog.actor))
-        .order_by(AuditLog.created_at.desc())
-        .limit(8)
-    )
+async def dashboard(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(require_roles(UserRole.admin, UserRole.exec))],
+) -> AdminDashboardResponse:
+    # Audit details are admin-only. Executives may use the content dashboard, but
+    # must not receive audit snapshots through this otherwise shared endpoint.
+    recent_logs: list[AuditLog] = []
+    if user.role == UserRole.admin:
+        recent = await db.execute(
+            select(AuditLog)
+            .options(selectinload(AuditLog.actor))
+            .order_by(AuditLog.created_at.desc())
+            .limit(8)
+        )
+        recent_logs = list(recent.scalars().all())
 
     return AdminDashboardResponse(
         users=await _count(db, User, User.deleted_at.is_(None)),
@@ -91,7 +99,7 @@ async def dashboard(db: Annotated[AsyncSession, Depends(get_db)]) -> AdminDashbo
             WelfareReport.deleted_at.is_(None),
             WelfareReport.status == ReportStatus.pending,
         ),
-        recent_audit=[AuditLogResponse.model_validate(log) for log in recent.scalars().all()],
+        recent_audit=[AuditLogResponse.model_validate(log) for log in recent_logs],
     )
 
 
@@ -99,15 +107,20 @@ async def dashboard(db: Annotated[AsyncSession, Depends(get_db)]) -> AdminDashbo
     "/audit-logs",
     response_model=PaginatedResponse[AuditLogResponse],
     summary="List audit logs",
-    dependencies=[Depends(require_roles(UserRole.admin))],
 )
 async def audit_logs(
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(require_roles(UserRole.admin))],
     actor_id: uuid.UUID | None = None,
-    action: str | None = None,
-    entity_type: str | None = None,
-    offset: int = 0,
-    limit: int = 50,
+    action: str | None = Query(default=None, max_length=50),
+    entity_type: str | None = Query(default=None, max_length=100),
+    role: UserRole | None = None,
+    search: str | None = Query(default=None, max_length=100),
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
 ) -> PaginatedResponse[AuditLogResponse]:
     filters = []
     if actor_id:
@@ -116,6 +129,20 @@ async def audit_logs(
         filters.append(AuditLog.action.ilike(f"%{action}%"))
     if entity_type:
         filters.append(AuditLog.entity_type.ilike(f"%{entity_type}%"))
+    if role:
+        filters.append(AuditLog.actor.has(User.role == role))
+    if date_from:
+        filters.append(AuditLog.created_at >= date_from)
+    if date_to:
+        filters.append(AuditLog.created_at <= date_to)
+    if search:
+        term = f"%{search}%"
+        filters.append(or_(
+            AuditLog.action.ilike(term),
+            AuditLog.entity_type.ilike(term),
+            AuditLog.request_id.ilike(term),
+            AuditLog.actor.has(User.full_name.ilike(term)),
+        ))
 
     total_result = await db.execute(select(func.count()).select_from(AuditLog).where(*filters))
     result = await db.execute(
@@ -127,9 +154,17 @@ async def audit_logs(
         .limit(limit)
     )
 
-    return PaginatedResponse(
+    response = PaginatedResponse(
         items=[AuditLogResponse.model_validate(log) for log in result.scalars().all()],
         total=total_result.scalar_one(),
         offset=offset,
         limit=limit,
     )
+    await AuditService(db).log(
+        action="VIEW",
+        entity_type="audit_log",
+        new_values={"filters_applied": bool(filters), "result_count": len(response.items)},
+        request=request,
+        actor_id=user.id,
+    )
+    return response
