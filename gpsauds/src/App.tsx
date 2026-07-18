@@ -12,18 +12,25 @@ import { tokenStorage } from '@/api/client'
 // ── Lazy pages ────────────────────────────────────────────────────────────────
 
 import { HomePage } from '@/pages/Home'
-import { AcademicsPage } from '@/pages/Academics'
-import { EventsPage, EventDetailPage } from '@/pages/Events'
+import { AcademicsPage, AcademicResourceDetailPage, AcademicUploadPage } from '@/pages/Academics'
+import { EventsPage, EventCreatePage, EventDetailPage } from '@/pages/Events'
 import {
-  WelfarePage, OpportunitiesPage, NewsPage, NewsDetailPage,
+  WelfarePage, OpportunitiesPage, OpportunityDetailPage, NewsPage, NewsDetailPage,
   NotificationsPage
 } from '@/pages/other-pages'
 import { AboutPage } from '@/pages/AboutPage'
 import { GalleryPage } from '@/pages/GalleryPage'
+import { LeadershipPage } from '@/pages/LeadershipPage'
 import {
   ProfilePage, CertificatesPage, CertificateVerifyPage, SettingsPage
 } from '@/pages/profile-pages'
-import { HeroSlidesPage } from '@/pages/admin/HeroSlidesPage'
+import { AdminLayout } from '@/pages/admin/AdminLayout'
+import {
+  AdminAboutPage, AdminAcademicsPage, AdminAuditLogsPage, AdminDashboardPage,
+  AdminEventsPage, AdminGalleryPage, AdminHomePage, AdminLeadershipPage,
+  AdminNewsPage, AdminOpportunitiesPage, AdminSettingsPage, AdminUsersPage,
+  AdminWelfarePage,
+} from '@/pages/admin/AdminPages'
 import {
   LoginPage, RegisterPage, ForgotPasswordPage, VerifyEmailPage
 } from '@/pages/auth'
@@ -89,7 +96,7 @@ function NotFoundPage() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_relativeSplatPath: true }}>
         <AuthInitialiser />
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -97,13 +104,18 @@ export default function App() {
             <Route element={<RootLayout />}>
               <Route index element={<HomePage />} />
               <Route path="academics" element={<AcademicsPage />} />
+              <Route path="academics/upload" element={<AcademicUploadPage />} />
+              <Route path="academics/:id" element={<AcademicResourceDetailPage />} />
               <Route path="events" element={<EventsPage />} />
+              <Route path="events/create" element={<EventCreatePage />} />
               <Route path="events/:id" element={<EventDetailPage />} />
               {/* New standalone pages */}
               <Route path="about" element={<AboutPage />} />
+              <Route path="leadership" element={<LeadershipPage />} />
               <Route path="gallery" element={<GalleryPage />} />
               <Route path="welfare" element={<WelfarePage />} />
               <Route path="opportunities" element={<OpportunitiesPage />} />
+              <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
               <Route path="news" element={<NewsPage />} />
               <Route path="news/:id" element={<NewsDetailPage />} />
               <Route path="certificates/verify" element={<CertificateVerifyPage />} />
@@ -115,10 +127,26 @@ export default function App() {
                 <Route path="certificates" element={<CertificatesPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
+            </Route>
 
-              {/* ── Admin routes ─────────────────────────────────────────── */}
-              <Route element={<ProtectedRoute roles={['admin']} />}>
-                <Route path="admin/hero" element={<HeroSlidesPage />} />
+            <Route element={<ProtectedRoute roles={['admin', 'exec']} />}>
+              <Route path="admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboardPage />} />
+                <Route path="dashboard" element={<AdminDashboardPage />} />
+                <Route path="home" element={<AdminHomePage />} />
+                <Route path="about" element={<AdminAboutPage />} />
+                <Route path="leadership" element={<AdminLeadershipPage />} />
+                <Route path="news" element={<AdminNewsPage />} />
+                <Route path="events" element={<AdminEventsPage />} />
+                <Route path="opportunities" element={<AdminOpportunitiesPage />} />
+                <Route path="gallery" element={<AdminGalleryPage />} />
+                <Route path="academics" element={<AdminAcademicsPage />} />
+                <Route path="welfare" element={<AdminWelfarePage />} />
+                <Route element={<ProtectedRoute roles={['admin']} />}>
+                  <Route path="users" element={<AdminUsersPage />} />
+                  <Route path="audit-logs" element={<AdminAuditLogsPage />} />
+                  <Route path="settings" element={<AdminSettingsPage />} />
+                </Route>
               </Route>
             </Route>
 

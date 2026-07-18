@@ -34,6 +34,9 @@ class OpportunityRepository(BaseRepository[Opportunity]):
         *,
         opp_type: OpportunityType | None = None,
         active_only: bool = True,
+        search: str | None = None,
+        sort_by: str | None = None,
+        sort_order: str | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> list[Opportunity]:
@@ -42,7 +45,22 @@ class OpportunityRepository(BaseRepository[Opportunity]):
             q = q.where(Opportunity.is_active.is_(True))
         if opp_type:
             q = q.where(Opportunity.opp_type == opp_type)
-        q = q.order_by(Opportunity.deadline.asc()).offset(offset).limit(limit)
+        if search:
+            pattern = f"%{search}%"
+            q = q.where(
+                Opportunity.title.ilike(pattern)
+                | Opportunity.organization.ilike(pattern)
+                | Opportunity.description.ilike(pattern)
+                | Opportunity.location.ilike(pattern)
+            )
+        sort_columns = {
+            "deadline": Opportunity.deadline,
+            "created_at": Opportunity.created_at,
+            "title": Opportunity.title,
+        }
+        sort_column = sort_columns.get(sort_by or "deadline", Opportunity.deadline)
+        order_fn = sort_column.desc if sort_order == "desc" else sort_column.asc
+        q = q.order_by(order_fn()).offset(offset).limit(limit)
         result = await self.db.execute(q)
         return list(result.scalars().all())
 
@@ -51,6 +69,7 @@ class OpportunityRepository(BaseRepository[Opportunity]):
         *,
         opp_type: OpportunityType | None = None,
         active_only: bool = True,
+        search: str | None = None,
     ) -> int:
         q = (
             select(func.count())
@@ -64,6 +83,14 @@ class OpportunityRepository(BaseRepository[Opportunity]):
             q = q.where(Opportunity.is_active.is_(True))
         if opp_type:
             q = q.where(Opportunity.opp_type == opp_type)
+        if search:
+            pattern = f"%{search}%"
+            q = q.where(
+                Opportunity.title.ilike(pattern)
+                | Opportunity.organization.ilike(pattern)
+                | Opportunity.description.ilike(pattern)
+                | Opportunity.location.ilike(pattern)
+            )
         result = await self.db.execute(q)
         return result.scalar_one()
 
@@ -79,14 +106,20 @@ class OpportunityService:
         self,
         opp_type: OpportunityType | None = None,
         include_expired: bool = False,
+        search: str | None = None,
+        sort_by: str | None = None,
+        sort_order: str | None = None,
         offset: int = 0,
         limit: int = 20,
     ) -> tuple[list[Opportunity], int]:
         active_only = not include_expired
         opps = await self.repo.list_filtered(
-            opp_type=opp_type, active_only=active_only, offset=offset, limit=limit
+            opp_type=opp_type, active_only=active_only, search=search,
+            sort_by=sort_by, sort_order=sort_order, offset=offset, limit=limit
         )
-        total = await self.repo.count_filtered(opp_type=opp_type, active_only=active_only)
+        total = await self.repo.count_filtered(
+            opp_type=opp_type, active_only=active_only, search=search
+        )
         return opps, total
 
     async def get_by_id(self, opp_id: uuid.UUID) -> Opportunity:
@@ -141,6 +174,8 @@ class OpportunityService:
 
         if "is_published" in updates and not can_publish_opportunity(actor):
             raise HTTPException(status_code=403, detail="Only admins can publish opportunities.")
+        if "deadline" in updates and updates["deadline"] < date.today():
+            updates["is_active"] = False
 
         old_values = {k: str(getattr(opp, k)) for k in updates}
         opp = await self.repo.update(opp, updates)

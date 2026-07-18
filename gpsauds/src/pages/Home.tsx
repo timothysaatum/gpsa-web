@@ -3,18 +3,18 @@ import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ArrowRight, BookOpen, Heart, Newspaper, Users, ChevronLeft, ChevronRight,
-  GraduationCap, CalendarRange, Library, Award, Mail,
+  GraduationCap, CalendarRange, Library, Award, Mail, Briefcase, Image as ImageIcon,
 } from 'lucide-react'
-import { eventsApi, heroApi, statsApi, welfareApi } from '@/api/services'
+import { eventsApi, galleryApi, heroApi, newsApi, opportunitiesApi, statsApi, welfareApi } from '@/api/services'
 import { Button, Badge, CardSkeleton, EmptyState, SectionHeader, Skeleton } from '@/components/ui'
 
-import { EventCard, CountdownBlock } from '@/components/shared'
+import { EventCard, CountdownBlock, NewsCard, OpportunityCard } from '@/components/shared'
 
-import { cn, formatDateTime, relativeTime } from '@/utils'
+import { cn, formatDate, formatDateTime, relativeTime } from '@/utils'
 import slide1 from '@/assets/KCP_4243.jpg'
 import slide2 from '@/assets/KCP_4248.jpg'
 import slide3 from '@/assets/KCP_4495.jpg'
-import type { HeroSlide } from '@/types'
+import type { GalleryItem, HeroSlide } from '@/types'
 
 // ── Hero Carousel ─────────────────────────────────────────────────────────────
 
@@ -360,7 +360,7 @@ function StatsStrip() {
 
   const stats = [
     { icon: GraduationCap, value: data?.total_users ?? 0, label: 'Students Represented', suffix: '+' },
-    { icon: CalendarRange, value: data?.total_events ?? 0, label: 'Events Per Year', suffix: '+' },
+    { icon: CalendarRange, value: data?.total_events ?? 0, label: 'Events Hosted', suffix: '+' },
     { icon: Library, value: data?.total_resources ?? 0, label: 'Academic Resources', suffix: '+' },
     { icon: Award, value: data?.active_members ?? 0, label: 'Active Members', suffix: '+' },
   ]
@@ -445,6 +445,104 @@ function QuickActions() {
             </button>
           ))}
         </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Latest updates ────────────────────────────────────────────────────────────
+
+function LatestUpdates() {
+  const navigate = useNavigate()
+
+  const featuredQuery = useQuery({
+    queryKey: ['news', 'featured-home'],
+    queryFn: newsApi.getFeatured,
+    staleTime: 2 * 60 * 1000,
+  })
+
+  const latestQuery = useQuery({
+    queryKey: ['news', 'home-list'],
+    queryFn: () => newsApi.list({ limit: 3 }),
+    staleTime: 2 * 60 * 1000,
+  })
+
+  const posts = latestQuery.data?.items ?? []
+  const featured = featuredQuery.data
+  const hasContent = Boolean(featured) || posts.length > 0
+  const isLoading = featuredQuery.isLoading || latestQuery.isLoading
+
+  return (
+    <section className="section-padding">
+      <div className="section-container">
+        <SectionHeader
+          title="Latest Updates"
+          subtitle="Official announcements and campus news"
+          action={
+            <Button variant="ghost" size="sm" onClick={() => navigate('/news')} rightIcon={<ArrowRight className="h-4 w-4" />}>
+              View All
+            </Button>
+          }
+        />
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
+          </div>
+        ) : !hasContent ? (
+          <EmptyState icon="📰" title="No updates yet" description="Published announcements will appear here." />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+            {featured && (
+              <button
+                onClick={() => navigate(`/news/${featured.id}`)}
+                className="group bg-brand text-white rounded-[1.6rem] p-6 sm:p-7 text-left overflow-hidden relative transition-all duration-300 hover:-translate-y-1 shadow-[0_22px_60px_rgba(0,77,0,0.2)] hover:shadow-[0_30px_80px_rgba(0,77,0,0.28)] min-h-[300px]"
+              >
+                <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='7' cy='7' r='1.5'/%3E%3Ccircle cx='37' cy='37' r='1.5'/%3E%3C/g%3E%3C/svg%3E")`,
+                  }}
+                />
+                <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/10" />
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/20 to-transparent" />
+                <div className="relative flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-4 mb-5">
+                    <Badge variant={featured.is_urgent ? 'red' : 'gold'} className="self-start">
+                      {featured.is_urgent ? 'Urgent Update' : 'Featured News'}
+                    </Badge>
+                    <span className="h-14 w-14 rounded-2xl bg-white/12 flex items-center justify-center text-3xl shrink-0 shadow-inner">
+                      {featured.banner_emoji ?? '📣'}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-3xl lg:text-4xl font-bold leading-none mb-4 line-clamp-3">
+                      {featured.title}
+                    </h3>
+                    <p className="text-sm sm:text-base text-white/75 leading-relaxed line-clamp-4">
+                      {featured.summary}
+                    </p>
+                  </div>
+                  <div className="mt-auto pt-6 flex items-center justify-between gap-3">
+                    <span className="text-xs font-700 text-white/45">
+                      {featured.published_at ? formatDate(featured.published_at) : 'Featured'}
+                    </span>
+                    <span className="inline-flex items-center gap-2 text-sm font-800 text-gold-500">
+                      Read update
+                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </div>
+              </button>
+            )}
+
+            {posts
+              .filter((post) => post.id !== featured?.id)
+              .slice(0, featured ? 2 : 3)
+              .map((post) => (
+                <NewsCard key={post.id} post={post} onClick={() => navigate(`/news/${post.id}`)} />
+              ))}
+          </div>
+        )}
       </div>
     </section>
   )
@@ -694,7 +792,7 @@ function FeaturedEventBanner() {
   return (
     <div className="section-container mb-6">
       <div
-        className="rounded-3xl p-8 lg:p-12 flex flex-col lg:flex-row gap-8 lg:gap-14 items-start lg:items-center overflow-hidden relative group cursor-pointer transition-shadow duration-300 hover:shadow-2xl bg-brand"
+        className="rounded-[1.75rem] p-7 lg:p-10 flex flex-col lg:flex-row gap-7 lg:gap-12 items-start lg:items-center overflow-hidden relative group cursor-pointer transition-all duration-300 hover:-translate-y-0.5 shadow-[0_24px_70px_rgba(0,77,0,0.2)] hover:shadow-[0_32px_90px_rgba(0,77,0,0.28)] bg-brand"
         onClick={() => navigate(`/events/${event.id}`)}
       >
         <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
@@ -706,8 +804,8 @@ function FeaturedEventBanner() {
           style={{ background: 'radial-gradient(ellipse at 30% 50%, color-mix(in srgb, var(--gold-old) 20%, transparent) 0%, transparent 60%)' }}
         />
 
-        <div className="text-6xl lg:text-7xl flex-shrink-0 relative group-hover:scale-105 transition-transform duration-500">
-          {event.banner_emoji ?? '🎓'}
+        <div className="h-24 w-24 lg:h-28 lg:w-28 rounded-[1.5rem] bg-white/10 flex items-center justify-center text-6xl lg:text-7xl flex-shrink-0 relative group-hover:scale-105 transition-transform duration-500 shadow-inner">
+          <span>{event.banner_emoji ?? '🎓'}</span>
         </div>
 
         <div className="flex-1 relative">
@@ -716,7 +814,7 @@ function FeaturedEventBanner() {
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--gold-old)' }} />
             Featured Event
           </span>
-          <h2 className="font-display text-2xl lg:text-4xl font-bold text-white mb-3 leading-tight">
+          <h2 className="font-display text-3xl lg:text-5xl font-bold text-white mb-3 leading-none">
             {event.title}
           </h2>
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/60 text-sm mb-5">
@@ -766,7 +864,7 @@ function UpcomingEvents() {
         ) : !data?.items?.length ? (
           <EmptyState icon="📅" title="No upcoming events" description="Check back soon for new events." />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {data.items.map((e) => (
               <EventCard key={e.id} event={e} />
             ))}
@@ -777,43 +875,120 @@ function UpcomingEvents() {
   )
 }
 
-// ── Gallery Teaser ────────────────────────────────────────────────────────────
+// ── Opportunities ─────────────────────────────────────────────────────────────
 
-const GALLERY_ITEMS = [
-  { emoji: '🎓', label: 'White Coat Ceremony', color: 'bg-brand' },
-  { emoji: '🏥', label: 'Health Screening', color: 'bg-gold-500' },
-  { emoji: '📚', label: 'Study Session', color: 'bg-emerald-600' },
-  { emoji: '🤝', label: 'Community Outreach', color: 'bg-sky-600' },
-  { emoji: '🎉', label: 'Congregation', color: 'bg-purple-600' },
-]
-
-const GALLERY_CARD = ({ emoji, label, color }: { emoji: string; label: string; color: string }) => (
-  <div
-    className={cn(
-      'flex-shrink-0 w-64 h-44 rounded-2xl overflow-hidden relative',
-      color,
-    )}
-  >
-    <div className="absolute inset-0 opacity-[0.06]"
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-      }}
-    />
-
-    <div className="relative w-full h-full flex flex-col items-center justify-center gap-3 p-6">
-      <span className="text-5xl">{emoji}</span>
-      <span className="text-white font-display font-bold text-sm text-center leading-snug">
-        {label}
-      </span>
-    </div>
-  </div>
-)
-
-function GalleryTeaser() {
+function OpportunitiesPreview() {
   const navigate = useNavigate()
+  const { data, isLoading } = useQuery({
+    queryKey: ['opportunities', 'home-list'],
+    queryFn: () => opportunitiesApi.list({ limit: 3 }),
+    staleTime: 2 * 60 * 1000,
+  })
 
   return (
     <section className="section-padding bg-cream-dark">
+      <div className="section-container">
+        <SectionHeader
+          title="Opportunities"
+          subtitle="Internships, scholarships, jobs, and training deadlines"
+          action={
+            <Button variant="ghost" size="sm" onClick={() => navigate('/opportunities')} rightIcon={<ArrowRight className="h-4 w-4" />}>
+              View All
+            </Button>
+          }
+        />
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
+          </div>
+        ) : !data?.items?.length ? (
+          <EmptyState
+            icon="💼"
+            title="No open opportunities"
+            description="New scholarships, internships, and training notices will appear here."
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+            {data.items.map((opportunity) => (
+              <OpportunityCard
+                key={opportunity.id}
+                opportunity={opportunity}
+                onApply={() => window.open(opportunity.external_link, '_blank', 'noopener,noreferrer')}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="mt-8 rounded-[1.35rem] bg-white border border-white p-5 flex flex-col sm:flex-row sm:items-center gap-4 shadow-[0_18px_45px_rgba(16,24,40,0.08)]">
+          <div className="w-11 h-11 rounded-xl bg-brand flex items-center justify-center flex-shrink-0">
+            <Briefcase className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold text-deep">Have an opportunity for GPSA-UDS students?</p>
+            <p className="text-sm text-muted leading-relaxed">Executive and admin teams can publish vetted opportunities from the dashboard.</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => navigate('/opportunities')}>
+            Browse
+          </Button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Gallery Teaser ────────────────────────────────────────────────────────────
+
+const FALLBACK_GALLERY_ITEMS: Pick<GalleryItem, 'id' | 'image_url' | 'thumbnail_url' | 'title' | 'category' | 'event_date'>[] = [
+  { id: 'fallback-1', image_url: slide1, thumbnail_url: null, title: 'GPSA-UDS Campus Life', category: 'events', event_date: null },
+  { id: 'fallback-2', image_url: slide2, thumbnail_url: null, title: 'Community and Leadership', category: 'outreach', event_date: null },
+  { id: 'fallback-3', image_url: slide3, thumbnail_url: null, title: 'Student Activities', category: 'social', event_date: null },
+]
+
+function GalleryPreviewCard({ item }: { item: Pick<GalleryItem, 'image_url' | 'thumbnail_url' | 'title' | 'category' | 'event_date'> }) {
+  const image = item.thumbnail_url ?? item.image_url
+
+  return (
+    <div className="relative h-52 md:h-60 rounded-2xl overflow-hidden group bg-brand">
+      {image ? (
+        <img
+          src={image}
+          alt={item.title}
+          loading="lazy"
+          className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <ImageIcon className="h-10 w-10 text-white/30" />
+        </div>
+      )}
+      <div className="absolute inset-0"
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.12) 55%, transparent 100%)' }}
+      />
+      <div className="absolute bottom-0 left-0 right-0 p-4">
+        <span className="inline-flex mb-2 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-700 uppercase tracking-widest text-white backdrop-blur-sm">
+          {item.category}
+        </span>
+        <p className="font-display font-bold text-white leading-snug line-clamp-2">
+          {item.title}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function GalleryTeaser() {
+  const navigate = useNavigate()
+  const { data, isLoading } = useQuery({
+    queryKey: ['gallery', 'home-list'],
+    queryFn: () => galleryApi.list({ limit: 6 }),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const items = data?.length ? data : FALLBACK_GALLERY_ITEMS
+
+  return (
+    <section className="section-padding">
       <div className="section-container">
         <SectionHeader
           title="From Our Gallery"
@@ -825,15 +1000,19 @@ function GalleryTeaser() {
           }
         />
 
-        <div className="marquee-wrapper rounded-2xl">
-          <div className="marquee-track gap-6 py-2">
-            {[...GALLERY_ITEMS, ...GALLERY_ITEMS].map((item, i) => (
-              <button key={`${item.label}-${i}`} onClick={() => navigate('/gallery')} className="cursor-pointer hover:opacity-85 transition-opacity">
-                <GALLERY_CARD {...item} />
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-56 rounded-2xl" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {items.slice(0, 6).map((item) => (
+              <button key={item.id} onClick={() => navigate('/gallery')} className="text-left transition-transform duration-300 hover:-translate-y-1">
+                <GalleryPreviewCard item={item} />
               </button>
             ))}
           </div>
-        </div>
+        )}
       </div>
     </section>
   )
@@ -902,6 +1081,8 @@ export function HomePage() {
       <Hero />
       <StatsStrip />
       <QuickActions />
+      <LatestUpdates />
+      <OpportunitiesPreview />
       <TodayAtGPSA />
       <UpcomingEvents />
       <GalleryTeaser />

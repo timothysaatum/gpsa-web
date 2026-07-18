@@ -1,6 +1,9 @@
 import api from './client'
 import type {
   AcademicResource,
+  AdminDashboard,
+  AboutContent,
+  AuditLog,
   Certificate,
   CertificateVerify,
   Course,
@@ -17,6 +20,8 @@ import type {
   HeroSlide,
   HeroSlideCreateRequest,
   HeroSlideUpdateRequest,
+  Leader,
+  LeadershipTerm,
   LoginRequest,
   MessageResponse,
   NewsCategory,
@@ -39,6 +44,28 @@ import type {
   WelfareSpotlight,
   WelfareStats,
 } from '@/types'
+
+// ── About ────────────────────────────────────────────────────────────────────
+
+export const aboutApi = {
+  get: () => api.get<AboutContent>('/about/').then((r) => r.data),
+}
+
+// ── Admin ────────────────────────────────────────────────────────────────────
+
+export const adminApi = {
+  dashboard: () =>
+    api.get<AdminDashboard>('/admin/dashboard').then((r) => r.data),
+
+  auditLogs: (params?: {
+    actor_id?: string
+    action?: string
+    entity_type?: string
+    offset?: number
+    limit?: number
+  }) =>
+    api.get<PaginatedResponse<AuditLog>>('/admin/audit-logs', { params }).then((r) => r.data),
+}
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -265,6 +292,9 @@ export const opportunitiesApi = {
   list: (params?: {
     opp_type?: OpportunityType
     include_expired?: boolean
+    search?: string
+    sort_by?: 'deadline' | 'created_at' | 'title'
+    sort_order?: 'asc' | 'desc'
     offset?: number
     limit?: number
   }) =>
@@ -314,9 +344,9 @@ export const newsApi = {
   getStripAnnouncements: () =>
     api.get<NewsPostSummary[]>('/news/strip').then((r) => r.data),
 
-  search: (q: string, offset = 0) =>
+  search: (q: string, offset = 0, limit = 20) =>
     api
-      .get<NewsPostSummary[]>('/news/search', { params: { q, offset } })
+      .get<NewsPostSummary[]>('/news/search', { params: { q, offset, limit } })
       .then((r) => r.data),
 
   getById: (id: string) =>
@@ -429,6 +459,79 @@ export const galleryApi = {
 
   delete: (id: string) =>
     api.delete<MessageResponse>(`/gallery/${id}`).then((r) => r.data),
+}
+
+// ── Leadership ───────────────────────────────────────────────────────────────
+
+export const leadershipApi = {
+  list: (params?: { include_inactive?: boolean; offset?: number; limit?: number }) =>
+    api.get<LeadershipTerm[]>('/leadership/', { params }).then((r) => r.data),
+
+  current: () =>
+    api.get<LeadershipTerm | null>('/leadership/current').then((r) => r.data),
+
+  createTerm: (data: {
+    title: string
+    academic_year: string
+    start_date?: string | null
+    end_date?: string | null
+    theme?: string | null
+    summary?: string | null
+    is_current?: boolean
+    sort_order?: number
+  }) =>
+    api.post<LeadershipTerm>('/leadership/terms', data).then((r) => r.data),
+
+  updateTerm: (id: string, data: {
+    title?: string
+    academic_year?: string
+    start_date?: string | null
+    end_date?: string | null
+    theme?: string | null
+    summary?: string | null
+    is_current?: boolean
+    sort_order?: number
+  }) =>
+    api.patch<LeadershipTerm>(`/leadership/terms/${id}`, data).then((r) => r.data),
+
+  deleteTerm: (id: string) =>
+    api.delete<MessageResponse>(`/leadership/terms/${id}`).then((r) => r.data),
+
+  createLeader: (data: {
+    term_id: string
+    full_name: string
+    office: string
+    bio?: string | null
+    email?: string | null
+    phone?: string | null
+    photo_url?: string | null
+    sort_order?: number
+    is_active?: boolean
+  }) =>
+    api.post<Leader>('/leadership/leaders', data).then((r) => r.data),
+
+  updateLeader: (id: string, data: {
+    term_id?: string
+    full_name?: string
+    office?: string
+    bio?: string | null
+    email?: string | null
+    phone?: string | null
+    photo_url?: string | null
+    sort_order?: number
+    is_active?: boolean
+  }) =>
+    api.patch<Leader>(`/leadership/leaders/${id}`, data).then((r) => r.data),
+
+  uploadLeaderPhoto: (id: string, formData: FormData) =>
+    api
+      .post<Leader>(`/leadership/leaders/${id}/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data),
+
+  deleteLeader: (id: string) =>
+    api.delete<MessageResponse>(`/leadership/leaders/${id}`).then((r) => r.data),
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────

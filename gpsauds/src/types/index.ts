@@ -281,6 +281,36 @@ export interface GalleryItem {
   created_at: string
 }
 
+// ── Leadership ───────────────────────────────────────────────────────────────
+
+export interface Leader {
+  id: string
+  term_id: string
+  full_name: string
+  office: string
+  bio: string | null
+  email: string | null
+  phone: string | null
+  photo_url: string | null
+  sort_order: number
+  is_active: boolean
+  created_at: string
+}
+
+export interface LeadershipTerm {
+  id: string
+  title: string
+  academic_year: string
+  start_date: string | null
+  end_date: string | null
+  theme: string | null
+  summary: string | null
+  is_current: boolean
+  sort_order: number
+  created_at: string
+  leaders: Leader[]
+}
+
 // ── Hero Slides ──────────────────────────────────────────────────────────────
 
 export interface HeroSlide {
@@ -336,6 +366,50 @@ export interface Feedback {
   created_at: string
 }
 
+// ── About ───────────────────────────────────────────────────────────────────
+
+export interface AboutContent {
+  name: string
+  short_name: string
+  tagline: string
+  overview: string
+  mission: string
+  vision: string
+  values: string[]
+  pillars: { title: string; body: string }[]
+  timeline: { year: string; title: string; body: string }[]
+  stats: SiteStats
+  featured_news: {
+    id: string
+    title: string
+    summary: string
+    category: string
+    published_at: string | null
+  } | null
+  upcoming_events: {
+    id: string
+    title: string
+    location: string
+    start_datetime: string
+    event_type: string
+  }[]
+  open_opportunities: {
+    id: string
+    title: string
+    organization: string
+    deadline: string
+    opp_type: string
+  }[]
+  gallery_highlights: {
+    id: string
+    title: string
+    image_url: string
+    thumbnail_url: string | null
+    category: string
+  }[]
+  welfare: WelfareConfig
+}
+
 export interface FeedbackSummary {
   entity_type: FeedbackEntityType
   entity_id: string
@@ -361,6 +435,33 @@ export interface SiteStats {
   active_members: number
   total_events: number
   total_resources: number
+}
+
+export interface AuditLog {
+  id: string
+  actor_id: string | null
+  actor: User | null
+  action: string
+  entity_type: string
+  entity_id: string | null
+  old_values: Record<string, unknown> | null
+  new_values: Record<string, unknown> | null
+  ip_address: string | null
+  user_agent: string | null
+  request_id: string | null
+  created_at: string
+}
+
+export interface AdminDashboard {
+  users: number
+  news_posts: number
+  events: number
+  opportunities: number
+  gallery_images: number
+  academic_resources: number
+  welfare_reports: number
+  pending_welfare_reports: number
+  recent_audit: AuditLog[]
 }
 
 export interface ApiError {

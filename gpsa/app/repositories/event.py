@@ -75,6 +75,18 @@ class EventRegistrationRepository(BaseRepository[EventRegistration]):
         )
         return result.scalar_one_or_none()
 
+    async def get_by_event_and_contact(
+        self, event_id: uuid.UUID, contact: str
+    ) -> EventRegistration | None:
+        result = await self.db.execute(
+            select(EventRegistration).where(
+                EventRegistration.event_id == event_id,
+                func.lower(EventRegistration.contact) == contact.lower(),
+                EventRegistration.deleted_at.is_(None),
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def list_for_event(self, event_id: uuid.UUID) -> list[EventRegistration]:
         result = await self.db.execute(
             select(EventRegistration).where(

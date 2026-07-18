@@ -314,6 +314,18 @@ function FeaturedEventBanner() {
 
 const PAGE_SIZE = 12
 
+const createEventSchema = z.object({
+  title: z.string().min(3, 'Title is required'),
+  description: z.string().min(10, 'Description is required'),
+  event_type: z.enum(['academic', 'welfare', 'outreach', 'social', 'conference']),
+  start_datetime: z.string().min(1, 'Start date is required'),
+  end_datetime: z.string().optional(),
+  location: z.string().min(2, 'Location is required'),
+  banner_emoji: z.string().max(10).optional(),
+  is_featured: z.boolean().default(false),
+})
+type CreateEventForm = z.infer<typeof createEventSchema>
+
 export function EventsPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
@@ -538,6 +550,134 @@ export function EventsPage() {
             )}
           </>
         )}
+      </div>
+    </>
+  )
+}
+
+// ── Create event page ────────────────────────────────────────────────────────
+
+export function EventCreatePage() {
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  const canCreate = user && (user.role === 'exec' || user.role === 'admin')
+  const [doneId, setDoneId] = useState<string | null>(null)
+
+  const { register, handleSubmit, formState: { errors } } = useForm<CreateEventForm>({
+    resolver: zodResolver(createEventSchema),
+    defaultValues: { event_type: 'academic', is_featured: false },
+  })
+
+  const mutation = useMutation({
+    mutationFn: (values: CreateEventForm) =>
+      eventsApi.create({
+        title: values.title,
+        description: values.description,
+        event_type: values.event_type,
+        start_datetime: new Date(values.start_datetime).toISOString(),
+        end_datetime: values.end_datetime ? new Date(values.end_datetime).toISOString() : null,
+        location: values.location,
+        banner_emoji: values.banner_emoji || null,
+        is_featured: values.is_featured,
+      }),
+    onSuccess: (event) => {
+      setDoneId(event.id)
+      qc.invalidateQueries({ queryKey: ['events'] })
+    },
+  })
+
+  if (!canCreate) {
+    return (
+      <EmptyState
+        icon="🔒"
+        title="Event access required"
+        description="Only GPSA-UDS executives and admins can create events."
+        action={<Button variant="primary" onClick={() => navigate('/events')}>Back to Events</Button>}
+      />
+    )
+  }
+
+  return (
+    <>
+      <EventsBreadcrumbs eventTitle="Create" />
+      <PageHeader title="Create Event" subtitle="Publish a GPSA-UDS event for students to discover and register." />
+      <div className="section-container section-padding max-w-3xl">
+        <div className="card p-6 sm:p-8">
+          {doneId ? (
+            <div className="text-center py-8">
+              <CheckCircle className="h-14 w-14 text-green-700 mx-auto mb-4" />
+              <h2 className="font-display text-2xl font-bold text-green-700 mb-2">Event created</h2>
+              <p className="text-sm text-muted mb-6">The event is now available on the events page.</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button variant="primary" onClick={() => navigate(`/events/${doneId}`)}>View Event</Button>
+                <Button variant="outline" onClick={() => navigate('/events')}>Back to Events</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {mutation.error && (
+                <div className="mb-5 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl p-3.5 text-sm text-red-600">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  {extractError(mutation.error)}
+                </div>
+              )}
+              <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="space-y-5">
+                <div>
+                  <label className="form-label">Title *</label>
+                  <input {...register('title')} className={cn('form-input', errors.title && 'form-input-error')} />
+                  {errors.title && <p className="form-error">{errors.title.message}</p>}
+                </div>
+
+                <div>
+                  <label className="form-label">Description *</label>
+                  <textarea {...register('description')} className={cn('form-input resize-none h-28', errors.description && 'form-input-error')} />
+                  {errors.description && <p className="form-error">{errors.description.message}</p>}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Type *</label>
+                    <select {...register('event_type')} className={cn('form-select', errors.event_type && 'form-input-error')}>
+                      {(['academic', 'welfare', 'outreach', 'social', 'conference'] as EventType[]).map((type) => (
+                        <option key={type} value={type}>{EVENT_TYPE_LABELS[type]}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label">Location *</label>
+                    <input {...register('location')} className={cn('form-input', errors.location && 'form-input-error')} />
+                    {errors.location && <p className="form-error">{errors.location.message}</p>}
+                  </div>
+                  <div>
+                    <label className="form-label">Starts *</label>
+                    <input {...register('start_datetime')} type="datetime-local" className={cn('form-input', errors.start_datetime && 'form-input-error')} />
+                    {errors.start_datetime && <p className="form-error">{errors.start_datetime.message}</p>}
+                  </div>
+                  <div>
+                    <label className="form-label">Ends</label>
+                    <input {...register('end_datetime')} type="datetime-local" className="form-input" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Banner Emoji</label>
+                    <input {...register('banner_emoji')} className="form-input" placeholder="🎓" />
+                  </div>
+                  <label className="flex items-end gap-3 pb-3 cursor-pointer">
+                    <input {...register('is_featured')} type="checkbox" className="h-4 w-4" />
+                    <span className="text-sm font-600 text-deep">Feature this event</span>
+                  </label>
+                </div>
+
+                <Button type="submit" variant="primary" size="lg" loading={mutation.isPending} className="w-full">
+                  Create Event
+                </Button>
+              </form>
+            </>
+          )}
+        </div>
       </div>
     </>
   )

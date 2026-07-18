@@ -12,6 +12,7 @@ from fastapi import Request
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.permissions import (
     assert_permission,
     can_manage_spotlight,
@@ -241,8 +242,8 @@ class WelfareService:
         result = await self.db.execute(resolved_this_month_q)
         resolved_this_month = result.scalar_one()
         return {
-            "emergency_contact": "+233 XXX XXX XXX",
-            "avg_response_time_hours": 48,
+            "emergency_contact": settings.welfare_emergency_contact or "",
+            "avg_response_time_hours": settings.welfare_avg_response_time_hours,
             "confidential_percent": 100,
             "total_reports": total,
             "total_resolved": resolved,
@@ -250,7 +251,7 @@ class WelfareService:
             "trust_items": [
                 {"icon": "shield", "text": "End-to-End Confidential"},
                 {"icon": "heart_handshake", "text": "Welfare Committee Review"},
-                {"icon": "clock", "text": "48-Hour Response"},
+                {"icon": "clock", "text": f"{settings.welfare_avg_response_time_hours}-Hour Response"},
                 {"icon": "phone", "text": "Direct Officer Line"},
             ],
         }

@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     email_from_address: EmailStr = "noreply@gpsa-uds.edu.gh"  # type: ignore[assignment]
     email_from_name: str = "GPSA-UDS"
 
+    # ── Welfare ───────────────────────────────────────────────────────────────
+    welfare_emergency_contact: str | None = None
+    welfare_avg_response_time_hours: int = 48
+
     # ── Seed ──────────────────────────────────────────────────────────────────
     first_admin_email: EmailStr = "admin@gpsa-uds.edu.gh"  # type: ignore[assignment]
     first_admin_password: str = "change-me-immediately"

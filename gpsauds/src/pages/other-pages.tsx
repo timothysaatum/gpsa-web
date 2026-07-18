@@ -1,20 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Welfare Page
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ExternalLink, Search, Bell, BellOff, ChevronRight, ArrowRight} from 'lucide-react'
+  ExternalLink, Search, Bell, BellOff, ChevronRight, ArrowRight, Calendar, MapPin} from 'lucide-react'
 import { opportunitiesApi, newsApi, notificationsApi } from '@/api/services'
 
-// Import more detailed pages from dedicated files. These will replace
-// the simplified placeholders defined later in this file. When the
-// router imports `AboutPage` or `GalleryPage` from `other-pages.tsx`, it
-// will instead use the richer implementations from `AboutPage.tsx` and
-// `GalleryPage.tsx`.
-import { AboutPage as DetailedAboutPage } from './AboutPage'
-import { GalleryPage as DetailedGalleryPage } from './GalleryPage'
 export { WelfarePage } from './WelfarePage'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Badge, CardSkeleton, EmptyState, Skeleton } from '@/components/ui'
@@ -23,7 +16,7 @@ import {
   cn, formatDate, deadlineUrgency,
   NEWS_CATEGORY_LABELS, relativeTime,
 } from '@/utils'
-import type { Opportunity, OpportunityType, NewsCategory } from '@/types'
+import type { OpportunityType, NewsCategory, NewsPostSummary } from '@/types'
 
 // ── Opportunities ─────────────────────────────────────────────────────────────
 
@@ -35,53 +28,52 @@ const SORT_OPTIONS = [
 ] as const
 
 type SortKey = (typeof SORT_OPTIONS)[number]['value']
+const OPPORTUNITY_PAGE_SIZE = 12
 
 export function OpportunitiesPage() {
+  const navigate = useNavigate()
   const [typeFilter, setTypeFilter] = useState<OpportunityType | 'all'>('all')
-  const [deadlineFilter, setDeadlineFilter] = useState<'all' | 'closing_soon' | 'open'>('all')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<SortKey>('deadline')
+  const [page, setPage] = useState(1)
   const [showFilters, setShowFilters] = useState(false)
   const [redirectOpp, setRedirectOpp] = useState<{ title: string; url: string } | null>(null)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['opportunities', { type: typeFilter }],
-    queryFn: () => opportunitiesApi.list({ opp_type: typeFilter !== 'all' ? typeFilter : undefined, limit: 48 }),
+  const queryParams = {
+    opp_type: typeFilter !== 'all' ? typeFilter : undefined,
+    search: search || undefined,
+    sort_by: sort === 'newest' ? 'created_at' as const : 'deadline' as const,
+    sort_order: sort === 'newest' ? 'desc' as const : 'asc' as const,
+    offset: (page - 1) * OPPORTUNITY_PAGE_SIZE,
+    limit: OPPORTUNITY_PAGE_SIZE,
+  }
+
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    queryKey: ['opportunities', queryParams],
+    queryFn: () => opportunitiesApi.list(queryParams),
     staleTime: 2 * 60 * 1000,
   })
 
-  const allItems = data?.items ?? []
+  const { data: closingData } = useQuery({
+    queryKey: ['opportunities', 'closing-soon-summary', typeFilter],
+    queryFn: () => opportunitiesApi.list({
+      opp_type: typeFilter !== 'all' ? typeFilter : undefined,
+      sort_by: 'deadline',
+      sort_order: 'asc',
+      limit: 6,
+    }),
+    staleTime: 2 * 60 * 1000,
+  })
 
-  const { closingSoon, remaining } = useMemo(() => {
-    const cs: Opportunity[] = []
-    const rem: Opportunity[] = []
-    for (const o of allItems) {
-      const u = deadlineUrgency(o.deadline)
-      if (u === 'closing_today' || u === 'closing_soon') cs.push(o)
-      else rem.push(o)
-    }
-    return { closingSoon: cs, remaining: rem }
-  }, [allItems])
-
-  const filtered = useMemo(() => {
-    let list = allItems
-    if (deadlineFilter === 'closing_soon') {
-      list = closingSoon
-    } else if (deadlineFilter === 'open') {
-      list = remaining.filter((o) => deadlineUrgency(o.deadline) === 'open')
-    }
-    if (search) {
-      const q = search.toLowerCase()
-      list = list.filter((o) => o.title.toLowerCase().includes(q) || o.organization.toLowerCase().includes(q))
-    }
-    const sorted = [...list].sort((a, b) => {
-      if (sort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
-    })
-    return sorted
-  }, [allItems, deadlineFilter, closingSoon, remaining, search, sort])
-
-  const showSpotlight = deadlineFilter === 'all' && !search && closingSoon.length > 0
+  const items = data?.items ?? []
+  const closingSoon = (closingData?.items ?? []).filter((o) => {
+    const u = deadlineUrgency(o.deadline)
+    return u === 'closing_today' || u === 'closing_soon'
+  })
+  const totalResults = data?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalResults / OPPORTUNITY_PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const showSpotlight = safePage === 1 && !search && closingSoon.length > 0
 
   const typeOptions: { value: OpportunityType | 'all'; label: string }[] = [
     { value: 'all',         label: 'All Types' },
@@ -91,14 +83,9 @@ export function OpportunitiesPage() {
     { value: 'training',    label: '🛠️ Training' },
   ]
 
-  const deadlineOptions: { value: 'all' | 'closing_soon' | 'open'; label: string }[] = [
-    { value: 'all',          label: 'All Deadlines' },
-    { value: 'closing_soon', label: '🔥 Closing Soon' },
-    { value: 'open',         label: '✅ Open' },
-  ]
-
-  const activeFilterCount = (typeFilter !== 'all' ? 1 : 0) + (deadlineFilter !== 'all' ? 1 : 0) + (search ? 1 : 0)
-  const totalCount = allItems.length
+  const activeFilterCount = (typeFilter !== 'all' ? 1 : 0) + (search ? 1 : 0)
+  const handleTypeChange = (value: OpportunityType | 'all') => { setTypeFilter(value); setPage(1) }
+  const handleSearch = (value: string) => { setSearch(value); setPage(1) }
 
   return (
     <>
@@ -107,10 +94,8 @@ export function OpportunitiesPage() {
       <div className="section-container section-padding">
         {/* ── Mini stats ── */}
         <div className="flex flex-wrap gap-4 mb-8">
-          <StatCard icon="📋" value={totalCount} label="Total" />
+          <StatCard icon="📋" value={totalResults} label="Total" />
           <StatCard icon="🔥" value={closingSoon.length} label="Closing Soon" />
-          <StatCard icon="✅" value={remaining.filter((o) => deadlineUrgency(o.deadline) === 'open').length} label="Open" />
-          <StatCard icon="⏰" value={allItems.filter((o) => deadlineUrgency(o.deadline) === 'expired').length} label="Expired" />
         </div>
 
         {/* ── Sticky controls ── */}
@@ -121,7 +106,7 @@ export function OpportunitiesPage() {
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
                 placeholder='Search opportunities...'
                 className="form-input pl-10 h-10 text-sm"
               />
@@ -134,7 +119,7 @@ export function OpportunitiesPage() {
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
-                    onClick={() => setSort(opt.value)}
+                    onClick={() => { setSort(opt.value); setPage(1) }}
                     className={cn(
                       'px-3 py-1.5 text-xs font-600 transition-all',
                       sort === opt.value
@@ -173,12 +158,11 @@ export function OpportunitiesPage() {
           {/* Collapsible filter panel */}
           {showFilters && (
             <div className="flex flex-wrap items-center gap-3 mt-3 animate-fade-in">
-              <FilterBar options={typeOptions} value={typeFilter} onChange={setTypeFilter} />
-              <FilterBar options={deadlineOptions} value={deadlineFilter} onChange={setDeadlineFilter} />
+              <FilterBar options={typeOptions} value={typeFilter} onChange={handleTypeChange} />
 
               {activeFilterCount > 0 && (
                 <button
-                  onClick={() => { setTypeFilter('all'); setDeadlineFilter('all'); setSearch(''); setSort('deadline') }}
+                  onClick={() => { setTypeFilter('all'); setSearch(''); setSort('deadline'); setPage(1) }}
                   className="text-xs text-red-600 font-600 hover:text-red-700 transition-colors whitespace-nowrap"
                 >
                   Clear all ({activeFilterCount})
@@ -194,7 +178,7 @@ export function OpportunitiesPage() {
               {SEARCH_SUGGESTIONS.map((s) => (
                 <button
                   key={s}
-                  onClick={() => setSearch(s)}
+                  onClick={() => handleSearch(s)}
                   className="text-[11px] px-2.5 py-1 rounded-full border border-cream-dark bg-white text-muted hover:border-green-300 hover:text-green-700 hover:bg-green-50 transition-all"
                 >
                   {s}
@@ -205,7 +189,7 @@ export function OpportunitiesPage() {
 
           {/* Result count */}
           <div className="mt-3 text-xs text-muted font-500">
-            Showing <strong className="text-deep">{filtered.length}</strong> of <strong className="text-deep">{totalCount}</strong> opportunities
+            Showing <strong className="text-deep">{items.length}</strong> of <strong className="text-deep">{totalResults}</strong> opportunities
           </div>
         </div>
 
@@ -213,14 +197,21 @@ export function OpportunitiesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1,2,3,4,5,6].map((i) => <CardSkeleton key={i} />)}
           </div>
-        ) : !filtered.length ? (
+        ) : isError ? (
+          <EmptyState
+            icon="⚠️"
+            title="Failed to load opportunities"
+            description="Something went wrong. Please try again."
+            action={<Button variant="primary" size="sm" onClick={() => refetch()}>Retry</Button>}
+          />
+        ) : !items.length ? (
           <EmptyState
             icon="💼"
             title="No opportunities found"
             description={search ? `Nothing matches "${search}". Try different keywords.` : 'Try adjusting your filters.'}
             action={
               activeFilterCount > 0 ? (
-                <Button variant="outline" size="sm" onClick={() => { setTypeFilter('all'); setDeadlineFilter('all'); setSearch('') }}>
+                <Button variant="outline" size="sm" onClick={() => { setTypeFilter('all'); setSearch(''); setPage(1) }}>
                   Reset Filters
                 </Button>
               ) : undefined
@@ -228,6 +219,11 @@ export function OpportunitiesPage() {
           />
         ) : (
           <>
+            {isFetching && (
+              <div className="h-1 rounded-full bg-cream-dark overflow-hidden mb-4">
+                <div className="h-full w-1/3 bg-green-gradient rounded-full animate-pulse" />
+              </div>
+            )}
             {/* Spotlight section: closing soon items at the top */}
             {showSpotlight && (
               <div className="mb-10">
@@ -238,11 +234,12 @@ export function OpportunitiesPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {closingSoon.slice(0, 3).map((o) => (
-                    <OpportunityCard
-                      key={o.id}
-                      opportunity={o}
-                      onApply={() => setRedirectOpp({ title: o.title, url: o.external_link })}
-                    />
+                    <div key={o.id} onClick={() => navigate(`/opportunities/${o.id}`)} className="cursor-pointer">
+                      <OpportunityCard
+                        opportunity={o}
+                        onApply={() => setRedirectOpp({ title: o.title, url: o.external_link })}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -250,24 +247,37 @@ export function OpportunitiesPage() {
 
             {/* Main results */}
             <div>
-              {showSpotlight && filtered.length > 0 && (
+              {showSpotlight && items.length > 0 && (
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">📋</span>
                   <h2 className="font-display text-xl font-bold text-deep">
-                    {deadlineFilter === 'all' ? 'All Opportunities' : deadlineFilter === 'closing_soon' ? 'Closing Soon' : 'Open'}
+                    All Opportunities
                   </h2>
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filtered.map((o) => (
-                  <OpportunityCard
-                    key={o.id}
-                    opportunity={o}
-                    onApply={() => setRedirectOpp({ title: o.title, url: o.external_link })}
-                  />
+                {items.map((o) => (
+                  <div key={o.id} onClick={() => navigate(`/opportunities/${o.id}`)} className="cursor-pointer">
+                    <OpportunityCard
+                      opportunity={o}
+                      onApply={() => setRedirectOpp({ title: o.title, url: o.external_link })}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-12">
+                <Button variant="outline" size="sm" disabled={safePage === 1} onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
+                  Prev
+                </Button>
+                <span className="text-xs text-muted px-2">Page {safePage} of {totalPages}</span>
+                <Button variant="outline" size="sm" disabled={safePage === totalPages} onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
+                  Next
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -291,6 +301,103 @@ export function OpportunitiesPage() {
                 onClick={() => setRedirectOpp(null)}
                 className="btn-md btn-primary flex-1 flex items-center justify-center gap-1.5"
               >
+                Proceed <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+export function OpportunityDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const [redirectOpp, setRedirectOpp] = useState<{ title: string; url: string } | null>(null)
+
+  const { data: opportunity, isLoading, isError, refetch } = useQuery({
+    queryKey: ['opportunities', id],
+    queryFn: () => opportunitiesApi.getById(id!),
+    enabled: Boolean(id),
+  })
+
+  if (isLoading) {
+    return (
+      <div className="section-container py-20 max-w-3xl">
+        <Skeleton className="h-56 rounded-3xl mb-8" />
+        <CardSkeleton />
+      </div>
+    )
+  }
+
+  if (isError || !opportunity) {
+    return (
+      <EmptyState
+        icon="💼"
+        title="Opportunity not found"
+        description="This opportunity may have expired or been removed."
+        action={<Button variant="primary" onClick={() => isError ? refetch() : navigate('/opportunities')}>{isError ? 'Retry' : 'Back to Opportunities'}</Button>}
+      />
+    )
+  }
+
+  return (
+    <>
+      <PageHeader title={opportunity.title} subtitle={`${opportunity.organization} · ${formatDate(opportunity.deadline)}`}>
+        <Button variant="outline-white" size="md" onClick={() => navigate('/opportunities')}>
+          Back to Opportunities
+        </Button>
+      </PageHeader>
+
+      <div className="section-container section-padding">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <article className="lg:col-span-2 card p-6 sm:p-8">
+            <div className="flex flex-wrap gap-2 mb-6">
+              <Badge variant="green">{opportunity.opp_type}</Badge>
+              <Badge variant={deadlineUrgency(opportunity.deadline) === 'expired' ? 'gray' : 'gold'}>
+                Deadline {formatDate(opportunity.deadline)}
+              </Badge>
+            </div>
+            <h2 className="font-display text-2xl font-bold text-green-700 mb-4">About this opportunity</h2>
+            <p className="text-muted leading-relaxed whitespace-pre-wrap">{opportunity.description}</p>
+          </article>
+
+          <aside className="card p-6 h-fit space-y-5">
+            <div className="space-y-3 text-sm">
+              <p className="flex items-start gap-2 text-muted"><Calendar className="h-4 w-4 text-green-700 mt-0.5" />Deadline: {formatDate(opportunity.deadline)}</p>
+              {opportunity.location && (
+                <p className="flex items-start gap-2 text-muted"><MapPin className="h-4 w-4 text-green-700 mt-0.5" />{opportunity.location}</p>
+              )}
+            </div>
+            {opportunity.is_active ? (
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full"
+                rightIcon={<ExternalLink className="h-4 w-4" />}
+                onClick={() => setRedirectOpp({ title: opportunity.title, url: opportunity.external_link })}
+              >
+                Apply Now
+              </Button>
+            ) : (
+              <Badge variant="gray">Expired</Badge>
+            )}
+          </aside>
+        </div>
+      </div>
+
+      {redirectOpp && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-card-lg w-full max-w-sm p-8 animate-fade-up text-center">
+            <span className="text-4xl mb-4 block">🔗</span>
+            <h3 className="font-display text-xl font-bold text-green-700 mb-3">External Redirect</h3>
+            <p className="text-sm text-muted mb-6">
+              You are being redirected to an external website to complete your application for <strong>{redirectOpp.title}</strong>.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="outline" size="md" className="flex-1" onClick={() => setRedirectOpp(null)}>Cancel</Button>
+              <a href={redirectOpp.url} target="_blank" rel="noreferrer" onClick={() => setRedirectOpp(null)} className="btn-md btn-primary flex-1 flex items-center justify-center gap-1.5">
                 Proceed <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
@@ -333,9 +440,25 @@ export function NewsPage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['news', { category: catFilter }],
-    queryFn: () => newsApi.list({ category: catFilter !== 'all' ? catFilter : undefined, limit: 100 }),
+  const offset = (page - 1) * NEWS_PAGE_SIZE
+  const trimmedSearch = search.trim()
+  const isSearching = trimmedSearch.length >= 2
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['news', { category: catFilter, page }],
+    queryFn: () => newsApi.list({
+      category: catFilter !== 'all' ? catFilter : undefined,
+      offset,
+      limit: NEWS_PAGE_SIZE,
+    }),
+    enabled: !isSearching,
+    staleTime: 60_000,
+  })
+
+  const searchQuery = useQuery({
+    queryKey: ['news', 'search', trimmedSearch, page],
+    queryFn: () => newsApi.search(trimmedSearch, offset, NEWS_PAGE_SIZE),
+    enabled: isSearching,
     staleTime: 60_000,
   })
 
@@ -349,15 +472,11 @@ export function NewsPage() {
     { value: 'general',         label: 'General' },
   ]
 
-  const allFiltered = (data?.items ?? []).filter((p) =>
-    !search ||
-    p.title.toLowerCase().includes(search.toLowerCase()) ||
-    p.summary.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const totalPages  = Math.max(1, Math.ceil(allFiltered.length / NEWS_PAGE_SIZE))
+  const serverItems: NewsPostSummary[] = isSearching ? (searchQuery.data ?? []) : (data?.items ?? [])
+  const totalResults = data?.total ?? 0
+  const totalPages  = isSearching ? page + (serverItems.length === NEWS_PAGE_SIZE ? 1 : 0) : Math.max(1, Math.ceil(totalResults / NEWS_PAGE_SIZE))
   const safePage    = Math.min(page, totalPages)
-  const paginated   = allFiltered.slice((safePage - 1) * NEWS_PAGE_SIZE, safePage * NEWS_PAGE_SIZE)
+  const paginated   = serverItems
 
   // Split first page into: 1 hero + 4 latest + rest in grid
   const heroPost      = safePage === 1 ? paginated[0]    : undefined
@@ -424,16 +543,16 @@ export function NewsPage() {
               className="form-input pl-11"
             />
           </div>
-          {allFiltered.length > 0 && (
+          {!isSearching && totalResults > 0 && (
             <p className="text-sm text-muted self-center flex-shrink-0">
-              {allFiltered.length} {allFiltered.length === 1 ? 'post' : 'posts'}
+              {totalResults} {totalResults === 1 ? 'post' : 'posts'}
             </p>
           )}
         </div>
 
         <FilterBar options={catOptions} value={catFilter} onChange={handleCatChange} className="mb-8" />
 
-        {isLoading ? (
+        {(isSearching ? searchQuery.isLoading : isLoading) ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2"><CardSkeleton /></div>
@@ -443,6 +562,17 @@ export function NewsPage() {
               {[1,2,3].map((i) => <CardSkeleton key={i} />)}
             </div>
           </div>
+        ) : (isSearching ? searchQuery.isError : isError) ? (
+          <EmptyState
+            icon="⚠️"
+            title="Failed to load news"
+            description="Something went wrong. Please try again."
+            action={
+              <Button variant="primary" size="sm" onClick={() => isSearching ? searchQuery.refetch() : refetch()}>
+                Retry
+              </Button>
+            }
+          />
         ) : !paginated.length ? (
           <EmptyState icon="📰" title="No posts found" description="Try a different search or category." />
         ) : (
@@ -582,7 +712,7 @@ export function NewsPage() {
             {/* Page info */}
             {totalPages > 1 && (
               <p className="text-center text-xs text-muted mt-3">
-                Page {safePage} of {totalPages} · {allFiltered.length} posts
+                {isSearching ? `Page ${safePage}` : `Page ${safePage} of ${totalPages} · ${totalResults} posts`}
               </p>
             )}
           </>
@@ -598,7 +728,7 @@ export function NewsDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  const { data: post, isLoading } = useQuery({
+  const { data: post, isLoading, isError, refetch } = useQuery({
     queryKey: ['news', id],
     queryFn: () => newsApi.getById(id!),
     enabled: !!id,
@@ -626,14 +756,23 @@ export function NewsDetailPage() {
     </div>
   )
 
+  if (isError) return (
+    <EmptyState
+      icon="⚠️"
+      title="Failed to load post"
+      description="Something went wrong. Please try again."
+      action={<Button variant="primary" onClick={() => refetch()}>Retry</Button>}
+    />
+  )
+
   if (!post) return (
     <EmptyState icon="📰" title="Post not found"
       action={<Button variant="primary" onClick={() => navigate('/news')}>Back to News</Button>} />
   )
 
   return (
-    <div className="section-container py-12">
-      <div className="max-w-3xl mx-auto">
+    <div className="section-container py-10 md:py-14">
+      <article className="max-w-3xl mx-auto">
 
         {/* Back */}
         <button
@@ -661,7 +800,7 @@ export function NewsDetailPage() {
           {post.is_urgent && <Badge variant="red">🔴 Urgent</Badge>}
         </div>
 
-        <h1 className="font-display text-4xl lg:text-5xl font-bold text-green-700 mb-4 leading-tight">
+        <h1 className="font-display text-4xl lg:text-5xl font-bold text-deep mb-4 leading-tight">
           {post.title}
         </h1>
 
@@ -673,13 +812,16 @@ export function NewsDetailPage() {
 
         {/* Summary callout */}
         {post.summary && (
-          <div className="bg-green-gradient border-l-4 border-green-700 rounded-r-xl p-5 mb-8 text-white">
-            <p className="text-deep text-base leading-relaxed font-500">{post.summary}</p>
+          <div className="relative rounded-2xl border border-green-100 bg-green-50/80 p-5 md:p-6 mb-8 overflow-hidden">
+            <div className="absolute inset-y-0 left-0 w-1.5 bg-green-700" />
+            <p className="pl-3 text-base md:text-lg leading-relaxed font-600 text-green-950">
+              {post.summary}
+            </p>
           </div>
         )}
 
         {/* Body */}
-        <div className="text-muted leading-relaxed whitespace-pre-wrap font-body text-base space-y-4">
+        <div className="text-secondary leading-8 whitespace-pre-wrap font-body text-base md:text-lg">
           {post.body}
         </div>
 
@@ -698,7 +840,7 @@ export function NewsDetailPage() {
             </div>
           )}
         </div>
-      </div>
+      </article>
 
       {/* Related posts */}
       {relatedPosts.length > 0 && (
@@ -812,10 +954,3 @@ export function NotificationsPage() {
     </div>
   )
 }
-// ── About Page ────────────────────────────────────────────────────────────────
-// ── Export detailed pages ───────────────────────────────────────────────────
-// Re-export the detailed implementations imported at the top so that
-// consumers of this module get the full-featured pages rather than the
-// simplified placeholders. The placeholders remain defined above for
-// reference but are not exported.
-export { DetailedAboutPage as AboutPage, DetailedGalleryPage as GalleryPage }

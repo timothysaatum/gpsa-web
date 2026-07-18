@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import {
   Menu, X, Bell, ChevronDown, LogOut, User, Settings,
   BookOpen, Calendar, Heart, Briefcase, Newspaper, Award,
-  Info, Image, MapPin, Mail, Phone, ArrowUpToLine
+  Info, Image, MapPin, Mail, Phone, ArrowUpToLine, UsersRound, LayoutDashboard
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { notificationsApi } from '@/api/services'
@@ -22,6 +22,7 @@ const NAV_LINKS = [
   { to: '/welfare',      label: 'Welfare',       icon: Heart },
   { to: '/opportunities',label: 'Opportunities', icon: Briefcase },
   { to: '/news',         label: 'News',          icon: Newspaper },
+  { to: '/leadership',   label: 'Leadership',    icon: UsersRound },
   { to: '/about',        label: 'About',         icon: Info },
   { to: '/gallery',      label: 'Gallery',       icon: Image },
 ]
@@ -162,6 +163,16 @@ export function Navbar() {
                         <Award className="h-4 w-4 text-green-700" />
                         My Certificates
                       </Link>
+                      {(user.role === 'admin' || user.role === 'exec') && (
+                        <Link
+                          to="/admin/dashboard"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-green-800 hover:bg-cream-dark transition-colors"
+                        >
+                          <LayoutDashboard className="h-4 w-4 text-green-700" />
+                          Admin Dashboard
+                        </Link>
+                      )}
                       <Link
                         to="/settings"
                         onClick={() => setProfileOpen(false)}
@@ -259,6 +270,7 @@ export function Footer() {
       { label: 'Welfare Support', to: '/welfare' },
       { label: 'Opportunities', to: '/opportunities' },
       { label: 'News', to: '/news' },
+      { label: 'Leadership', to: '/leadership' },
     ],
     Resources: [
       { label: 'Exam Questions', to: '/academics?type=exam_questions' },
@@ -271,6 +283,7 @@ export function Footer() {
       { label: 'Register for Events', to: '/events' },
       { label: 'Report an Issue', to: '/welfare' },
       { label: 'Browse Opportunities', to: '/opportunities' },
+      { label: 'Meet Leadership', to: '/leadership' },
       { label: 'Verify Certificate', to: '/certificates/verify' },
     ],
   }

@@ -8,7 +8,7 @@ from datetime import date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, status
-from pydantic import Field
+from pydantic import Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import CurrentUser, require_roles
@@ -29,6 +29,13 @@ class OpportunityCreateRequest(AppModel):
     deadline: date
     external_link: str = Field(max_length=2048)
 
+    @field_validator("external_link")
+    @classmethod
+    def validate_external_link(cls, value: str) -> str:
+        if not value.startswith(("https://", "http://")):
+            raise ValueError("external_link must be an http or https URL")
+        return value
+
 
 class OpportunityUpdateRequest(AppModel):
     title: str | None = Field(default=None, max_length=500)
@@ -39,6 +46,13 @@ class OpportunityUpdateRequest(AppModel):
     deadline: date | None = None
     external_link: str | None = None
     is_published: bool | None = None
+
+    @field_validator("external_link")
+    @classmethod
+    def validate_external_link(cls, value: str | None) -> str | None:
+        if value is not None and not value.startswith(("https://", "http://")):
+            raise ValueError("external_link must be an http or https URL")
+        return value
 
 
 class OpportunityResponse(AppModel):
@@ -69,12 +83,21 @@ async def list_opportunities(
     db: Annotated[AsyncSession, Depends(get_db)],
     opp_type: OpportunityType | None = None,
     include_expired: bool = False,
+    search: str | None = None,
+    sort_by: str | None = None,
+    sort_order: str | None = None,
     offset: int = 0,
     limit: int = 20,
 ) -> PaginatedResponse[OpportunityResponse]:
     svc = OpportunityService(db)
     opps, total = await svc.list_filtered(
-        opp_type=opp_type, include_expired=include_expired, offset=offset, limit=limit
+        opp_type=opp_type,
+        include_expired=include_expired,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        offset=offset,
+        limit=limit,
     )
     return PaginatedResponse(
         items=[OpportunityResponse.model_validate(o) for o in opps],

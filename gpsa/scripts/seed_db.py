@@ -27,16 +27,25 @@ from app.core.logging import configure_logging, get_logger   # Use get_logger fr
 from app.core.security import hash_password
 from app.db.session import AsyncSessionLocal
 from app.models.enums import (
+    ContentType,
     EventStatus,
     EventType,
+    FileType,
+    GalleryCategory,
     NewsCategory,
     OpportunityType,
     ReportStatus,
     ReportType,
+    Trimester,
     UserRole,
     WelfareCategory,
 )
+from app.models.academic_resource import AcademicResource
+from app.models.audit import AuditLog
 from app.models.event import Event, EventRegistration
+from app.models.gallery import GalleryImage
+from app.models.hero_slide import HeroSlide
+from app.models.leadership import Leader, LeadershipTerm
 from app.models.news import NewsPost
 from app.models.opportunity import Opportunity
 from app.models.course import Course
@@ -160,6 +169,86 @@ async def seed_courses(db) -> list[Course]:
     await db.flush()
     logger.info("courses_seeded", count=len(courses))
     return courses
+
+
+async def seed_academic_resources(db, users: dict, courses: list[Course]) -> None:
+    logger.info("seeding_academic_resources")
+    course_by_code = {course.code: course for course in courses}
+    reviewed_at = datetime.now()
+
+    resources_data = [
+        {
+            "title": "Pharmacokinetics Past Questions Pack",
+            "content_type": ContentType.exam_questions,
+            "course": course_by_code["PHRM301"],
+            "level": 300,
+            "trimester": Trimester.first,
+            "file_key": "seed/academic/pharmacokinetics-past-questions.pdf",
+            "file_type": FileType.pdf,
+            "mime_type": "application/pdf",
+            "file_size_bytes": 1_240_000,
+            "duration_mins": None,
+            "is_featured": True,
+            "is_published": True,
+        },
+        {
+            "title": "Clinical Pharmacy Ward Round Guide",
+            "content_type": ContentType.lecture_slides,
+            "course": course_by_code["PHRM401"],
+            "level": 400,
+            "trimester": Trimester.second,
+            "file_key": "seed/academic/clinical-pharmacy-ward-round-guide.pdf",
+            "file_type": FileType.pdf,
+            "mime_type": "application/pdf",
+            "file_size_bytes": 2_850_000,
+            "duration_mins": None,
+            "is_featured": True,
+            "is_published": True,
+        },
+        {
+            "title": "Hospital Pharmacy Practice Orientation Video",
+            "content_type": ContentType.tutorial_videos,
+            "course": course_by_code["PHRM502"],
+            "level": 500,
+            "trimester": Trimester.first,
+            "file_key": "seed/academic/hospital-pharmacy-orientation.mp4",
+            "file_type": FileType.video,
+            "mime_type": "video/mp4",
+            "file_size_bytes": 36_200_000,
+            "duration_mins": 18,
+            "is_featured": False,
+            "is_published": True,
+        },
+        {
+            "title": "Microbiology Lab Report Template",
+            "content_type": ContentType.lab_reports,
+            "course": course_by_code["PHRM203"],
+            "level": 200,
+            "trimester": Trimester.second,
+            "file_key": "seed/academic/microbiology-lab-report-template.docx",
+            "file_type": FileType.doc,
+            "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "file_size_bytes": 420_000,
+            "duration_mins": None,
+            "is_featured": False,
+            "is_published": True,
+        },
+    ]
+
+    for data in resources_data:
+        result = await db.execute(select(AcademicResource).where(AcademicResource.title == data["title"]))
+        if result.scalar_one_or_none():
+            continue
+        course = data.pop("course")
+        db.add(AcademicResource(
+            **data,
+            course_id=course.id,
+            uploaded_by=users["exec"].id,
+            reviewed_by=users["admin"].id,
+            reviewed_at=reviewed_at,
+        ))
+    await db.flush()
+    logger.info("academic_resources_seeded", count=len(resources_data))
 
 
 async def seed_events(db, users: dict) -> list[Event]:
@@ -467,6 +556,168 @@ async def seed_news(db, users: dict) -> None:
     logger.info("news_seeded", count=len(posts_data))
 
 
+async def seed_hero_slides(db) -> None:
+    logger.info("seeding_hero_slides")
+    slides = [
+        {
+            "image_url": "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80",
+            "tag": "GPSA-UDS",
+            "heading": "Pharmacy students",
+            "highlight": "moving forward",
+            "sub": "Access welfare support, academic resources, leadership updates, events, and opportunities from one official portal.",
+            "primary_button_label": "Explore Portal",
+            "primary_button_path": "/academics",
+            "secondary_button_label": "Meet Leadership",
+            "secondary_button_path": "/leadership",
+            "sort_order": 1,
+            "is_active": True,
+        },
+        {
+            "image_url": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1600&q=80",
+            "tag": "PharmaCare",
+            "heading": "Care for students",
+            "highlight": "and community",
+            "sub": "Welfare, outreach, and confidential support channels built around real student needs.",
+            "primary_button_label": "Get Support",
+            "primary_button_path": "/welfare",
+            "secondary_button_label": "View Events",
+            "secondary_button_path": "/events",
+            "sort_order": 2,
+            "is_active": True,
+        },
+        {
+            "image_url": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=1600&q=80",
+            "tag": "Professional Growth",
+            "heading": "Opportunities",
+            "highlight": "for every level",
+            "sub": "Find internships, scholarships, career programs, academic materials, and association news.",
+            "primary_button_label": "See Opportunities",
+            "primary_button_path": "/opportunities",
+            "secondary_button_label": "Read News",
+            "secondary_button_path": "/news",
+            "sort_order": 3,
+            "is_active": True,
+        },
+    ]
+    for data in slides:
+        result = await db.execute(select(HeroSlide).where(HeroSlide.heading == data["heading"]))
+        if not result.scalar_one_or_none():
+            db.add(HeroSlide(**data))
+    await db.flush()
+    logger.info("hero_slides_seeded", count=len(slides))
+
+
+async def seed_gallery(db) -> None:
+    logger.info("seeding_gallery")
+    images = [
+        {
+            "image_url": "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1400&q=80",
+            "thumbnail_url": None,
+            "title": "Student leadership meeting",
+            "description": "Executive and class representatives reviewing student priorities.",
+            "category": GalleryCategory.events.value,
+            "event_date": date.today() - timedelta(days=18),
+            "sort_order": 1,
+        },
+        {
+            "image_url": "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=1400&q=80",
+            "thumbnail_url": None,
+            "title": "Health outreach screening",
+            "description": "PharmaCare community outreach and patient counselling.",
+            "category": GalleryCategory.outreach.value,
+            "event_date": date.today() - timedelta(days=12),
+            "sort_order": 2,
+        },
+        {
+            "image_url": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1400&q=80",
+            "thumbnail_url": None,
+            "title": "Academic practical session",
+            "description": "Students engaging with laboratory learning materials.",
+            "category": GalleryCategory.academic.value,
+            "event_date": date.today() - timedelta(days=9),
+            "sort_order": 3,
+        },
+        {
+            "image_url": "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1400&q=80",
+            "thumbnail_url": None,
+            "title": "Committee planning session",
+            "description": "Portfolio committees planning welfare, academic, and events work.",
+            "category": GalleryCategory.welfare.value,
+            "event_date": date.today() - timedelta(days=5),
+            "sort_order": 4,
+        },
+    ]
+    for data in images:
+        result = await db.execute(select(GalleryImage).where(GalleryImage.title == data["title"]))
+        if not result.scalar_one_or_none():
+            db.add(GalleryImage(**data))
+    await db.flush()
+    logger.info("gallery_seeded", count=len(images))
+
+
+async def seed_leadership(db) -> None:
+    logger.info("seeding_leadership")
+    terms_data = [
+        {
+            "title": "2025/2026 Executive Council",
+            "academic_year": "2025/2026",
+            "start_date": date(2025, 9, 1),
+            "end_date": date(2026, 8, 31),
+            "theme": "Service, accountability, and professional excellence",
+            "summary": "The current administration coordinating academics, welfare, events, opportunities, and member engagement.",
+            "is_current": True,
+            "sort_order": 1,
+            "leaders": [
+                ("Abena Mensah", "President", "Represents GPSA-UDS and leads executive strategy.", "president@gpsauds.org", "+233244100001", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80", 1),
+                ("Kwesi Addo", "Vice President", "Coordinates committee delivery and executive follow-up.", "vicepresident@gpsauds.org", "+233244100002", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80", 2),
+                ("Efua Sarpong", "General Secretary", "Handles records, notices, and official correspondence.", "secretary@gpsauds.org", "+233244100003", "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=800&q=80", 3),
+                ("Daniel Osei", "Financial Secretary", "Manages dues, budgets, and financial reporting.", "finance@gpsauds.org", "+233244100004", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80", 4),
+            ],
+        },
+        {
+            "title": "2024/2025 Executive Council",
+            "academic_year": "2024/2025",
+            "start_date": date(2024, 9, 1),
+            "end_date": date(2025, 8, 31),
+            "theme": "Unity and academic progress",
+            "summary": "A past administration focused on academic resources, welfare reporting, and community outreach.",
+            "is_current": False,
+            "sort_order": 2,
+            "leaders": [
+                ("Nana Owusu", "President", "Led student representation and association partnerships.", "nana.owusu@gpsauds.org", None, "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80", 1),
+                ("Ama Kumi", "Vice President", "Supported committee supervision and program delivery.", "ama.kumi@gpsauds.org", None, "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=800&q=80", 2),
+                ("Kojo Frimpong", "Academic Affairs", "Expanded shared learning material and exam support.", "academic@gpsauds.org", None, "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?auto=format&fit=crop&w=800&q=80", 3),
+            ],
+        },
+    ]
+
+    for term_data in terms_data:
+        leaders = term_data.pop("leaders")
+        result = await db.execute(select(LeadershipTerm).where(LeadershipTerm.academic_year == term_data["academic_year"]))
+        term = result.scalar_one_or_none()
+        if term is None:
+            term = LeadershipTerm(**term_data)
+            db.add(term)
+            await db.flush()
+        for full_name, office, bio, email, phone, photo_url, sort_order in leaders:
+            result = await db.execute(select(Leader).where(Leader.term_id == term.id, Leader.office == office))
+            if result.scalar_one_or_none():
+                continue
+            db.add(Leader(
+                term_id=term.id,
+                full_name=full_name,
+                office=office,
+                bio=bio,
+                email=email,
+                phone=phone,
+                photo_url=photo_url,
+                sort_order=sort_order,
+                is_active=True,
+            ))
+    await db.flush()
+    logger.info("leadership_seeded", count=len(terms_data))
+
+
 async def seed_welfare(db) -> None:
     logger.info("seeding_welfare")
 
@@ -521,10 +772,65 @@ async def seed_welfare(db) -> None:
     ]
 
     for data in reports_data:
-        db.add(WelfareReport(**data))
+        result = await db.execute(select(WelfareReport).where(WelfareReport.description == data["description"]))
+        if not result.scalar_one_or_none():
+            db.add(WelfareReport(**data))
 
     await db.flush()
     logger.info("welfare_seeded")
+
+
+async def seed_audit_logs(db, users: dict) -> None:
+    logger.info("seeding_audit_logs")
+    logs = [
+        {
+            "actor_id": users["admin"].id,
+            "action": "CREATE",
+            "entity_type": "news_post",
+            "old_values": None,
+            "new_values": {"title": "MYC 2025 Registration Closes Tomorrow"},
+            "ip_address": "127.0.0.1",
+            "user_agent": "Seed Script",
+            "request_id": "seed-news-create",
+        },
+        {
+            "actor_id": users["exec"].id,
+            "action": "UPLOAD_PHOTO",
+            "entity_type": "leader",
+            "old_values": None,
+            "new_values": {"office": "President"},
+            "ip_address": "127.0.0.1",
+            "user_agent": "Seed Script",
+            "request_id": "seed-leadership-photo",
+        },
+        {
+            "actor_id": users["admin"].id,
+            "action": "PUBLISH",
+            "entity_type": "opportunity",
+            "old_values": {"is_published": False},
+            "new_values": {"is_published": True},
+            "ip_address": "127.0.0.1",
+            "user_agent": "Seed Script",
+            "request_id": "seed-opportunity-publish",
+        },
+        {
+            "actor_id": users["exec"].id,
+            "action": "RESOLVE_WELFARE_REPORT",
+            "entity_type": "welfare_report",
+            "old_values": {"status": "pending"},
+            "new_values": {"status": "in_review"},
+            "ip_address": "127.0.0.1",
+            "user_agent": "Seed Script",
+            "request_id": "seed-welfare-review",
+        },
+    ]
+
+    for data in logs:
+        result = await db.execute(select(AuditLog).where(AuditLog.request_id == data["request_id"]))
+        if not result.scalar_one_or_none():
+            db.add(AuditLog(**data))
+    await db.flush()
+    logger.info("audit_logs_seeded", count=len(logs))
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
@@ -537,11 +843,16 @@ async def seed() -> None:
     async with AsyncSessionLocal() as db:
         try:
             users = await seed_users(db)
-            await seed_courses(db)
+            courses = await seed_courses(db)
+            await seed_academic_resources(db, users, courses)
             await seed_events(db, users)
             await seed_opportunities(db, users)
             await seed_news(db, users)
+            await seed_hero_slides(db)
+            await seed_gallery(db)
+            await seed_leadership(db)
             await seed_welfare(db)
+            await seed_audit_logs(db, users)
             await db.commit()
             print(
                 "\n✅  Database seeded successfully.\n\n"
@@ -549,6 +860,10 @@ async def seed() -> None:
                 "   Admin  → admin@gpsa-uds.edu.gh  / Admin1234!\n"
                 "   Exec   → exec@gpsa-uds.edu.gh   / Exec1234!\n"
                 "   Student→ kwame@student.uds.edu.gh / Student1234!\n"
+                "\n"
+                "   Admin site:\n"
+                "   http://localhost:3000/admin/dashboard\n"
+                "   http://127.0.0.1:3001/admin/dashboard if Vite is using port 3001\n"
             )
         except Exception as exc:
             await db.rollback()

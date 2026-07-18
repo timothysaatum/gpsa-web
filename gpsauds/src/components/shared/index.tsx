@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Calendar, MapPin, ExternalLink, ArrowRight, Star } from 'lucide-react'
+import { Building2, Calendar, Clock3, MapPin, ExternalLink, ArrowRight, Star } from 'lucide-react'
 import type { EventSummary, Opportunity, NewsPostSummary } from '@/types'
 import { Badge, Button, Card } from '@/components/ui'
 import {
@@ -65,11 +65,11 @@ function DeadlineBadge({ deadline }: { deadline: string }) {
 // ── Event card ────────────────────────────────────────────────────────────────
 
 const EVENT_BG: Record<string, string> = {
-  academic:   'bg-green-gradient',
-  welfare:    'bg-gold-50',
-  outreach:   'bg-green-gradient',
-  social:     'bg-cream-dark',
-  conference: 'bg-gold-50',
+  academic:   'bg-green-700',
+  welfare:    'bg-amber-500',
+  outreach:   'bg-emerald-600',
+  social:     'bg-blue-600',
+  conference: 'bg-amber-500',
 }
 
 interface EventCardProps {
@@ -87,59 +87,56 @@ export function EventCard({ event, onRegister }: EventCardProps) {
   return (
     <div
       onClick={() => navigate(`/events/${event.id}`)}
-      className="group relative bg-white rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-300 border border-cream-dark hover:-translate-y-1 hover:shadow-xl"
+      className="group relative overflow-hidden rounded-[1.35rem] bg-white flex flex-col cursor-pointer transition-all duration-300 border border-white shadow-[0_18px_45px_rgba(16,24,40,0.08)] hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(0,77,0,0.16)]"
     >
-      {/* Top colour bar */}
-      <div className={cn('h-1.5', EVENT_BG[event.event_type] ?? 'bg-cream-dark')} />
+      <div className={cn('absolute inset-x-0 top-0 h-1.5', EVENT_BG[event.event_type] ?? 'bg-green-700')} />
+      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-cream-dark to-transparent opacity-80" />
 
-      <div className="p-5 flex flex-col gap-3 flex-1">
-        {/* Date badge + type */}
-        <div className="flex items-start justify-between gap-3">
-          {/* Calendar-style date badge */}
-          <div className="flex-shrink-0 w-12 h-14 rounded-xl overflow-hidden border border-cream-dark flex flex-col items-center justify-center bg-white">
-            <span className="text-[10px] font-700 uppercase text-muted leading-none mt-1">{month}</span>
-            <span className="text-lg font-bold text-deep leading-none">{day}</span>
+      <div className="relative p-5 sm:p-6 flex flex-col gap-5 flex-1">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white border border-cream-dark shadow-sm flex flex-col items-center justify-center">
+              <span className="text-[10px] font-800 uppercase text-green-700 leading-none">{month}</span>
+              <span className="text-lg font-800 text-deep leading-none">{day}</span>
+            </div>
+            {event.banner_emoji && (
+              <div className="h-12 w-12 rounded-2xl bg-green-50 flex items-center justify-center text-3xl leading-none transition-transform duration-300 group-hover:scale-105">
+                {event.banner_emoji}
+              </div>
+            )}
           </div>
 
-          {/* Tags */}
           <div className="flex flex-wrap gap-1.5 justify-end">
             <Badge variant="blue">{EVENT_TYPE_LABELS[event.event_type] ?? event.event_type}</Badge>
             <EventUrgencyBadge start={event.start_datetime} />
           </div>
         </div>
 
-        {/* Emoji */}
-        {event.banner_emoji && (
-          <div className="text-3xl">{event.banner_emoji}</div>
-        )}
+        <div className="min-h-[4.5rem]">
+          <h3 className="font-display text-2xl font-bold text-deep leading-tight line-clamp-2 group-hover:text-green-700 transition-colors">
+            {event.title}
+          </h3>
+        </div>
 
-        <h3 className="font-display font-bold text-deep leading-snug line-clamp-2 group-hover:text-green-700 transition-colors">
-          {event.title}
-        </h3>
-
-        <div className="space-y-1.5 mt-auto">
-          <p className="flex items-center gap-1.5 text-xs text-muted">
-            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+        <div className="space-y-2.5 mt-auto rounded-2xl bg-cream-dark/70 p-3.5">
+          <p className="flex items-center gap-2 text-xs text-secondary">
+            <Calendar className="h-3.5 w-3.5 flex-shrink-0 text-green-700" />
             {formatDateTime(event.start_datetime)}
           </p>
-          <p className="flex items-center gap-1.5 text-xs text-muted">
-            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+          <p className="flex items-center gap-2 text-xs text-secondary">
+            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-green-700" />
             <span className="truncate">{event.location}</span>
           </p>
         </div>
 
-        <div className="pt-3 border-t border-cream-dark mt-auto">
-          {event.status !== 'past' ? (
-            <span
-              className="inline-flex items-center gap-1 text-xs font-600 text-green-700 group-hover:text-green-600 transition-colors"
-              onClick={(e) => { e.stopPropagation(); onRegister?.() }}
-            >
-              View event
-              <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5" />
-            </span>
-          ) : (
-            <span className="text-xs text-muted font-500">Past event</span>
-          )}
+        <div className="pt-1">
+          <span
+            className="inline-flex items-center gap-2 text-sm font-800 text-green-900 group-hover:text-green-600 transition-colors"
+            onClick={(e) => { e.stopPropagation(); onRegister?.() }}
+          >
+            {event.status !== 'past' ? 'View event' : 'Past event'}
+            {event.status !== 'past' && <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />}
+          </span>
         </div>
       </div>
     </div>
@@ -181,60 +178,66 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
   const style = OPP_TYPE_STYLE[opportunity.opp_type] ?? OPP_TYPE_STYLE.internship
 
   return (
-    <Card padding="none" className="flex flex-col hover:shadow-card-md transition-all duration-300 hover:-translate-y-0.5 overflow-hidden">
-      <div className={cn('h-1', style.bar)} />
-      <div className="p-5 flex flex-col gap-3 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl flex-shrink-0">{style.icon}</span>
-            <div>
-              <span className={cn('text-[11px] font-700 uppercase tracking-wider', style.badge.split(' ')[0] === 'badge-blue' ? 'text-blue-700' : style.badge.split(' ')[0] === 'badge-gold' ? 'text-yellow-700' : style.badge.split(' ')[0] === 'badge-purple' ? 'text-purple-700' : 'text-green-700')}>
+    <Card padding="none" className="group relative flex flex-col overflow-hidden rounded-[1.35rem] border-white bg-white shadow-[0_18px_45px_rgba(16,24,40,0.08)] hover:shadow-[0_26px_70px_rgba(0,77,0,0.15)] transition-all duration-300 hover:-translate-y-1">
+      <div className={cn('absolute left-0 top-0 h-full w-1.5', style.bar)} />
+      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white to-cream-dark/50" />
+      <div className="relative p-5 sm:p-6 flex flex-col gap-4 flex-1">
+        <div className="flex items-start justify-between gap-3 pl-1">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="h-12 w-12 rounded-2xl bg-cream-dark flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">{style.icon}</span>
+            <div className="min-w-0">
+              <p className={cn('text-[11px] font-800 uppercase tracking-widest', style.badge.split(' ')[0] === 'badge-blue' ? 'text-blue-700' : style.badge.split(' ')[0] === 'badge-gold' ? 'text-yellow-700' : style.badge.split(' ')[0] === 'badge-purple' ? 'text-purple-700' : 'text-green-700')}>
                 {OPP_TYPE_LABELS[opportunity.opp_type]}
-              </span>
+              </p>
+              <p className="text-xs text-muted truncate">Opportunity</p>
             </div>
           </div>
-          {!opportunity.is_active && (
-            <Badge variant="gray">Expired</Badge>
-          )}
+          {!opportunity.is_active && <Badge variant="gray">Expired</Badge>}
         </div>
 
-        <h3 className="font-display font-bold text-deep leading-snug line-clamp-2 text-lg">
-          {opportunity.title}
-        </h3>
+        <div className="pl-1">
+          <h3 className="font-display text-2xl font-bold text-deep leading-tight line-clamp-2 group-hover:text-green-700 transition-colors">
+            {opportunity.title}
+          </h3>
+          <p className="mt-2 flex items-center gap-2 text-sm text-secondary font-600">
+            <Building2 className="h-4 w-4 text-green-700 flex-shrink-0" />
+            <span className="truncate">{opportunity.organization}</span>
+          </p>
+        </div>
 
-        <p className="text-sm text-muted font-500">🏢 {opportunity.organization}</p>
-
-        <p className="text-sm text-muted line-clamp-2 leading-relaxed">
+        <p className="pl-1 text-sm text-muted line-clamp-3 leading-relaxed">
           {opportunity.description}
         </p>
 
         {opportunity.location && (
-          <p className="flex items-center gap-1.5 text-xs text-muted">
-            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-            {opportunity.location}
+          <p className="pl-1 flex items-center gap-2 text-xs text-secondary">
+            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-green-700" />
+            <span className="truncate">{opportunity.location}</span>
           </p>
         )}
 
-        <div className="flex items-center justify-between mt-auto pt-3 border-t border-cream-dark">
-          <div className="flex items-center gap-3">
+        <div className="mt-auto rounded-2xl bg-cream-dark/80 p-4">
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] text-muted uppercase tracking-wide font-700 mb-1">Deadline</p>
+              <p className="text-[10px] text-muted uppercase tracking-widest font-800 mb-1">Deadline</p>
               <DeadlineBadge deadline={opportunity.deadline} />
             </div>
-            <DaysRemaining deadline={opportunity.deadline} />
+            <div className="text-right">
+              <DaysRemaining deadline={opportunity.deadline} />
+              <p className="text-xs text-muted mt-1">{formatDate(opportunity.deadline)}</p>
+            </div>
           </div>
-          <p className="text-xs text-muted">{formatDate(opportunity.deadline)}</p>
         </div>
       </div>
 
       {opportunity.is_active && (
-        <div className="px-5 pb-5">
+        <div className="relative px-5 sm:px-6 pb-5 sm:pb-6">
           <Button
             variant="primary"
             size="sm"
-            className="w-full"
+            className="w-full rounded-2xl"
             rightIcon={<ExternalLink className="h-3.5 w-3.5" />}
-            onClick={onApply}
+            onClick={(e) => { e.stopPropagation(); onApply?.() }}
           >
             Apply Now
           </Button>
@@ -263,22 +266,35 @@ interface NewsCardProps {
 export function NewsCard({ post, onClick }: NewsCardProps) {
   const style = CATEGORY_STYLE[post.category] ?? CATEGORY_STYLE.general
   return (
-    <Card hover padding="none" onClick={onClick} className="overflow-hidden flex flex-col">
-      <div className={cn('h-1.5', style.bar)} />
-      <div className="p-5 flex flex-col gap-2 flex-1">
-        <div className="flex items-center gap-2">
-          <span className={cn('w-2 h-2 rounded-full', style.dot)} />
-          <span className={cn('text-[11px] font-700 uppercase tracking-wider', style.text)}>
+    <Card hover padding="none" onClick={onClick} className="group relative overflow-hidden flex flex-col rounded-[1.35rem] border-white bg-white shadow-[0_18px_45px_rgba(16,24,40,0.08)] hover:shadow-[0_26px_70px_rgba(0,77,0,0.15)]">
+      <div className={cn('absolute inset-x-5 top-0 h-1.5 rounded-b-full', style.bar)} />
+      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-cream-dark/80 to-transparent" />
+      <div className="relative p-5 sm:p-6 flex flex-col gap-5 flex-1 min-h-[300px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className={cn('inline-flex items-center gap-2 text-[11px] font-800 uppercase tracking-widest', style.text)}>
+            <span className={cn('w-2 h-2 rounded-full', style.dot)} />
             {NEWS_CATEGORY_LABELS[post.category] ?? post.category}
           </span>
-          {post.is_urgent && <span className="text-[11px] font-700 text-red-600">● Urgent</span>}
+          {post.is_urgent && <Badge variant="red">Urgent</Badge>}
         </div>
-        <h3 className="font-display font-bold text-deep leading-snug line-clamp-2">
-          {post.title}
-        </h3>
-        {post.published_at && (
-          <span className="text-xs text-muted mt-auto">{formatDate(post.published_at)}</span>
-        )}
+        <div>
+          <h3 className="font-display text-2xl font-bold text-deep leading-tight line-clamp-3 group-hover:text-green-700 transition-colors">
+            {post.title}
+          </h3>
+          <p className="mt-3 text-sm text-muted leading-relaxed line-clamp-3">
+            {post.summary}
+          </p>
+        </div>
+        <div className="mt-auto rounded-2xl bg-cream-dark/70 p-3.5 flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2 text-xs text-secondary">
+            <Clock3 className="h-3.5 w-3.5 text-green-700" />
+            {post.published_at ? formatDate(post.published_at) : 'Draft'}
+          </span>
+          <span className="inline-flex items-center gap-1 text-xs font-800 text-green-800 group-hover:text-green-600">
+            Read
+            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+          </span>
+        </div>
       </div>
     </Card>
   )

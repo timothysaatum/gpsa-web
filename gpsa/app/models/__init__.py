@@ -37,6 +37,7 @@ from app.models.event import Event, EventRegistration
 from app.models.feedback import Feedback
 from app.models.gallery import GalleryImage
 from app.models.hero_slide import HeroSlide
+from app.models.leadership import Leader, LeadershipTerm
 from app.models.news import NewsPost
 from app.models.notification import Notification
 from app.models.opportunity import Opportunity
@@ -73,6 +74,9 @@ __all__ = [
     "Certificate",
     # Hero
     "HeroSlide",
+    # Leadership
+    "LeadershipTerm",
+    "Leader",
     # Feedback
     "Feedback",
     # Enums (re-exported for convenience)

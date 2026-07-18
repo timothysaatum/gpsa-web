@@ -135,6 +135,14 @@ async def update_event(
     event = await repo.get_by_id_or_404(event_id)
     updates = payload.model_dump(exclude_none=True)
 
+    start_datetime = updates.get("start_datetime", event.start_datetime)
+    end_datetime = updates.get("end_datetime", event.end_datetime)
+    if end_datetime and end_datetime <= start_datetime:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="end_datetime must be after start_datetime",
+        )
+
     # Publishing requires admin
     if "status" in updates and not can_publish_event(current_user):
         raise HTTPException(
@@ -215,13 +223,20 @@ async def register_for_event(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="You are already registered for this event.",
             )
+    elif payload.contact:
+        existing = await reg_repo.get_by_event_and_contact(event_id, payload.contact.strip())
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This contact is already registered for this event.",
+            )
 
     registration = await reg_repo.create({
         "event_id": event_id,
         "user_id": current_user.id if current_user else None,
         "full_name": payload.full_name,
         "level": payload.level,
-        "contact": payload.contact,
+        "contact": payload.contact.strip() if payload.contact else None,
         "notes": payload.notes,
         "registered_at": datetime.now(UTC),
     })

@@ -132,6 +132,30 @@ async def test_admin(db_session: AsyncSession):
 
 
 @pytest_asyncio.fixture
+async def test_exec(db_session: AsyncSession):
+    from app.core.security import hash_password
+    from app.models.enums import UserRole
+    from app.models.user import User
+
+    existing = await db_session.scalar(select(User).where(User.email == "exec@test.com"))
+    if existing:
+        return existing
+
+    user = User(
+        full_name="Test Exec",
+        email="exec@test.com",
+        password_hash=hash_password("Exec1234!"),
+        role=UserRole.exec,
+        email_verified=True,
+        level=500,
+        student_id="EXEC001",
+    )
+    db_session.add(user)
+    await db_session.flush()
+    return user
+
+
+@pytest_asyncio.fixture
 async def student_token(test_student) -> str:
     from app.core.security import create_access_token
     return create_access_token(test_student.id, extra={"role": test_student.role})
@@ -141,6 +165,12 @@ async def student_token(test_student) -> str:
 async def admin_token(test_admin) -> str:
     from app.core.security import create_access_token
     return create_access_token(test_admin.id, extra={"role": test_admin.role})
+
+
+@pytest_asyncio.fixture
+async def exec_token(test_exec) -> str:
+    from app.core.security import create_access_token
+    return create_access_token(test_exec.id, extra={"role": test_exec.role})
 
 
 def auth_headers(token: str) -> dict[str, str]:

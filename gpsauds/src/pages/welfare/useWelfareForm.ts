@@ -23,7 +23,7 @@ export function useWelfareForm() {
 
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
-    defaultValues: { is_anonymous: false, report_type: 'issue' },
+    defaultValues: { category: 'welfare', is_anonymous: false, report_type: 'issue' },
   })
 
   const mutation = useMutation({

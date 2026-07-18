@@ -40,6 +40,12 @@ class EventUpdateRequest(AppModel):
     agenda: dict | None = None
     speakers: list | None = None
 
+    @model_validator(mode="after")
+    def validate_dates(self) -> "EventUpdateRequest":
+        if self.start_datetime and self.end_datetime and self.end_datetime <= self.start_datetime:
+            raise ValueError("end_datetime must be after start_datetime")
+        return self
+
 
 class EventResponse(AppModel):
     id: uuid.UUID

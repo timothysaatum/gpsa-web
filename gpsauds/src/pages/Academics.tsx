@@ -1,16 +1,20 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import {
   Search, Download, Eye, Star, ChevronLeft, ChevronRight,
-  Upload, BookOpen, Film, FileText, Beaker, Globe, SlidersHorizontal, X,
+  Upload, BookOpen, Film, FileText, Beaker, Globe, SlidersHorizontal, X, ArrowLeft, AlertCircle, CheckCircle,
 } from 'lucide-react'
 import { academicsApi } from '@/api/services'
+import { extractError } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
 import { Badge, Button, EmptyState, Skeleton } from '@/components/ui'
 import { PageHeader } from '@/components/shared'
 import { cn, TRIMESTER_LABELS, formatFileSize, CONTENT_TYPE_LABELS } from '@/utils'
-import type { ContentType, Trimester, Course } from '@/types'
+import type { AcademicResource, ContentType, Trimester, Course } from '@/types'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -495,5 +499,266 @@ export function AcademicsPage() {
         )}
       </div>
     </>
+  )
+}
+
+// ── Resource detail ───────────────────────────────────────────────────────────
+
+export function AcademicResourceDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+
+  const { data: resource, isLoading, isError, refetch } = useQuery({
+    queryKey: ['academic-resources', id],
+    queryFn: () => academicsApi.getResource(id!),
+    enabled: Boolean(id),
+  })
+
+  if (isLoading) {
+    return (
+      <>
+        <Breadcrumbs />
+        <div className="section-container section-padding">
+          <ResourceCardSkeleton />
+        </div>
+      </>
+    )
+  }
+
+  if (isError || !resource) {
+    return (
+      <>
+        <Breadcrumbs />
+        <EmptyState
+          icon="📚"
+          title="Resource not found"
+          description="The resource may have been removed or is no longer published."
+          action={<Button variant="primary" size="sm" onClick={() => refetch()}>Retry</Button>}
+        />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <Breadcrumbs />
+      <PageHeader title={resource.title} subtitle={resource.course?.name ?? `Level ${resource.level} resource`}>
+        <Button variant="outline-white" size="md" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => navigate('/academics')}>
+          Back to Resources
+        </Button>
+      </PageHeader>
+
+      <div className="section-container section-padding">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 card p-6 sm:p-8">
+            <div className="flex items-start gap-4 mb-6">
+              <ResourceIcon content_type={resource.content_type} className="w-14 h-14" />
+              <div className="min-w-0">
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  <Badge variant="green">Level {resource.level}</Badge>
+                  <Badge variant="blue">{TRIMESTER_LABELS[resource.trimester]}</Badge>
+                  <Badge variant="gray">{resource.file_type.toUpperCase()}</Badge>
+                  {resource.is_featured && <Badge variant="gold">Best Sample</Badge>}
+                </div>
+                <h2 className="font-display text-2xl font-bold text-deep leading-tight">{resource.title}</h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <DetailItem label="Course" value={resource.course?.name ?? 'Unassigned'} />
+              <DetailItem label="Resource Type" value={CONTENT_TYPE_LABELS[resource.content_type] ?? resource.content_type} />
+              <DetailItem label="Trimester" value={TRIMESTER_LABELS[resource.trimester]} />
+              <DetailItem label="File Size" value={formatFileSize(resource.file_size_bytes)} />
+              {resource.duration_mins && <DetailItem label="Duration" value={`${resource.duration_mins} min`} />}
+            </div>
+          </div>
+
+          <div className="card p-6 h-fit">
+            <h3 className="font-display text-xl font-bold text-green-700 mb-4">Access Resource</h3>
+            {resource.download_url ? (
+              <div className="space-y-3">
+                <a href={resource.download_url} target="_blank" rel="noreferrer" className="btn-lg btn-outline w-full flex items-center justify-center gap-2">
+                  <Eye className="h-4 w-4" /> View
+                </a>
+                <a href={resource.download_url} download className="btn-lg btn-primary w-full flex items-center justify-center gap-2">
+                  <Download className="h-4 w-4" /> Download
+                </a>
+              </div>
+            ) : (
+              <p className="text-sm text-muted">This resource is not available for download yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-cream-dark p-4">
+      <p className="text-[11px] font-700 uppercase tracking-wide text-muted mb-1">{label}</p>
+      <p className="font-600 text-deep">{value}</p>
+    </div>
+  )
+}
+
+// ── Upload page ───────────────────────────────────────────────────────────────
+
+const uploadSchema = z.object({
+  title: z.string().min(3, 'Title is required'),
+  content_type: z.enum(['exam_questions', 'lecture_slides', 'tutorial_videos', 'lab_reports', 'field_materials']),
+  course_id: z.string().min(1, 'Course is required'),
+  level: z.string().min(1, 'Level is required'),
+  trimester: z.enum(['first', 'second', 'third']),
+  duration_mins: z.string().optional(),
+  is_featured: z.boolean().default(false),
+  file: z.instanceof(FileList).refine((files) => files.length > 0, 'File is required'),
+})
+type UploadForm = z.infer<typeof uploadSchema>
+
+export function AcademicUploadPage() {
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  const canUpload = user && (user.role === 'exec' || user.role === 'admin')
+  const [done, setDone] = useState<AcademicResource | null>(null)
+
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<UploadForm>({
+    resolver: zodResolver(uploadSchema),
+    defaultValues: { content_type: 'lecture_slides', trimester: 'first', is_featured: false },
+  })
+
+  const selectedLevel = watch('level')
+  const { data: coursesData } = useQuery({
+    queryKey: ['courses', selectedLevel || 'all'],
+    queryFn: () => academicsApi.listCourses(selectedLevel ? parseInt(selectedLevel) : undefined),
+    staleTime: 10 * 60 * 1000,
+  })
+  const courses = coursesData ?? []
+
+  const mutation = useMutation({
+    mutationFn: (values: UploadForm) => {
+      const formData = new FormData()
+      formData.append('file', values.file[0])
+      formData.append('title', values.title)
+      formData.append('content_type', values.content_type)
+      formData.append('course_id', values.course_id)
+      formData.append('level', values.level)
+      formData.append('trimester', values.trimester)
+      if (values.duration_mins) formData.append('duration_mins', values.duration_mins)
+      formData.append('is_featured', String(values.is_featured))
+      return academicsApi.uploadResource(formData)
+    },
+    onSuccess: (resource) => {
+      setDone(resource)
+      qc.invalidateQueries({ queryKey: ['academic-resources'] })
+    },
+  })
+
+  if (!canUpload) {
+    return (
+      <EmptyState
+        icon="🔒"
+        title="Upload access required"
+        description="Only GPSA-UDS executives and admins can upload academic resources."
+        action={<Button variant="primary" onClick={() => navigate('/academics')}>Back to Academics</Button>}
+      />
+    )
+  }
+
+  return (
+    <>
+      <Breadcrumbs />
+      <PageHeader title="Upload Resource" subtitle="Share vetted academic material with GPSA-UDS students." />
+      <div className="section-container section-padding max-w-3xl">
+        <div className="card p-6 sm:p-8">
+          {done ? (
+            <div className="text-center py-8">
+              <CheckCircle className="h-14 w-14 text-green-700 mx-auto mb-4" />
+              <h2 className="font-display text-2xl font-bold text-green-700 mb-2">Resource uploaded</h2>
+              <p className="text-sm text-muted mb-6">
+                {done.is_published ? 'It is now published.' : 'It is pending admin review before publication.'}
+              </p>
+              <Button variant="primary" onClick={() => navigate('/academics')}>Back to Academics</Button>
+            </div>
+          ) : (
+            <>
+              {mutation.error && (
+                <div className="mb-5 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl p-3.5 text-sm text-red-600">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  {extractError(mutation.error)}
+                </div>
+              )}
+              <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="space-y-5">
+                <div>
+                  <label className="form-label">Title *</label>
+                  <input {...register('title')} className={cn('form-input', errors.title && 'form-input-error')} />
+                  {errors.title && <p className="form-error">{errors.title.message}</p>}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormSelect label="Type *" error={errors.content_type?.message}>
+                    <select {...register('content_type')} className={cn('form-select', errors.content_type && 'form-input-error')}>
+                      {CONTENT_TABS.filter((t) => t.value !== 'all').map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </FormSelect>
+                  <FormSelect label="Level *" error={errors.level?.message}>
+                    <select {...register('level')} className={cn('form-select', errors.level && 'form-input-error')}>
+                      <option value="">Select level</option>
+                      {[100, 200, 300, 400, 500, 600].map((l) => <option key={l} value={l}>Level {l}</option>)}
+                    </select>
+                  </FormSelect>
+                  <FormSelect label="Course *" error={errors.course_id?.message}>
+                    <select {...register('course_id')} className={cn('form-select', errors.course_id && 'form-input-error')}>
+                      <option value="">Select course</option>
+                      {courses.map((c) => <option key={c.id} value={c.id}>{c.name}{c.code ? ` (${c.code})` : ''}</option>)}
+                    </select>
+                  </FormSelect>
+                  <FormSelect label="Trimester *" error={errors.trimester?.message}>
+                    <select {...register('trimester')} className={cn('form-select', errors.trimester && 'form-input-error')}>
+                      <option value="first">1st Trimester</option>
+                      <option value="second">2nd Trimester</option>
+                      <option value="third">3rd Trimester</option>
+                    </select>
+                  </FormSelect>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Duration Minutes</label>
+                    <input {...register('duration_mins')} type="number" min="1" className="form-input" placeholder="For videos" />
+                  </div>
+                  <label className="flex items-end gap-3 pb-3 cursor-pointer">
+                    <input {...register('is_featured')} type="checkbox" className="h-4 w-4" />
+                    <span className="text-sm font-600 text-deep">Mark as best sample</span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="form-label">File *</label>
+                  <input {...register('file')} type="file" className={cn('form-input', errors.file && 'form-input-error')} />
+                  {errors.file && <p className="form-error">{errors.file.message as string}</p>}
+                </div>
+
+                <Button type="submit" variant="primary" size="lg" loading={mutation.isPending} className="w-full">
+                  Upload Resource
+                </Button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
+function FormSelect({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="form-label">{label}</label>
+      {children}
+      {error && <p className="form-error">{error}</p>}
+    </div>
   )
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { X, ChevronLeft, ChevronRight, ZoomIn, Calendar} from 'lucide-react'
 import { galleryApi } from '@/api/services'
-import { Button } from '@/components/ui'
+import { Button, EmptyState } from '@/components/ui'
 import { PageHeader } from '@/components/shared'
 import { cn } from '@/utils'
 import type { GalleryCategory, GalleryItem } from '@/types'
@@ -223,7 +223,7 @@ function Lightbox({
       >
         {hasPhoto ? (
           <img
-            src={item.thumbnail_url ?? item.image_url}
+            src={item.image_url}
             alt={item.title}
             className="w-full object-contain"
             style={{ maxHeight: '80vh' }}
@@ -296,19 +296,29 @@ export function GalleryPage() {
   const [lightboxIndex, setLightboxIndex]   = useState<number | null>(null)
   const [visibleCount, setVisibleCount]     = useState(LOAD_MORE_STEP)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['gallery', 'list'],
-    queryFn: () => galleryApi.list(),
+  const { data: countData } = useQuery({
+    queryKey: ['gallery', 'counts'],
+    queryFn: () => galleryApi.list({ limit: 500 }),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['gallery', 'list', activeCategory, visibleCount],
+    queryFn: () => galleryApi.list({
+      category: activeCategory !== 'all' ? activeCategory : undefined,
+      limit: visibleCount,
+    }),
+    staleTime: 2 * 60 * 1000,
   })
   const allItems = Array.isArray(data) ? data : []
+  const countItems = Array.isArray(countData) ? countData : []
 
-  // Filter
-  const filtered = activeCategory === 'all'
-    ? allItems
-    : allItems.filter((g) => g.category === activeCategory)
-
-  const visible = filtered.slice(0, visibleCount)
-  const hasMore = visibleCount < filtered.length
+  const filtered = allItems
+  const visible = filtered
+  const filteredTotal = activeCategory === 'all'
+    ? countItems.length
+    : countItems.filter((g) => g.category === activeCategory).length
+  const hasMore = visible.length < filteredTotal
 
   // Reset visible count when filter changes
   const handleCategoryChange = (cat: GalleryCategory | 'all') => {
@@ -331,8 +341,8 @@ export function GalleryPage() {
   // Count per category for the filter bar
   const countFor = (cat: GalleryCategory | 'all') =>
     cat === 'all'
-      ? allItems.length
-      : allItems.filter((g) => g.category === cat).length
+      ? countItems.length
+      : countItems.filter((g) => g.category === cat).length
 
   return (
     <>
@@ -375,7 +385,7 @@ export function GalleryPage() {
 
           {/* Result count — right-aligned */}
           <p className="ml-auto self-center text-sm text-muted hidden sm:block">
-            {filtered.length} {filtered.length === 1 ? 'photo' : 'photos'}
+            {filteredTotal} {filteredTotal === 1 ? 'photo' : 'photos'}
           </p>
         </div>
 
@@ -384,6 +394,13 @@ export function GalleryPage() {
           <div className="flex items-center justify-center py-20">
             <div className="h-8 w-8 rounded-full border-2 border-green-600 border-t-transparent animate-spin" />
           </div>
+        ) : isError ? (
+          <EmptyState
+            icon="⚠️"
+            title="Failed to load gallery"
+            description="Something went wrong. Please try again."
+            action={<Button variant="primary" size="sm" onClick={() => refetch()}>Retry</Button>}
+          />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <span className="text-5xl mb-5">🖼️</span>
@@ -411,7 +428,7 @@ export function GalleryPage() {
                   Load More Photos
                 </Button>
                 <p className="text-xs text-muted">
-                  Showing {visible.length} of {filtered.length}
+                  Showing {visible.length} of {filteredTotal}
                 </p>
               </div>
             )}

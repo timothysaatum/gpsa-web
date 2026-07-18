@@ -133,6 +133,12 @@ api.interceptors.response.use(
 
 export function extractError(error: unknown): string {
   if (axios.isAxiosError(error)) {
+    if (!error.response) {
+      return 'Cannot reach the API server. Please make sure the backend is running and try again.'
+    }
+    if (error.response.status >= 500) {
+      return 'The server hit an unexpected error. Please try again, or check the API logs if this is a local environment.'
+    }
     const data = error.response?.data
     if (typeof data?.detail === 'string') return data.detail
     if (Array.isArray(data?.errors)) {

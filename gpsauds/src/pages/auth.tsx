@@ -7,7 +7,7 @@ import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { authApi } from '@/api/services'
 import { useAuthStore } from '@/store/authStore'
-import { extractError } from '@/api/client'
+import { extractError, tokenStorage } from '@/api/client'
 import { Button } from '@/components/ui'
 import { cn } from '@/utils'
 
@@ -99,6 +99,8 @@ export function LoginPage() {
   const mutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: async (tokens) => {
+      tokenStorage.setAccess(tokens.access_token)
+      tokenStorage.setRefresh(tokens.refresh_token)
       const user = await authApi.me()
       login(tokens.access_token, tokens.refresh_token, user)
       navigate(from, { replace: true })
