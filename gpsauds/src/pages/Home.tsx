@@ -128,9 +128,9 @@ function Hero() {
   }, [current, go, slides.length])
 
   return (
-    <section className="pb-16 lg:pb-24 pt-8 lg:pt-12 px-5 sm:px-8 lg:px-10">
+    <section className="pb-16 lg:pb-24 pt-6 sm:pt-8 lg:pt-12 px-3 sm:px-8 lg:px-10">
       <div className="max-w-7xl mx-auto">
-        <div className="relative overflow-hidden z-40 rounded-3xl aspect-[16/9] md:aspect-[21/9]">
+        <div className="relative overflow-hidden z-40 rounded-2xl sm:rounded-3xl min-h-[34rem] sm:min-h-[32rem] md:min-h-0 md:aspect-[16/10] lg:aspect-[21/9]">
 
         <div className="absolute inset-0 rounded-3xl overflow-hidden">
           <div className="absolute inset-0 transition-transform duration-[800ms] ease-out"
@@ -164,7 +164,7 @@ function Hero() {
           }}
         />
 
-        <div className="relative w-full h-full flex flex-col justify-center px-8 lg:px-14 pt-24 lg:pt-28 pb-20 lg:pb-24">
+        <div className="relative w-full min-h-[34rem] sm:min-h-[32rem] md:min-h-0 md:h-full flex flex-col px-5 sm:px-8 lg:px-14 py-6 sm:py-8 md:pt-16 md:pb-10 lg:pt-20 lg:pb-12">
           <div className="max-w-2xl relative z-50"
             style={{
               opacity: animating ? 0 : 1,
@@ -173,7 +173,7 @@ function Hero() {
             }}
           >
             <span
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-700 uppercase tracking-widest mb-6"
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-700 uppercase tracking-widest mb-3 sm:mb-5"
               style={{ background: 'rgba(255,255,255,0.12)', color: 'var(--white)', backdropFilter: 'blur(8px)' }}
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--gold-old)' }} />
@@ -181,8 +181,7 @@ function Hero() {
             </span>
 
             <h1
-              className="font-display font-bold text-white leading-[1.03] tracking-tight mb-4"
-              style={{ fontSize: 'clamp(2.8rem, 7vw, 5rem)' }}
+              className="font-display font-bold text-white text-[2.15rem] sm:text-5xl md:text-6xl lg:text-7xl xl:text-[5rem] leading-[1.02] tracking-tight mb-3 sm:mb-4"
             >
               {slide.heading}{' '}
               <span
@@ -197,27 +196,33 @@ function Hero() {
               </span>
             </h1>
 
-            <p className="text-lg text-white/70 leading-relaxed mb-10 max-w-xl">
+            <p className="text-sm sm:text-base lg:text-lg text-white/80 leading-relaxed mb-5 sm:mb-7 lg:mb-8 max-w-xl">
               {slide.sub}
             </p>
 
-            <div className="flex flex-wrap gap-4 mb-8 lg:mb-10">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8">
               <Button
                 variant="gold"
                 size="lg"
+                className="w-full sm:w-auto justify-center"
                 onClick={() => navigate(slide.primary_button_path)}
                 rightIcon={<ArrowRight className="h-4 w-4" />}
               >
                 {slide.primary_button_label}
               </Button>
-              <Button variant="outline-white" size="lg" onClick={() => navigate(slide.secondary_button_path)}>
+              <Button
+                variant="outline-white"
+                size="lg"
+                className="w-full sm:w-auto justify-center"
+                onClick={() => navigate(slide.secondary_button_path)}
+              >
                 {slide.secondary_button_label}
               </Button>
             </div>
           </div>
 
-          <div className="mt-auto relative z-50">
-            <div className="h-[2px] bg-white/10 rounded-full mb-6 overflow-hidden">
+          <div className="mt-auto relative z-50 pt-2">
+            <div className="h-[2px] bg-white/10 rounded-full mb-3 sm:mb-5 overflow-hidden">
               <div
                 className="h-full rounded-full transition-none"
                 style={{
@@ -228,7 +233,7 @@ function Hero() {
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3 sm:gap-6">
                 <div className="flex gap-2">
                   {slides.map((_, i) => (
                     <button
@@ -248,16 +253,18 @@ function Hero() {
                 </span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2">
                 <button
                   onClick={prev}
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                  aria-label="Previous slide"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
                   onClick={next}
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                  aria-label="Next slide"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
