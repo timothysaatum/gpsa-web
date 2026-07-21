@@ -93,7 +93,9 @@ class TestJWT:
 class TestSecureTokens:
     def test_generate_secure_token_is_url_safe(self):
         token = generate_secure_token()
-        assert all(c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=" for c in token)
+        assert all(
+            c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=" for c in token
+        )
 
     def test_generate_secure_token_unique(self):
         tokens = {generate_secure_token() for _ in range(100)}

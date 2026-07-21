@@ -68,9 +68,7 @@ class AuthService:
 
     # ── Registration ──────────────────────────────────────────────────────────
 
-    async def register(
-        self, payload: UserRegisterRequest, request: Request
-    ) -> UserPublicResponse:
+    async def register(self, payload: UserRegisterRequest, request: Request) -> UserPublicResponse:
         # Uniqueness checks
         if await self.users.get_by_email(payload.email):
             raise HTTPException(
@@ -87,18 +85,20 @@ class AuthService:
         raw_token = generate_secure_token()
         token_hash = hash_token(raw_token)
 
-        user = await self.users.create({
-            "full_name": payload.full_name.strip(),
-            "email": payload.email.lower().strip(),
-            "password_hash": hash_password(payload.password),
-            "phone": payload.phone,
-            "student_id": payload.student_id,
-            "level": payload.level,
-            "role": UserRole.student,
-            "email_verified": False,
-            "verification_token": token_hash,
-            "verification_sent_at": datetime.now(UTC),
-        })
+        user = await self.users.create(
+            {
+                "full_name": payload.full_name.strip(),
+                "email": payload.email.lower().strip(),
+                "password_hash": hash_password(payload.password),
+                "phone": payload.phone,
+                "student_id": payload.student_id,
+                "level": payload.level,
+                "role": UserRole.student,
+                "email_verified": False,
+                "verification_token": token_hash,
+                "verification_sent_at": datetime.now(UTC),
+            }
+        )
 
         # Send verification email (raw token — never the hash)
         await self.email.send_verification_email(user.email, user.full_name, raw_token)
@@ -114,7 +114,9 @@ class AuthService:
 
         await self.db.commit()
         logger.info("user_registered", user_id=str(user.id), email=user.email)
-        await self.bus.publish_async(UserRegistered(user_id=user.id, email=user.email, role=user.role))
+        await self.bus.publish_async(
+            UserRegistered(user_id=user.id, email=user.email, role=user.role)
+        )
         return UserPublicResponse.model_validate(user)
 
     # ── Login ─────────────────────────────────────────────────────────────────
@@ -183,14 +185,16 @@ class AuthService:
         access_token = create_access_token(user.id, extra={"role": user.role})
         raw_refresh, expires_at = create_refresh_token(user.id)
 
-        await self.refresh_tokens.create({
-            "user_id": user.id,
-            "token_hash": hash_token(raw_refresh),
-            "expires_at": expires_at,
-            "device_info": request.state.user_agent,
-            "ip_address": request.state.ip_address,
-            "created_at": datetime.now(UTC),
-        })
+        await self.refresh_tokens.create(
+            {
+                "user_id": user.id,
+                "token_hash": hash_token(raw_refresh),
+                "expires_at": expires_at,
+                "device_info": request.state.user_agent,
+                "ip_address": request.state.ip_address,
+                "created_at": datetime.now(UTC),
+            }
+        )
 
         await self.users.record_login(user)
         await self.audit.log(
@@ -210,9 +214,7 @@ class AuthService:
 
     # ── Token refresh ─────────────────────────────────────────────────────────
 
-    async def refresh_tokens_pair(
-        self, payload: RefreshRequest, request: Request
-    ) -> TokenResponse:
+    async def refresh_tokens_pair(self, payload: RefreshRequest, request: Request) -> TokenResponse:
         token_hash = hash_token(payload.refresh_token)
         stored = await self.refresh_tokens.get_by_hash(token_hash)
 
@@ -235,14 +237,16 @@ class AuthService:
         access_token = create_access_token(user.id, extra={"role": user.role})
         raw_refresh, expires_at = create_refresh_token(user.id)
 
-        await self.refresh_tokens.create({
-            "user_id": user.id,
-            "token_hash": hash_token(raw_refresh),
-            "expires_at": expires_at,
-            "device_info": request.state.user_agent,
-            "ip_address": request.state.ip_address,
-            "created_at": datetime.now(UTC),
-        })
+        await self.refresh_tokens.create(
+            {
+                "user_id": user.id,
+                "token_hash": hash_token(raw_refresh),
+                "expires_at": expires_at,
+                "device_info": request.state.user_agent,
+                "ip_address": request.state.ip_address,
+                "created_at": datetime.now(UTC),
+            }
+        )
 
         await self.db.commit()
         return TokenResponse(
@@ -253,9 +257,7 @@ class AuthService:
 
     # ── Logout ────────────────────────────────────────────────────────────────
 
-    async def logout(
-        self, raw_refresh_token: str, request: Request, user_id: uuid.UUID
-    ) -> None:
+    async def logout(self, raw_refresh_token: str, request: Request, user_id: uuid.UUID) -> None:
         token_hash = hash_token(raw_refresh_token)
         stored = await self.refresh_tokens.get_by_hash(token_hash)
         if stored:
@@ -320,18 +322,19 @@ class AuthService:
             return  # silent — do not reveal account existence
 
         raw_token = generate_secure_token()
-        await self.users.update(user, {
-            "verification_token": hash_token(raw_token),
-            "verification_sent_at": datetime.now(UTC),
-        })
+        await self.users.update(
+            user,
+            {
+                "verification_token": hash_token(raw_token),
+                "verification_sent_at": datetime.now(UTC),
+            },
+        )
         await self.email.send_verification_email(user.email, user.full_name, raw_token)
         await self.db.commit()
 
     # ── Password reset ────────────────────────────────────────────────────────
 
-    async def forgot_password(
-        self, payload: ForgotPasswordRequest, request: Request
-    ) -> None:
+    async def forgot_password(self, payload: ForgotPasswordRequest, request: Request) -> None:
         """Always returns 200 regardless of outcome — prevents email enumeration."""
         user = await self.users.get_by_email(payload.email)
         if not user or not user.email_verified:
@@ -341,16 +344,16 @@ class AuthService:
         await self.reset_tokens.invalidate_existing_for_user(user.id)
 
         raw_token = generate_secure_token()
-        expires_at = datetime.now(UTC) + timedelta(
-            hours=settings.password_reset_token_expire_hours
+        expires_at = datetime.now(UTC) + timedelta(hours=settings.password_reset_token_expire_hours)
+        await self.reset_tokens.create(
+            {
+                "user_id": user.id,
+                "token_hash": hash_token(raw_token),
+                "expires_at": expires_at,
+                "ip_address": request.state.ip_address,
+                "created_at": datetime.now(UTC),
+            }
         )
-        await self.reset_tokens.create({
-            "user_id": user.id,
-            "token_hash": hash_token(raw_token),
-            "expires_at": expires_at,
-            "ip_address": request.state.ip_address,
-            "created_at": datetime.now(UTC),
-        })
 
         await self.email.send_password_reset_email(user.email, user.full_name, raw_token)
         await self.audit.log(
@@ -361,9 +364,7 @@ class AuthService:
         )
         await self.db.commit()
 
-    async def reset_password(
-        self, payload: ResetPasswordRequest, request: Request
-    ) -> None:
+    async def reset_password(self, payload: ResetPasswordRequest, request: Request) -> None:
         token_hash = hash_token(payload.token)
         reset_token = await self.reset_tokens.get_valid_by_hash(token_hash)
 

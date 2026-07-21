@@ -14,7 +14,7 @@ Usage:
         return paginate(items, total, params)
 """
 
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from fastapi import Query
 from pydantic import BaseModel
@@ -38,7 +38,7 @@ class PaginationParams(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
 
 
-def paginate(items: list[T], total: int, params: PaginationParams) -> PaginatedResponse[T]:
+def paginate[T](items: list[T], total: int, params: PaginationParams) -> PaginatedResponse[T]:
     """Wrap a list of items into the standard paginated envelope."""
     return PaginatedResponse(
         items=items,

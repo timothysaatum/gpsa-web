@@ -17,8 +17,8 @@ from app.models.enums import ReportStatus, ReportType, WelfareCategory
 from app.schemas.common import AppModel, PaginatedResponse
 from app.services.welfare import WelfareService
 
-
 # ── Schemas ───────────────────────────────────────────────────────────────────
+
 
 class WelfareReportRequest(AppModel):
     report_type: ReportType
@@ -141,6 +141,7 @@ async def resolve_report(
 
 
 # ── Spotlight ─────────────────────────────────────────────────────────────────
+
 
 @router.get(
     "/spotlight",

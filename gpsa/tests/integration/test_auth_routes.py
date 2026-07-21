@@ -7,7 +7,6 @@ Each test gets an isolated transaction, rolled back after the test.
 import pytest
 from httpx import AsyncClient
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -22,6 +21,7 @@ VALID_REGISTER = {
 
 
 # ── Registration ──────────────────────────────────────────────────────────────
+
 
 class TestRegister:
     async def test_register_success(self, client: AsyncClient):
@@ -60,17 +60,17 @@ class TestRegister:
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
+
 class TestLogin:
     async def _register_and_verify(self, client: AsyncClient, db_session) -> None:
         """Helper — register then manually mark email verified."""
-        from sqlalchemy import select, update
+        from sqlalchemy import update
+
         from app.models.user import User
 
         await client.post(f"{BASE}/register", json=VALID_REGISTER)
         await db_session.execute(
-            update(User)
-            .where(User.email == VALID_REGISTER["email"])
-            .values(email_verified=True)
+            update(User).where(User.email == VALID_REGISTER["email"]).values(email_verified=True)
         )
         await db_session.flush()
 
@@ -112,6 +112,7 @@ class TestLogin:
 
 # ── Get /me ───────────────────────────────────────────────────────────────────
 
+
 class TestGetMe:
     async def test_me_unauthenticated(self, client: AsyncClient):
         resp = await client.get(f"{BASE}/me")
@@ -127,6 +128,7 @@ class TestGetMe:
 
 
 # ── Password reset ────────────────────────────────────────────────────────────
+
 
 class TestForgotPassword:
     async def test_forgot_password_always_200(self, client: AsyncClient):
@@ -147,6 +149,7 @@ class TestForgotPassword:
 
 # ── Logout ────────────────────────────────────────────────────────────────────
 
+
 class TestLogout:
     async def test_logout_requires_auth(self, client: AsyncClient):
         resp = await client.post(
@@ -164,6 +167,7 @@ class TestLogout:
 
 
 # ── Health check (smoke test) ─────────────────────────────────────────────────
+
 
 class TestHealth:
     async def test_health_ok(self, client: AsyncClient):

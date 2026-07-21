@@ -3,7 +3,6 @@ URL slug generation — used for human-readable identifiers in certificates
 and future SEO-friendly news/event URLs.
 """
 
-import re
 import uuid
 
 from slugify import slugify as _slugify

@@ -5,7 +5,6 @@ from pydantic import Field, model_validator
 
 from app.models.enums import EventStatus, EventType
 from app.schemas.common import AppModel
-from app.schemas.user import UserSummaryResponse
 
 
 class EventCreateRequest(AppModel):
@@ -76,6 +75,7 @@ class EventSummaryResponse(AppModel):
 
 
 # ── Registrations ─────────────────────────────────────────────────────────────
+
 
 class EventRegistrationRequest(AppModel):
     full_name: str = Field(min_length=2, max_length=255)

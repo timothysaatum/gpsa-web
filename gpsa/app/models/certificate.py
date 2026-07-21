@@ -1,5 +1,12 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.event import Event, EventRegistration
+    from app.models.user import User
 
 from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -57,9 +64,9 @@ class Certificate(UUIDPrimaryKeyMixin, Base):
     )
 
     # Relationships
-    event: Mapped["Event"] = relationship(back_populates="certificates")  # type: ignore[name-defined]
-    user: Mapped["User | None"] = relationship(back_populates="certificates")  # type: ignore[name-defined]
-    registration: Mapped["EventRegistration | None"] = relationship(  # type: ignore[name-defined]
+    event: Mapped[Event] = relationship(back_populates="certificates")
+    user: Mapped[User | None] = relationship(back_populates="certificates")
+    registration: Mapped[EventRegistration | None] = relationship(
         back_populates="certificate",
     )
 

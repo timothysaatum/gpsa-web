@@ -11,16 +11,15 @@ from app.core.dependencies import require_roles
 from app.db.session import get_db
 from app.models.academic_resource import AcademicResource
 from app.models.audit import AuditLog
+from app.models.enums import ReportStatus, UserRole
 from app.models.event import Event
 from app.models.gallery import GalleryImage
 from app.models.news import NewsPost
 from app.models.opportunity import Opportunity
 from app.models.user import User
 from app.models.welfare import WelfareReport
-from app.models.enums import ReportStatus, UserRole
 from app.schemas.common import AppModel, PaginatedResponse
 from app.services.audit import AuditService
-
 
 router = APIRouter(tags=["Admin"])
 
@@ -91,7 +90,9 @@ async def dashboard(
         events=await _count(db, Event, Event.deleted_at.is_(None)),
         opportunities=await _count(db, Opportunity, Opportunity.deleted_at.is_(None)),
         gallery_images=await _count(db, GalleryImage, GalleryImage.deleted_at.is_(None)),
-        academic_resources=await _count(db, AcademicResource, AcademicResource.deleted_at.is_(None)),
+        academic_resources=await _count(
+            db, AcademicResource, AcademicResource.deleted_at.is_(None)
+        ),
         welfare_reports=await _count(db, WelfareReport, WelfareReport.deleted_at.is_(None)),
         pending_welfare_reports=await _count(
             db,
@@ -137,12 +138,14 @@ async def audit_logs(
         filters.append(AuditLog.created_at <= date_to)
     if search:
         term = f"%{search}%"
-        filters.append(or_(
-            AuditLog.action.ilike(term),
-            AuditLog.entity_type.ilike(term),
-            AuditLog.request_id.ilike(term),
-            AuditLog.actor.has(User.full_name.ilike(term)),
-        ))
+        filters.append(
+            or_(
+                AuditLog.action.ilike(term),
+                AuditLog.entity_type.ilike(term),
+                AuditLog.request_id.ilike(term),
+                AuditLog.actor.has(User.full_name.ilike(term)),
+            )
+        )
 
     total_result = await db.execute(select(func.count()).select_from(AuditLog).where(*filters))
     result = await db.execute(

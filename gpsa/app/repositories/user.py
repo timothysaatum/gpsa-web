@@ -4,7 +4,6 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.mixins import SoftDeleteMixin
 from app.models.token import PasswordResetToken, RefreshToken
 from app.models.user import User
 from app.repositories.base import BaseRepository
@@ -23,9 +22,7 @@ class UserRepository(BaseRepository[User]):
         return result.scalar_one_or_none()
 
     async def get_by_student_id(self, student_id: str) -> User | None:
-        result = await self.db.execute(
-            self._base_query().where(User.student_id == student_id)
-        )
+        result = await self.db.execute(self._base_query().where(User.student_id == student_id))
         return result.scalar_one_or_none()
 
     async def get_by_verification_token(self, token_hash: str) -> User | None:
@@ -35,9 +32,13 @@ class UserRepository(BaseRepository[User]):
         return result.scalar_one_or_none()
 
     async def count_verified(self) -> int:
-        q = select(func.count()).select_from(User).where(
-            User.deleted_at.is_(None),
-            User.email_verified.is_(True),
+        q = (
+            select(func.count())
+            .select_from(User)
+            .where(
+                User.deleted_at.is_(None),
+                User.email_verified.is_(True),
+            )
         )
         result = await self.db.execute(q)
         return result.scalar_one()

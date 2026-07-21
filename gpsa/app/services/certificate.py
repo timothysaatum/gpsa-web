@@ -91,23 +91,30 @@ class CertificateService:
                 public=False,
             )
 
-            cert = await self.repo.create({
-                "event_id": event_id,
-                "user_id": reg.user_id,
-                "registration_id": reg.id,
-                "verification_code": code,
-                "certificate_key": cert_key,
-                "issued_at": datetime.now(UTC),
-            })
+            cert = await self.repo.create(
+                {
+                    "event_id": event_id,
+                    "user_id": reg.user_id,
+                    "registration_id": reg.id,
+                    "verification_code": code,
+                    "certificate_key": cert_key,
+                    "issued_at": datetime.now(UTC),
+                }
+            )
 
-            cert_events.append(CertificateIssued(
-                certificate_id=cert.id, event_id=event_id, user_id=reg.user_id,
-            ))
+            cert_events.append(
+                CertificateIssued(
+                    certificate_id=cert.id,
+                    event_id=event_id,
+                    user_id=reg.user_id,
+                )
+            )
             # Notify the student
             await self.notifications.certificate_issued(reg.user_id, cert.id, event.title)
 
             await self.audit.log(
-                action="CREATE", entity_type="certificate",
+                action="CREATE",
+                entity_type="certificate",
                 entity_id=cert.id,
                 new_values={"event_id": str(event_id), "user_id": str(reg.user_id), "code": code},
                 request=request,

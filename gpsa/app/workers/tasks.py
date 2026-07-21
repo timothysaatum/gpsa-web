@@ -9,8 +9,8 @@ import structlog
 from sqlalchemy import select
 
 from app.db.session import AsyncSessionLocal
-from app.models.event import Event, EventRegistration
 from app.models.enums import EventStatus
+from app.models.event import Event, EventRegistration
 from app.services.email import EmailService
 from app.services.notification import NotificationService
 
@@ -95,10 +95,9 @@ async def notify_all_users_new_opportunity(opp_id: str, opp_title: str) -> None:
     in the request cycle, as the user list can be large.
     """
     import uuid as uuid_mod
-    from sqlalchemy import and_
 
-    from app.models.user import User
     from app.models.enums import UserRole
+    from app.models.user import User
 
     async with AsyncSessionLocal() as db:
         try:
@@ -136,11 +135,11 @@ async def retry_failed_emails(max_retries: int = 3) -> None:
     """
     from datetime import UTC, datetime, timedelta
 
+    import resend
+
     from app.core.config import settings
     from app.models.email_log import EmailLog
     from app.models.enums import EmailStatus
-
-    import resend
 
     resend.api_key = settings.resend_api_key
 
@@ -148,10 +147,12 @@ async def retry_failed_emails(max_retries: int = 3) -> None:
         try:
             now = datetime.now(UTC)
             result = await db.execute(
-                select(EmailLog).where(
+                select(EmailLog)
+                .where(
                     EmailLog.status == EmailStatus.failed,
                     EmailLog.retry_count < max_retries,
-                ).order_by(EmailLog.created_at.asc())
+                )
+                .order_by(EmailLog.created_at.asc())
             )
             failed_logs = result.scalars().all()
 
@@ -165,17 +166,21 @@ async def retry_failed_emails(max_retries: int = 3) -> None:
 
                 try:
                     sender = f"{settings.email_from_name} <{settings.email_from_address}>"
-                    resp = resend.Emails.send({
-                        "from": sender,
-                        "to": [log.recipient],
-                        "subject": log.subject,
-                        "html": log.html_body or "",
-                    })
+                    resp = resend.Emails.send(
+                        {
+                            "from": sender,
+                            "to": [log.recipient],
+                            "subject": log.subject,
+                            "html": log.html_body or "",
+                        }
+                    )
                     log.status = EmailStatus.sent
                     log.provider_message_id = resp.get("id")
                     log.sent_at = datetime.now(UTC)
                     log.error_message = None
-                    logger.info("email_retry_succeeded", log_id=str(log.id), attempt=log.retry_count + 1)
+                    logger.info(
+                        "email_retry_succeeded", log_id=str(log.id), attempt=log.retry_count + 1
+                    )
                 except Exception as exc:
                     log.retry_count += 1
                     log.error_message = str(exc)
@@ -183,7 +188,11 @@ async def retry_failed_emails(max_retries: int = 3) -> None:
                         log.status = EmailStatus.permanent_failure
                         logger.warning("email_retry_exhausted", log_id=str(log.id))
                     else:
-                        logger.info("email_retry_failed_will_retry", log_id=str(log.id), attempt=log.retry_count)
+                        logger.info(
+                            "email_retry_failed_will_retry",
+                            log_id=str(log.id),
+                            attempt=log.retry_count,
+                        )
 
             await db.commit()
             if failed_logs:

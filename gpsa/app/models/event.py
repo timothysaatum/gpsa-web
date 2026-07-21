@@ -19,9 +19,7 @@ if TYPE_CHECKING:
 
 class Event(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "events"
-    __table_args__ = (
-        Index("ix_events_status_start", "status", "start_datetime"),
-    )
+    __table_args__ = (Index("ix_events_status_start", "status", "start_datetime"),)
 
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)

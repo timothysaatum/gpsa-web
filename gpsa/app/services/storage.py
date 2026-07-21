@@ -139,9 +139,7 @@ class StorageService:
         try:
             await loop.run_in_executor(
                 None,
-                lambda: self._client.delete_object(
-                    Bucket=settings.storage_bucket_name, Key=key
-                ),
+                lambda: self._client.delete_object(Bucket=settings.storage_bucket_name, Key=key),
             )
             logger.info("storage_delete_ok", key=key)
         except ClientError as exc:
@@ -157,9 +155,7 @@ class StorageService:
         try:
             await loop.run_in_executor(
                 None,
-                lambda: self._client.head_object(
-                    Bucket=settings.storage_bucket_name, Key=key
-                ),
+                lambda: self._client.head_object(Bucket=settings.storage_bucket_name, Key=key),
             )
             return True
         except ClientError:

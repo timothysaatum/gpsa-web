@@ -10,11 +10,10 @@ The scheduler is started and shut down via the FastAPI lifespan context manager
 in main.py — it is never started independently.
 """
 
+import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-
-import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -22,6 +21,7 @@ scheduler = AsyncIOScheduler(timezone="Africa/Accra")
 
 
 # ── Job definitions ───────────────────────────────────────────────────────────
+
 
 async def expire_opportunities() -> None:
     """Set is_active=False on opportunities whose deadline has passed."""
@@ -57,8 +57,8 @@ async def update_event_statuses() -> None:
     from sqlalchemy import update
 
     from app.db.session import AsyncSessionLocal
-    from app.models.event import Event
     from app.models.enums import EventStatus
+    from app.models.event import Event
 
     now = datetime.now(UTC)
 
@@ -105,9 +105,7 @@ async def prune_old_notifications() -> None:
 
     async with AsyncSessionLocal() as db:
         try:
-            result = await db.execute(
-                delete(Notification).where(Notification.created_at < cutoff)
-            )
+            result = await db.execute(delete(Notification).where(Notification.created_at < cutoff))
             await db.commit()
             logger.info("notifications_pruned", count=result.rowcount)
         except Exception:
@@ -116,6 +114,7 @@ async def prune_old_notifications() -> None:
 
 
 # ── Registration ──────────────────────────────────────────────────────────────
+
 
 def register_jobs() -> None:
     from app.workers.tasks import retry_failed_emails, send_event_reminders
@@ -143,8 +142,10 @@ def register_jobs() -> None:
     )
     # 24-hour event reminder — runs daily at 8am
     scheduler.add_job(
-        lambda: __import__("asyncio").get_event_loop().run_until_complete(
-            send_event_reminders(hours_before=24)
+        lambda: (
+            __import__("asyncio")
+            .get_event_loop()
+            .run_until_complete(send_event_reminders(hours_before=24))
         ),
         trigger=CronTrigger(hour=8, minute=0, timezone="Africa/Accra"),
         id="event_reminders_24h",

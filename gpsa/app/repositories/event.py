@@ -98,8 +98,11 @@ class EventRegistrationRepository(BaseRepository[EventRegistration]):
 
     async def count_for_event(self, event_id: uuid.UUID) -> int:
         from sqlalchemy import func, select
+
         result = await self.db.execute(
-            select(func.count()).select_from(EventRegistration).where(
+            select(func.count())
+            .select_from(EventRegistration)
+            .where(
                 EventRegistration.event_id == event_id,
                 EventRegistration.deleted_at.is_(None),
             )

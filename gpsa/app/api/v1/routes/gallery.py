@@ -16,8 +16,8 @@ from app.services.audit import AuditService
 from app.services.storage import storage
 from app.utils.file_validation import validate_image_file
 
-
 # ── Schemas ───────────────────────────────────────────────────────────────────
+
 
 class GalleryImageResponse(AppModel):
     id: uuid.UUID
@@ -96,17 +96,22 @@ async def create_gallery_image(
     image_url = storage.cdn_url(image_key)
 
     repo = BaseRepository(GalleryImage, db)
-    img = await repo.create({
-        "image_url": image_url,
-        "title": title,
-        "description": description,
-        "category": category.value,
-        "event_date": event_date,
-        "sort_order": sort_order,
-    })
+    img = await repo.create(
+        {
+            "image_url": image_url,
+            "title": title,
+            "description": description,
+            "category": category.value,
+            "event_date": event_date,
+            "sort_order": sort_order,
+        }
+    )
     await AuditService(db).log(
-        action="CREATE", entity_type="gallery_image", entity_id=img.id,
-        new_values={"title": img.title, "category": img.category}, request=request,
+        action="CREATE",
+        entity_type="gallery_image",
+        entity_id=img.id,
+        new_values={"title": img.title, "category": img.category},
+        request=request,
     )
     await db.commit()
     return GalleryImageResponse.model_validate(img)
@@ -147,8 +152,11 @@ async def update_gallery_image(
     old_values = {k: str(getattr(img, k)) for k in updates}
     img = await repo.update(img, updates)
     await AuditService(db).log(
-        action="UPDATE", entity_type="gallery_image", entity_id=img.id,
-        old_values=old_values, new_values={k: str(v) for k, v in updates.items()},
+        action="UPDATE",
+        entity_type="gallery_image",
+        entity_id=img.id,
+        old_values=old_values,
+        new_values={k: str(v) for k, v in updates.items()},
         request=request,
     )
     await db.commit()
@@ -171,7 +179,10 @@ async def delete_gallery_image(
     img = await repo.get_by_id_or_404(image_id)
     await repo.soft_delete(img)
     await AuditService(db).log(
-        action="DELETE", entity_type="gallery_image", entity_id=img.id, request=request,
+        action="DELETE",
+        entity_type="gallery_image",
+        entity_id=img.id,
+        request=request,
     )
     await db.commit()
     return MessageResponse(message="Gallery image deleted.")

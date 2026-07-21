@@ -16,7 +16,6 @@ from pathlib import Path
 # Ensure project root is on sys.path when run directly
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -29,15 +28,14 @@ from app.models.user import User
 
 configure_logging()
 
-import structlog
+import structlog  # noqa: E402
+
 logger = structlog.get_logger(__name__)
 
 
 async def create_first_admin() -> None:
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(User).where(User.email == settings.first_admin_email)
-        )
+        result = await db.execute(select(User).where(User.email == settings.first_admin_email))
         existing = result.scalar_one_or_none()
 
         if existing:

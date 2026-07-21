@@ -14,7 +14,7 @@ from app.core.permissions import assert_permission, can_publish_news, can_write_
 from app.domain.bus import bus as domain_bus
 from app.domain.events import NewsPublished
 from app.domain.kernel import DomainEventBus
-from app.models.enums import NewsCategory, UserRole
+from app.models.enums import NewsCategory
 from app.models.news import NewsPost
 from app.models.user import User
 from app.repositories.base import BaseRepository
@@ -34,12 +34,8 @@ class NewsRepository(BaseRepository[NewsPost]):
         offset: int = 0,
         limit: int = 20,
     ) -> list[NewsPost]:
-        from sqlalchemy import select
 
-        q = (
-            self._base_query()
-            .where(NewsPost.published_at.is_not(None))
-        )
+        q = self._base_query().where(NewsPost.published_at.is_not(None))
         if category:
             q = q.where(NewsPost.category == category)
         q = q.order_by(NewsPost.published_at.desc()).offset(offset).limit(limit)
@@ -130,9 +126,7 @@ class NewsService:
     async def get_strip_announcements(self) -> list[NewsPost]:
         return await self.repo.get_strip_announcements()
 
-    async def search(
-        self, q_str: str, offset: int = 0, limit: int = 20
-    ) -> list[NewsPost]:
+    async def search(self, q_str: str, offset: int = 0, limit: int = 20) -> list[NewsPost]:
         if len(q_str.strip()) < 2:
             raise HTTPException(
                 status_code=400, detail="Search query must be at least 2 characters."
@@ -169,28 +163,37 @@ class NewsService:
 
         published_at = datetime.now(UTC) if (publish_immediately and can_publish) else None
 
-        post = await self.repo.create({
-            "title": title,
-            "category": category,
-            "summary": summary,
-            "body": body,
-            "banner_emoji": banner_emoji,
-            "is_featured": is_featured,
-            "is_urgent": is_urgent,
-            "is_strip_announcement": is_strip_announcement,
-            "attachments": attachments,
-            "published_at": published_at,
-            "author_id": actor.id,
-        })
+        post = await self.repo.create(
+            {
+                "title": title,
+                "category": category,
+                "summary": summary,
+                "body": body,
+                "banner_emoji": banner_emoji,
+                "is_featured": is_featured,
+                "is_urgent": is_urgent,
+                "is_strip_announcement": is_strip_announcement,
+                "attachments": attachments,
+                "published_at": published_at,
+                "author_id": actor.id,
+            }
+        )
         await self.audit.log(
-            action="CREATE", entity_type="news_post", entity_id=post.id,
-            new_values={"title": post.title, "published": post.is_published}, request=request,
+            action="CREATE",
+            entity_type="news_post",
+            entity_id=post.id,
+            new_values={"title": post.title, "published": post.is_published},
+            request=request,
         )
         await self.db.commit()
         if post.is_published:
-            await self.bus.publish_async(NewsPublished(
-                post_id=post.id, title=post.title, category=str(post.category),
-            ))
+            await self.bus.publish_async(
+                NewsPublished(
+                    post_id=post.id,
+                    title=post.title,
+                    category=str(post.category),
+                )
+            )
         return post
 
     async def update(
@@ -205,8 +208,11 @@ class NewsService:
         old_values = {k: str(getattr(post, k)) for k in updates}
         post = await self.repo.update(post, updates)
         await self.audit.log(
-            action="UPDATE", entity_type="news_post", entity_id=post.id,
-            old_values=old_values, new_values={k: str(v) for k, v in updates.items()},
+            action="UPDATE",
+            entity_type="news_post",
+            entity_id=post.id,
+            old_values=old_values,
+            new_values={k: str(v) for k, v in updates.items()},
             request=request,
         )
         await self.db.commit()
@@ -221,9 +227,13 @@ class NewsService:
             action="PUBLISH", entity_type="news_post", entity_id=post.id, request=request
         )
         await self.db.commit()
-        await self.bus.publish_async(NewsPublished(
-            post_id=post.id, title=post.title, category=str(post.category),
-        ))
+        await self.bus.publish_async(
+            NewsPublished(
+                post_id=post.id,
+                title=post.title,
+                category=str(post.category),
+            )
+        )
         return post
 
     async def delete(self, post_id: uuid.UUID, request: Request) -> None:

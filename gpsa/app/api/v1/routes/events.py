@@ -33,6 +33,7 @@ router = APIRouter(tags=["Events"])
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
+
 @router.get(
     "/",
     response_model=PaginatedResponse[EventSummaryResponse],
@@ -99,11 +100,13 @@ async def create_event(
     assert_permission(can_create_event(current_user))
     repo = EventRepository(db)
 
-    event = await repo.create({
-        **payload.model_dump(),
-        "status": EventStatus.upcoming,
-        "created_by": current_user.id,
-    })
+    event = await repo.create(
+        {
+            **payload.model_dump(),
+            "status": EventStatus.upcoming,
+            "created_by": current_user.id,
+        }
+    )
     await AuditService(db).log(
         action="CREATE",
         entity_type="event",
@@ -112,9 +115,13 @@ async def create_event(
         request=request,
     )
     await db.commit()
-    await domain_bus.publish_async(EventCreated(
-        event_id=event.id, title=event.title, event_type=str(event.event_type),
-    ))
+    await domain_bus.publish_async(
+        EventCreated(
+            event_id=event.id,
+            title=event.title,
+            event_type=str(event.event_type),
+        )
+    )
     return EventResponse.model_validate(event)
 
 
@@ -162,9 +169,12 @@ async def update_event(
     )
     await db.commit()
     if "status" in updates and updates["status"] == EventStatus.ongoing:
-        await domain_bus.publish_async(EventPublished(
-            event_id=event.id, title=event.title,
-        ))
+        await domain_bus.publish_async(
+            EventPublished(
+                event_id=event.id,
+                title=event.title,
+            )
+        )
     return EventResponse.model_validate(event)
 
 
@@ -191,6 +201,7 @@ async def delete_event(
 
 
 # ── Registrations ─────────────────────────────────────────────────────────────
+
 
 @router.post(
     "/{event_id}/register",
@@ -231,15 +242,17 @@ async def register_for_event(
                 detail="This contact is already registered for this event.",
             )
 
-    registration = await reg_repo.create({
-        "event_id": event_id,
-        "user_id": current_user.id if current_user else None,
-        "full_name": payload.full_name,
-        "level": payload.level,
-        "contact": payload.contact.strip() if payload.contact else None,
-        "notes": payload.notes,
-        "registered_at": datetime.now(UTC),
-    })
+    registration = await reg_repo.create(
+        {
+            "event_id": event_id,
+            "user_id": current_user.id if current_user else None,
+            "full_name": payload.full_name,
+            "level": payload.level,
+            "contact": payload.contact.strip() if payload.contact else None,
+            "notes": payload.notes,
+            "registered_at": datetime.now(UTC),
+        }
+    )
 
     # Send confirmation email if contact provided
     if payload.contact and "@" in payload.contact:
@@ -260,12 +273,14 @@ async def register_for_event(
         actor_id=current_user.id if current_user else None,
     )
     await db.commit()
-    await domain_bus.publish_async(RegistrationConfirmed(
-        registration_id=registration.id,
-        event_id=event_id,
-        user_id=current_user.id if current_user else None,
-        full_name=payload.full_name,
-    ))
+    await domain_bus.publish_async(
+        RegistrationConfirmed(
+            registration_id=registration.id,
+            event_id=event_id,
+            user_id=current_user.id if current_user else None,
+            full_name=payload.full_name,
+        )
+    )
     return EventRegistrationResponse.model_validate(registration)
 
 

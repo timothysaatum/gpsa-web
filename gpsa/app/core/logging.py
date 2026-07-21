@@ -51,7 +51,7 @@ def configure_logging() -> None:
     if settings.is_development:
         processors = [
             *shared_processors,
-            structlog.stdlib.add_logger_name,          # Now safe
+            structlog.stdlib.add_logger_name,  # Now safe
             structlog.dev.ConsoleRenderer(colors=True),
         ]
     else:
@@ -64,9 +64,9 @@ def configure_logging() -> None:
 
     structlog.configure(
         processors=processors,  # type: ignore[arg-type]
-        wrapper_class=structlog.stdlib.BoundLogger,      # ← Key fix
+        wrapper_class=structlog.stdlib.BoundLogger,  # ← Key fix
         context_class=dict,
-        logger_factory=structlog.stdlib.LoggerFactory(), # ← Key fix
+        logger_factory=structlog.stdlib.LoggerFactory(),  # ← Key fix
         cache_logger_on_first_use=True,
     )
 
@@ -75,7 +75,7 @@ def configure_logging() -> None:
         format="%(message)s",
         stream=sys.stdout,
         level=logging.DEBUG if settings.debug else logging.INFO,
-        force=True,                     # Important for scripts & alembic
+        force=True,  # Important for scripts & alembic
     )
 
     # Quieten noisy libraries

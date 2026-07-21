@@ -143,7 +143,9 @@ async def resend_verification(
     Always returns 200 regardless of whether the email exists.
     """
     await AuthService(db).resend_verification(payload.email, request)
-    return MessageResponse(message="If that email is registered and unverified, a new link has been sent.")
+    return MessageResponse(
+        message="If that email is registered and unverified, a new link has been sent."
+    )
 
 
 @router.post(
@@ -179,7 +181,9 @@ async def reset_password(
     All active sessions are revoked after a successful reset.
     """
     await AuthService(db).reset_password(payload, request)
-    return MessageResponse(message="Password reset successfully. Please log in with your new password.")
+    return MessageResponse(
+        message="Password reset successfully. Please log in with your new password."
+    )
 
 
 @router.post(

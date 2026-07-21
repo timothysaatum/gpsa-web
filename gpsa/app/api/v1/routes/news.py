@@ -12,8 +12,8 @@ from app.models.enums import NewsCategory, UserRole
 from app.schemas.common import AppModel, MessageResponse, PaginatedResponse
 from app.services.news import NewsService
 
-
 # ── Schemas ───────────────────────────────────────────────────────────────────
+
 
 class NewsCreateRequest(AppModel):
     title: str = Field(min_length=3, max_length=500)

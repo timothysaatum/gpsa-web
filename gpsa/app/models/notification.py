@@ -1,7 +1,14 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, Index, String, Text, func
+if TYPE_CHECKING:
+    from app.models.user import User
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -59,7 +66,7 @@ class Notification(UUIDPrimaryKeyMixin, Base):
     )
 
     # Relationships
-    user: Mapped["User"] = relationship(back_populates="notifications")  # type: ignore[name-defined]
+    user: Mapped[User] = relationship(back_populates="notifications")
 
     def __repr__(self) -> str:
         return (

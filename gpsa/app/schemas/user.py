@@ -6,8 +6,8 @@ from pydantic import EmailStr, Field, field_validator
 from app.models.enums import UserRole
 from app.schemas.common import AppModel
 
-
 # ── Registration ──────────────────────────────────────────────────────────────
+
 
 class UserRegisterRequest(AppModel):
     full_name: str = Field(min_length=2, max_length=255)
@@ -36,6 +36,7 @@ class UserRegisterRequest(AppModel):
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
+
 class LoginRequest(AppModel):
     email: EmailStr
     password: str
@@ -53,6 +54,7 @@ class RefreshRequest(AppModel):
 
 
 # ── Password management ───────────────────────────────────────────────────────
+
 
 class ForgotPasswordRequest(AppModel):
     email: EmailStr
@@ -88,14 +90,17 @@ class ChangePasswordRequest(AppModel):
 
 # ── Email verification ────────────────────────────────────────────────────────
 
+
 class VerifyEmailRequest(AppModel):
     token: str
 
 
 # ── User responses ────────────────────────────────────────────────────────────
 
+
 class UserPublicResponse(AppModel):
     """Safe read — never exposes auth internals."""
+
     id: uuid.UUID
     full_name: str
     email: str
@@ -109,12 +114,14 @@ class UserPublicResponse(AppModel):
 
 class UserSummaryResponse(AppModel):
     """Compact form used in nested objects (e.g. event registration, news author)."""
+
     id: uuid.UUID
     full_name: str
     role: UserRole
 
 
 # ── Profile update ────────────────────────────────────────────────────────────
+
 
 class UpdateProfileRequest(AppModel):
     full_name: str | None = Field(default=None, min_length=2, max_length=255)
@@ -131,6 +138,7 @@ class UpdateProfileRequest(AppModel):
 
 
 # ── Admin user management ─────────────────────────────────────────────────────
+
 
 class AdminUpdateUserRequest(AppModel):
     role: UserRole | None = None

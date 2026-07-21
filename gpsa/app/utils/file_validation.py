@@ -11,7 +11,6 @@ uploading it through the academic resources endpoint.
 Requires: python-magic (libmagic bindings)
 """
 
-import io
 from dataclasses import dataclass
 
 import magic
@@ -44,9 +43,9 @@ ATTACHMENT_ALLOWED: dict[str, FileType] = {
 }
 
 # Maximum file sizes
-MAX_DOCUMENT_SIZE_BYTES = 50 * 1024 * 1024    # 50 MB
-MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024      # 500 MB
-MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024       # 10 MB
+MAX_DOCUMENT_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
+MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024  # 500 MB
+MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 MAX_ATTACHMENT_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 
 
@@ -98,8 +97,7 @@ def validate_file(
     if detected_mime not in allowed:
         allowed_list = ", ".join(sorted(allowed.keys()))
         raise FileValidationError(
-            f"File type '{detected_mime}' is not allowed. "
-            f"Accepted types: {allowed_list}."
+            f"File type '{detected_mime}' is not allowed. Accepted types: {allowed_list}."
         )
 
     return ValidatedFile(

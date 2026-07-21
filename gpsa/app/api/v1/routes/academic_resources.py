@@ -26,6 +26,7 @@ router = APIRouter(tags=["Academic Resources"])
 
 # ── Courses ───────────────────────────────────────────────────────────────────
 
+
 @router.get("/courses", response_model=list[CourseResponse], summary="List all courses")
 async def list_courses(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -50,6 +51,7 @@ async def create_course(
 
 
 # ── Resources ─────────────────────────────────────────────────────────────────
+
 
 @router.get(
     "/",
@@ -166,9 +168,12 @@ async def update_resource(
     old_values = {k: str(getattr(resource, k)) for k in updates}
     resource = await repo.update(resource, updates)
     await AuditService(db).log(
-        action="UPDATE", entity_type="academic_resource",
-        entity_id=resource.id, old_values=old_values,
-        new_values={k: str(v) for k, v in updates.items()}, request=request,
+        action="UPDATE",
+        entity_type="academic_resource",
+        entity_id=resource.id,
+        old_values=old_values,
+        new_values={k: str(v) for k, v in updates.items()},
+        request=request,
     )
     await db.commit()
     return await AcademicResourceService(db)._to_response(resource)

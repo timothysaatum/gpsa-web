@@ -1,8 +1,20 @@
-import uuid
-from datetime import datetime
+from __future__ import annotations
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum as SAEnum, Integer, SmallInteger, String
-from sqlalchemy.dialects.postgresql import UUID
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.academic_resource import AcademicResource
+    from app.models.audit import AuditLog
+    from app.models.certificate import Certificate
+    from app.models.event import EventRegistration
+    from app.models.feedback import Feedback
+    from app.models.news import NewsPost
+    from app.models.notification import Notification
+    from app.models.token import PasswordResetToken, RefreshToken
+
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, SmallInteger, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -13,13 +25,17 @@ from app.models.enums import UserRole
 class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "users"
     __table_args__ = (
-        CheckConstraint("level IS NULL OR (level >= 100 AND level <= 600)", name="ck_users_level_range"),
+        CheckConstraint(
+            "level IS NULL OR (level >= 100 AND level <= 600)", name="ck_users_level_range"
+        ),
     )
 
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    student_id: Mapped[str | None] = mapped_column(String(50), unique=True, index=True, nullable=True)
+    student_id: Mapped[str | None] = mapped_column(
+        String(50), unique=True, index=True, nullable=True
+    )
     level: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)  # 100–600
 
     role: Mapped[UserRole] = mapped_column(
@@ -32,7 +48,9 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     verification_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    verification_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    verification_sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Brute-force protection
@@ -40,31 +58,31 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+    refresh_tokens: Mapped[list[RefreshToken]] = relationship(
         back_populates="user", cascade="all, delete-orphan", lazy="noload"
     )
-    password_reset_tokens: Mapped[list["PasswordResetToken"]] = relationship(
+    password_reset_tokens: Mapped[list[PasswordResetToken]] = relationship(
         back_populates="user", cascade="all, delete-orphan", lazy="noload"
     )
-    audit_logs: Mapped[list["AuditLog"]] = relationship(
+    audit_logs: Mapped[list[AuditLog]] = relationship(
         back_populates="actor", foreign_keys="AuditLog.actor_id", lazy="noload"
     )
-    notifications: Mapped[list["Notification"]] = relationship(
+    notifications: Mapped[list[Notification]] = relationship(
         back_populates="user", cascade="all, delete-orphan", lazy="noload"
     )
-    event_registrations: Mapped[list["EventRegistration"]] = relationship(
+    event_registrations: Mapped[list[EventRegistration]] = relationship(
         back_populates="user", lazy="noload"
     )
-    uploaded_resources: Mapped[list["AcademicResource"]] = relationship(
-        back_populates="uploaded_by_user", foreign_keys="AcademicResource.uploaded_by", lazy="noload"
+    uploaded_resources: Mapped[list[AcademicResource]] = relationship(
+        back_populates="uploaded_by_user",
+        foreign_keys="AcademicResource.uploaded_by",
+        lazy="noload",
     )
-    news_posts: Mapped[list["NewsPost"]] = relationship(
+    news_posts: Mapped[list[NewsPost]] = relationship(
         back_populates="author", foreign_keys="NewsPost.author_id", lazy="noload"
     )
-    certificates: Mapped[list["Certificate"]] = relationship(
-        back_populates="user", lazy="noload"
-    )
-    feedback: Mapped[list["Feedback"]] = relationship(
+    certificates: Mapped[list[Certificate]] = relationship(back_populates="user", lazy="noload")
+    feedback: Mapped[list[Feedback]] = relationship(
         back_populates="submitted_by_user", lazy="noload"
     )
 

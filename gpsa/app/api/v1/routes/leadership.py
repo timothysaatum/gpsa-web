@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -117,7 +117,9 @@ async def _get_term_or_404(db: AsyncSession, term_id: uuid.UUID) -> LeadershipTe
     )
     term = result.scalar_one_or_none()
     if term is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Leadership term not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Leadership term not found."
+        )
     return term
 
 
@@ -132,7 +134,11 @@ async def list_terms(
         select(LeadershipTerm)
         .options(selectinload(LeadershipTerm.leaders))
         .where(LeadershipTerm.deleted_at.is_(None))
-        .order_by(LeadershipTerm.is_current.desc(), LeadershipTerm.sort_order.asc(), LeadershipTerm.created_at.desc())
+        .order_by(
+            LeadershipTerm.is_current.desc(),
+            LeadershipTerm.sort_order.asc(),
+            LeadershipTerm.created_at.desc(),
+        )
         .offset(offset)
         .limit(limit)
     )
@@ -140,11 +146,15 @@ async def list_terms(
     terms = list(result.scalars().unique().all())
     if not include_inactive:
         for term in terms:
-            term.leaders = [leader for leader in term.leaders if leader.deleted_at is None and leader.is_active]
+            term.leaders = [
+                leader for leader in term.leaders if leader.deleted_at is None and leader.is_active
+            ]
     return [LeadershipTermResponse.model_validate(term) for term in terms]
 
 
-@router.get("/current", response_model=LeadershipTermResponse | None, summary="Get current leadership")
+@router.get(
+    "/current", response_model=LeadershipTermResponse | None, summary="Get current leadership"
+)
 async def get_current_leadership(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> LeadershipTermResponse | None:
@@ -161,7 +171,9 @@ async def get_current_leadership(
     term = result.scalar_one_or_none()
     if term is None:
         return None
-    term.leaders = [leader for leader in term.leaders if leader.deleted_at is None and leader.is_active]
+    term.leaders = [
+        leader for leader in term.leaders if leader.deleted_at is None and leader.is_active
+    ]
     return LeadershipTermResponse.model_validate(term)
 
 
@@ -237,7 +249,9 @@ async def delete_term(
 ) -> MessageResponse:
     term = await _get_term_or_404(db, term_id)
     await BaseRepository(LeadershipTerm, db).soft_delete(term)
-    await AuditService(db).log(action="DELETE", entity_type="leadership_term", entity_id=term.id, request=request)
+    await AuditService(db).log(
+        action="DELETE", entity_type="leadership_term", entity_id=term.id, request=request
+    )
     await db.commit()
     return MessageResponse(message="Leadership term deleted.")
 
@@ -324,7 +338,9 @@ async def upload_leader_photo(
         mime_type=validated.mime_type,
         public=True,
     )
-    leader = await repo.update(leader, {"photo_key": photo_key, "photo_url": storage.cdn_url(photo_key)})
+    leader = await repo.update(
+        leader, {"photo_key": photo_key, "photo_url": storage.cdn_url(photo_key)}
+    )
     await AuditService(db).log(
         action="UPLOAD_PHOTO",
         entity_type="leader",
@@ -351,6 +367,8 @@ async def delete_leader(
     repo = BaseRepository(Leader, db)
     leader = await repo.get_by_id_or_404(leader_id)
     await repo.soft_delete(leader)
-    await AuditService(db).log(action="DELETE", entity_type="leader", entity_id=leader.id, request=request)
+    await AuditService(db).log(
+        action="DELETE", entity_type="leader", entity_id=leader.id, request=request
+    )
     await db.commit()
     return MessageResponse(message="Leader deleted.")

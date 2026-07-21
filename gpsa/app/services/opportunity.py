@@ -114,8 +114,13 @@ class OpportunityService:
     ) -> tuple[list[Opportunity], int]:
         active_only = not include_expired
         opps = await self.repo.list_filtered(
-            opp_type=opp_type, active_only=active_only, search=search,
-            sort_by=sort_by, sort_order=sort_order, offset=offset, limit=limit
+            opp_type=opp_type,
+            active_only=active_only,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            offset=offset,
+            limit=limit,
         )
         total = await self.repo.count_filtered(
             opp_type=opp_type, active_only=active_only, search=search
@@ -125,7 +130,9 @@ class OpportunityService:
     async def get_by_id(self, opp_id: uuid.UUID) -> Opportunity:
         opp = await self.repo.get_by_id_or_404(opp_id)
         if not opp.is_published:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found."
+            )
         return opp
 
     async def create(
@@ -153,13 +160,19 @@ class OpportunityService:
         }
         opp = await self.repo.create(data)
         await self.audit.log(
-            action="CREATE", entity_type="opportunity",
-            entity_id=opp.id, new_values={"title": opp.title}, request=request,
+            action="CREATE",
+            entity_type="opportunity",
+            entity_id=opp.id,
+            new_values={"title": opp.title},
+            request=request,
         )
         await self.db.commit()
-        await self.bus.publish_async(OpportunityCreated(
-            opportunity_id=opp.id, title=opp.title,
-        ))
+        await self.bus.publish_async(
+            OpportunityCreated(
+                opportunity_id=opp.id,
+                title=opp.title,
+            )
+        )
         return opp
 
     async def update(
@@ -180,8 +193,11 @@ class OpportunityService:
         old_values = {k: str(getattr(opp, k)) for k in updates}
         opp = await self.repo.update(opp, updates)
         await self.audit.log(
-            action="UPDATE", entity_type="opportunity", entity_id=opp.id,
-            old_values=old_values, new_values={k: str(v) for k, v in updates.items()},
+            action="UPDATE",
+            entity_type="opportunity",
+            entity_id=opp.id,
+            old_values=old_values,
+            new_values={k: str(v) for k, v in updates.items()},
             request=request,
         )
         await self.db.commit()
