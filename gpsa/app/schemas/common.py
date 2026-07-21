@@ -1,6 +1,4 @@
-import uuid
-from datetime import datetime
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
@@ -23,7 +21,7 @@ class AppModel(BaseModel):
     )
 
 
-class PaginatedResponse(AppModel, Generic[DataT]):
+class PaginatedResponse[DataT](AppModel):
     """Standard envelope for paginated list endpoints."""
 
     items: list[DataT]
@@ -38,6 +36,7 @@ class PaginatedResponse(AppModel, Generic[DataT]):
 
 class MessageResponse(AppModel):
     """Simple acknowledgement response."""
+
     message: str
 
 

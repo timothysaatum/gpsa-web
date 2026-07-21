@@ -21,11 +21,15 @@ os.environ.setdefault("ENVIRONMENT", "development")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # ── IMPORTANT: Configure logging BEFORE any other imports that use logger ─────
-from app.core.config import settings
-from app.core.logging import configure_logging, get_logger   # Use get_logger from logging.py
+from sqlalchemy import select
 
+from app.core.config import settings
+from app.core.logging import configure_logging, get_logger  # Use get_logger from logging.py
 from app.core.security import hash_password
 from app.db.session import AsyncSessionLocal
+from app.models.academic_resource import AcademicResource
+from app.models.audit import AuditLog
+from app.models.course import Course
 from app.models.enums import (
     ContentType,
     EventStatus,
@@ -40,18 +44,14 @@ from app.models.enums import (
     UserRole,
     WelfareCategory,
 )
-from app.models.academic_resource import AcademicResource
-from app.models.audit import AuditLog
 from app.models.event import Event, EventRegistration
 from app.models.gallery import GalleryImage
 from app.models.hero_slide import HeroSlide
 from app.models.leadership import Leader, LeadershipTerm
 from app.models.news import NewsPost
 from app.models.opportunity import Opportunity
-from app.models.course import Course
 from app.models.user import User
 from app.models.welfare import WelfareReport, WelfareSpotlight
-from sqlalchemy import select
 
 # Configure logging FIRST
 configure_logging()
@@ -61,6 +61,7 @@ logger = get_logger("seed_db")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 async def get_or_create_user(db, **kwargs) -> User:
     result = await db.execute(select(User).where(User.email == kwargs["email"]))
@@ -85,6 +86,7 @@ async def get_or_create_course(db, **kwargs) -> Course:
 
 
 # ── Seed functions ────────────────────────────────────────────────────────────
+
 
 async def seed_users(db) -> dict[str, User]:
     logger.info("seeding_users")
@@ -236,17 +238,21 @@ async def seed_academic_resources(db, users: dict, courses: list[Course]) -> Non
     ]
 
     for data in resources_data:
-        result = await db.execute(select(AcademicResource).where(AcademicResource.title == data["title"]))
+        result = await db.execute(
+            select(AcademicResource).where(AcademicResource.title == data["title"])
+        )
         if result.scalar_one_or_none():
             continue
         course = data.pop("course")
-        db.add(AcademicResource(
-            **data,
-            course_id=course.id,
-            uploaded_by=users["exec"].id,
-            reviewed_by=users["admin"].id,
-            reviewed_at=reviewed_at,
-        ))
+        db.add(
+            AcademicResource(
+                **data,
+                course_id=course.id,
+                uploaded_by=users["exec"].id,
+                reviewed_by=users["admin"].id,
+                reviewed_at=reviewed_at,
+            )
+        )
     await db.flush()
     logger.info("academic_resources_seeded", count=len(resources_data))
 
@@ -371,7 +377,7 @@ async def seed_events(db, users: dict) -> list[Event]:
 
 async def seed_opportunities(db, users: dict) -> None:
     logger.info("seeding_opportunities")
-    now = datetime.now(UTC)   # Keep this aware
+    now = datetime.now(UTC)  # Keep this aware
 
     opps_data = [
         {
@@ -390,7 +396,7 @@ async def seed_opportunities(db, users: dict) -> None:
             "is_active": True,
             "posted_by": users["exec"].id,
             "reviewed_by": users["admin"].id,
-            "reviewed_at": now,                    # ← use aware datetime
+            "reviewed_at": now,  # ← use aware datetime
         },
         {
             "title": "Ghana MoH Scholarship Programme 2025",
@@ -668,10 +674,42 @@ async def seed_leadership(db) -> None:
             "is_current": True,
             "sort_order": 1,
             "leaders": [
-                ("Abena Mensah", "President", "Represents GPSA-UDS and leads executive strategy.", "president@gpsauds.org", "+233244100001", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80", 1),
-                ("Kwesi Addo", "Vice President", "Coordinates committee delivery and executive follow-up.", "vicepresident@gpsauds.org", "+233244100002", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80", 2),
-                ("Efua Sarpong", "General Secretary", "Handles records, notices, and official correspondence.", "secretary@gpsauds.org", "+233244100003", "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=800&q=80", 3),
-                ("Daniel Osei", "Financial Secretary", "Manages dues, budgets, and financial reporting.", "finance@gpsauds.org", "+233244100004", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80", 4),
+                (
+                    "Abena Mensah",
+                    "President",
+                    "Represents GPSA-UDS and leads executive strategy.",
+                    "president@gpsauds.org",
+                    "+233244100001",
+                    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80",
+                    1,
+                ),
+                (
+                    "Kwesi Addo",
+                    "Vice President",
+                    "Coordinates committee delivery and executive follow-up.",
+                    "vicepresident@gpsauds.org",
+                    "+233244100002",
+                    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80",
+                    2,
+                ),
+                (
+                    "Efua Sarpong",
+                    "General Secretary",
+                    "Handles records, notices, and official correspondence.",
+                    "secretary@gpsauds.org",
+                    "+233244100003",
+                    "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=800&q=80",
+                    3,
+                ),
+                (
+                    "Daniel Osei",
+                    "Financial Secretary",
+                    "Manages dues, budgets, and financial reporting.",
+                    "finance@gpsauds.org",
+                    "+233244100004",
+                    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80",
+                    4,
+                ),
             ],
         },
         {
@@ -684,36 +722,66 @@ async def seed_leadership(db) -> None:
             "is_current": False,
             "sort_order": 2,
             "leaders": [
-                ("Nana Owusu", "President", "Led student representation and association partnerships.", "nana.owusu@gpsauds.org", None, "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80", 1),
-                ("Ama Kumi", "Vice President", "Supported committee supervision and program delivery.", "ama.kumi@gpsauds.org", None, "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=800&q=80", 2),
-                ("Kojo Frimpong", "Academic Affairs", "Expanded shared learning material and exam support.", "academic@gpsauds.org", None, "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?auto=format&fit=crop&w=800&q=80", 3),
+                (
+                    "Nana Owusu",
+                    "President",
+                    "Led student representation and association partnerships.",
+                    "nana.owusu@gpsauds.org",
+                    None,
+                    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
+                    1,
+                ),
+                (
+                    "Ama Kumi",
+                    "Vice President",
+                    "Supported committee supervision and program delivery.",
+                    "ama.kumi@gpsauds.org",
+                    None,
+                    "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=800&q=80",
+                    2,
+                ),
+                (
+                    "Kojo Frimpong",
+                    "Academic Affairs",
+                    "Expanded shared learning material and exam support.",
+                    "academic@gpsauds.org",
+                    None,
+                    "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?auto=format&fit=crop&w=800&q=80",
+                    3,
+                ),
             ],
         },
     ]
 
     for term_data in terms_data:
         leaders = term_data.pop("leaders")
-        result = await db.execute(select(LeadershipTerm).where(LeadershipTerm.academic_year == term_data["academic_year"]))
+        result = await db.execute(
+            select(LeadershipTerm).where(LeadershipTerm.academic_year == term_data["academic_year"])
+        )
         term = result.scalar_one_or_none()
         if term is None:
             term = LeadershipTerm(**term_data)
             db.add(term)
             await db.flush()
         for full_name, office, bio, email, phone, photo_url, sort_order in leaders:
-            result = await db.execute(select(Leader).where(Leader.term_id == term.id, Leader.office == office))
+            result = await db.execute(
+                select(Leader).where(Leader.term_id == term.id, Leader.office == office)
+            )
             if result.scalar_one_or_none():
                 continue
-            db.add(Leader(
-                term_id=term.id,
-                full_name=full_name,
-                office=office,
-                bio=bio,
-                email=email,
-                phone=phone,
-                photo_url=photo_url,
-                sort_order=sort_order,
-                is_active=True,
-            ))
+            db.add(
+                Leader(
+                    term_id=term.id,
+                    full_name=full_name,
+                    office=office,
+                    bio=bio,
+                    email=email,
+                    phone=phone,
+                    photo_url=photo_url,
+                    sort_order=sort_order,
+                    is_active=True,
+                )
+            )
     await db.flush()
     logger.info("leadership_seeded", count=len(terms_data))
 
@@ -724,17 +792,19 @@ async def seed_welfare(db) -> None:
     # Spotlight
     result = await db.execute(select(WelfareSpotlight).where(WelfareSpotlight.is_active.is_(True)))
     if not result.scalar_one_or_none():
-        db.add(WelfareSpotlight(
-            summary=(
-                "Multiple Level 300 students reported difficulties accessing lab chemicals "
-                "for practicals due to supply chain delays in the Faculty store."
-            ),
-            action_taken=(
-                "The GPSA Academic Officer has formally raised this with the Faculty Dean. "
-                "A response is expected by end of week."
-            ),
-            is_active=True,
-        ))
+        db.add(
+            WelfareSpotlight(
+                summary=(
+                    "Multiple Level 300 students reported difficulties accessing lab chemicals "
+                    "for practicals due to supply chain delays in the Faculty store."
+                ),
+                action_taken=(
+                    "The GPSA Academic Officer has formally raised this with the Faculty Dean. "
+                    "A response is expected by end of week."
+                ),
+                is_active=True,
+            )
+        )
         await db.flush()
 
     # Sample reports
@@ -772,7 +842,9 @@ async def seed_welfare(db) -> None:
     ]
 
     for data in reports_data:
-        result = await db.execute(select(WelfareReport).where(WelfareReport.description == data["description"]))
+        result = await db.execute(
+            select(WelfareReport).where(WelfareReport.description == data["description"])
+        )
         if not result.scalar_one_or_none():
             db.add(WelfareReport(**data))
 
@@ -834,6 +906,7 @@ async def seed_audit_logs(db, users: dict) -> None:
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
+
 
 async def seed() -> None:
     if settings.is_production:

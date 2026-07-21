@@ -8,10 +8,10 @@ from app.api.v1.routes.stats import get_stats
 from app.db.session import get_db
 from app.models.enums import EventStatus
 from app.models.gallery import GalleryImage
+from app.repositories.event import EventRepository
 from app.schemas.common import AppModel
 from app.services.news import NewsService
 from app.services.opportunity import OpportunityService
-from app.repositories.event import EventRepository
 from app.services.welfare import WelfareService
 
 
@@ -101,10 +101,26 @@ async def get_about_content(
             },
         ],
         timeline=[
-            {"year": "2015", "title": "Association foundation", "body": "GPSA-UDS began formal student representation and advocacy."},
-            {"year": "2018", "title": "Welfare strengthened", "body": "A clearer welfare channel was established for student wellbeing."},
-            {"year": "2021", "title": "Academic resource focus", "body": "Academic support expanded through shared learning material."},
-            {"year": "2025", "title": "Digital student portal", "body": "Events, resources, welfare, news, gallery, and opportunities moved into one public platform."},
+            {
+                "year": "2015",
+                "title": "Association foundation",
+                "body": "GPSA-UDS began formal student representation and advocacy.",
+            },
+            {
+                "year": "2018",
+                "title": "Welfare strengthened",
+                "body": "A clearer welfare channel was established for student wellbeing.",
+            },
+            {
+                "year": "2021",
+                "title": "Academic resource focus",
+                "body": "Academic support expanded through shared learning material.",
+            },
+            {
+                "year": "2025",
+                "title": "Digital student portal",
+                "body": "Events, resources, welfare, news, gallery, and opportunities moved into one public platform.",
+            },
         ],
         stats=stats,
         featured_news={
@@ -113,7 +129,9 @@ async def get_about_content(
             "summary": news.summary,
             "category": news.category.value,
             "published_at": news.published_at,
-        } if news else None,
+        }
+        if news
+        else None,
         upcoming_events=[
             {
                 "id": str(event.id),

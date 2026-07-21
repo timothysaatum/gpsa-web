@@ -2,14 +2,14 @@ import enum
 
 
 # ── Users ─────────────────────────────────────────────────────────────────────
-class UserRole(str, enum.Enum):
+class UserRole(enum.StrEnum):
     student = "student"
     exec = "exec"
     admin = "admin"
 
 
 # ── Academic Resources ────────────────────────────────────────────────────────
-class ContentType(str, enum.Enum):
+class ContentType(enum.StrEnum):
     exam_questions = "exam_questions"
     lecture_slides = "lecture_slides"
     tutorial_videos = "tutorial_videos"
@@ -17,13 +17,13 @@ class ContentType(str, enum.Enum):
     field_materials = "field_materials"
 
 
-class Trimester(str, enum.Enum):
+class Trimester(enum.StrEnum):
     first = "first"
     second = "second"
     third = "third"
 
 
-class FileType(str, enum.Enum):
+class FileType(enum.StrEnum):
     pdf = "pdf"
     video = "video"
     doc = "doc"
@@ -32,7 +32,7 @@ class FileType(str, enum.Enum):
 
 
 # ── Events ────────────────────────────────────────────────────────────────────
-class EventType(str, enum.Enum):
+class EventType(enum.StrEnum):
     academic = "academic"
     welfare = "welfare"
     outreach = "outreach"
@@ -40,20 +40,20 @@ class EventType(str, enum.Enum):
     conference = "conference"
 
 
-class EventStatus(str, enum.Enum):
+class EventStatus(enum.StrEnum):
     upcoming = "upcoming"
     ongoing = "ongoing"
     past = "past"
 
 
 # ── Welfare ───────────────────────────────────────────────────────────────────
-class ReportType(str, enum.Enum):
+class ReportType(enum.StrEnum):
     issue = "issue"
     support = "support"
     confidential = "confidential"
 
 
-class WelfareCategory(str, enum.Enum):
+class WelfareCategory(enum.StrEnum):
     academic = "academic"
     welfare = "welfare"
     financial = "financial"
@@ -61,14 +61,14 @@ class WelfareCategory(str, enum.Enum):
     other = "other"
 
 
-class ReportStatus(str, enum.Enum):
+class ReportStatus(enum.StrEnum):
     pending = "pending"
     in_review = "in_review"
     resolved = "resolved"
 
 
 # ── Opportunities ─────────────────────────────────────────────────────────────
-class OpportunityType(str, enum.Enum):
+class OpportunityType(enum.StrEnum):
     internship = "internship"
     scholarship = "scholarship"
     job = "job"
@@ -76,7 +76,7 @@ class OpportunityType(str, enum.Enum):
 
 
 # ── News ──────────────────────────────────────────────────────────────────────
-class NewsCategory(str, enum.Enum):
+class NewsCategory(enum.StrEnum):
     announcement = "announcement"
     academic_update = "academic_update"
     welfare_update = "welfare_update"
@@ -86,7 +86,7 @@ class NewsCategory(str, enum.Enum):
 
 
 # ── Notifications ─────────────────────────────────────────────────────────────
-class NotificationType(str, enum.Enum):
+class NotificationType(enum.StrEnum):
     event_reminder = "event_reminder"
     event_registration = "event_registration"
     welfare_status_change = "welfare_status_change"
@@ -96,14 +96,14 @@ class NotificationType(str, enum.Enum):
 
 
 # ── Feedback ──────────────────────────────────────────────────────────────────
-class FeedbackEntityType(str, enum.Enum):
+class FeedbackEntityType(enum.StrEnum):
     event = "event"
     academic_resource = "academic_resource"
     opportunity = "opportunity"
 
 
 # ── Gallery ──────────────────────────────────────────────────────────────────
-class GalleryCategory(str, enum.Enum):
+class GalleryCategory(enum.StrEnum):
     events = "events"
     academic = "academic"
     health = "health"
@@ -113,14 +113,14 @@ class GalleryCategory(str, enum.Enum):
 
 
 # ── Email Logs ────────────────────────────────────────────────────────────────
-class EmailStatus(str, enum.Enum):
+class EmailStatus(enum.StrEnum):
     pending = "pending"
     sent = "sent"
     failed = "failed"
     permanent_failure = "permanent_failure"
 
 
-class EmailTemplate(str, enum.Enum):
+class EmailTemplate(enum.StrEnum):
     email_verification = "email_verification"
     password_reset = "password_reset"
     event_registration_confirmation = "event_registration_confirmation"

@@ -30,16 +30,12 @@ class CourseRepository(BaseRepository[Course]):
         super().__init__(Course, db)
 
     async def get_by_code(self, code: str) -> Course | None:
-        result = await self.db.execute(
-            self._base_query().where(Course.code == code.upper())
-        )
+        result = await self.db.execute(self._base_query().where(Course.code == code.upper()))
         return result.scalar_one_or_none()
 
     async def list_by_level(self, level: int) -> list[Course]:
         result = await self.db.execute(
-            self._base_query()
-            .where(Course.level == level)
-            .order_by(Course.name)
+            self._base_query().where(Course.level == level).order_by(Course.name)
         )
         return list(result.scalars().all())
 
@@ -96,8 +92,10 @@ class AcademicResourceRepository(BaseRepository[AcademicResource]):
         search: str | None = None,
         is_featured: bool | None = None,
     ) -> int:
-        q = select(func.count()).select_from(AcademicResource).where(
-            AcademicResource.deleted_at.is_(None)
+        q = (
+            select(func.count())
+            .select_from(AcademicResource)
+            .where(AcademicResource.deleted_at.is_(None))
         )
 
         if published_only:

@@ -1,7 +1,14 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Enum as SAEnum, ForeignKey, Index, SmallInteger, Text, func
+if TYPE_CHECKING:
+    from app.models.user import User
+
+from sqlalchemy import CheckConstraint, ForeignKey, Index, SmallInteger, Text, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -54,7 +61,7 @@ class Feedback(UUIDPrimaryKeyMixin, Base):
     )
 
     # Relationships
-    submitted_by_user: Mapped["User"] = relationship(  # type: ignore[name-defined]
+    submitted_by_user: Mapped[User] = relationship(
         back_populates="feedback",
     )
 

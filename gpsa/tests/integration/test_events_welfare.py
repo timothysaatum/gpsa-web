@@ -13,6 +13,7 @@ WELFARE_BASE = "/api/v1/welfare"
 
 # ── Events ────────────────────────────────────────────────────────────────────
 
+
 class TestEventsList:
     async def test_list_events_public(self, client: AsyncClient):
         resp = await client.get(f"{EVENTS_BASE}/")
@@ -35,9 +36,7 @@ class TestEventCreate:
         resp = await client.post(f"{EVENTS_BASE}/", json={})
         assert resp.status_code == 401
 
-    async def test_create_event_student_forbidden(
-        self, client: AsyncClient, student_token: str
-    ):
+    async def test_create_event_student_forbidden(self, client: AsyncClient, student_token: str):
         payload = {
             "title": "Test Event",
             "description": "A test event description",
@@ -52,9 +51,7 @@ class TestEventCreate:
         )
         assert resp.status_code == 403
 
-    async def test_create_event_admin_success(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_create_event_admin_success(self, client: AsyncClient, admin_token: str):
         payload = {
             "title": "Admin Test Event",
             "description": "A detailed description of the test event here",
@@ -109,9 +106,7 @@ class TestEventRegistration:
         )
         return resp.json()["id"]
 
-    async def test_register_for_event_guest(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_register_for_event_guest(self, client: AsyncClient, admin_token: str):
         event_id = await self._create_event(client, admin_token)
         resp = await client.post(
             f"{EVENTS_BASE}/{event_id}/register",
@@ -128,7 +123,9 @@ class TestEventRegistration:
         headers = {"Authorization": f"Bearer {student_token}"}
 
         await client.post(f"{EVENTS_BASE}/{event_id}/register", json=reg_payload, headers=headers)
-        resp = await client.post(f"{EVENTS_BASE}/{event_id}/register", json=reg_payload, headers=headers)
+        resp = await client.post(
+            f"{EVENTS_BASE}/{event_id}/register", json=reg_payload, headers=headers
+        )
         assert resp.status_code == 409
 
     async def test_list_registrations_requires_exec(
@@ -149,6 +146,7 @@ class TestEventRegistration:
 
 
 # ── Welfare ───────────────────────────────────────────────────────────────────
+
 
 class TestWelfareReports:
     async def test_submit_issue_report(self, client: AsyncClient):
@@ -202,9 +200,7 @@ class TestWelfareReports:
         resp = await client.get(f"{WELFARE_BASE}/spotlight")
         assert resp.status_code == 200  # null is fine if none active
 
-    async def test_create_spotlight_requires_exec(
-        self, client: AsyncClient, student_token: str
-    ):
+    async def test_create_spotlight_requires_exec(self, client: AsyncClient, student_token: str):
         resp = await client.post(
             f"{WELFARE_BASE}/spotlight",
             json={"summary": "Test issue", "action_taken": "Being investigated"},
@@ -212,9 +208,7 @@ class TestWelfareReports:
         )
         assert resp.status_code == 403
 
-    async def test_create_spotlight_admin_ok(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_create_spotlight_admin_ok(self, client: AsyncClient, admin_token: str):
         resp = await client.post(
             f"{WELFARE_BASE}/spotlight",
             json={

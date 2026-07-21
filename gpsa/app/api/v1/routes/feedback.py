@@ -53,18 +53,21 @@ async def submit_feedback(
 
     fb = await repo.create(data)
     await AuditService(db).log(
-        action="CREATE", entity_type="feedback",
+        action="CREATE",
+        entity_type="feedback",
         entity_id=fb.id,
         new_values={"entity_type": payload.entity_type, "rating": payload.rating},
         request=request,
     )
     await db.commit()
-    await domain_bus.publish_async(FeedbackSubmitted(
-        feedback_id=fb.id,
-        entity_type=str(payload.entity_type),
-        entity_id=payload.entity_id,
-        rating=payload.rating,
-    ))
+    await domain_bus.publish_async(
+        FeedbackSubmitted(
+            feedback_id=fb.id,
+            entity_type=str(payload.entity_type),
+            entity_id=payload.entity_id,
+            rating=payload.rating,
+        )
+    )
     return FeedbackResponse.model_validate(fb)
 
 

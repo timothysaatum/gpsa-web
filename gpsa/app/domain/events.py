@@ -7,8 +7,8 @@ from dataclasses import dataclass
 
 from .kernel import DomainEvent
 
-
 # ── Auth ───────────────────────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class UserRegistered(DomainEvent):
@@ -28,6 +28,7 @@ class PasswordReset(DomainEvent):
 
 
 # ── Events ─────────────────────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class EventCreated(DomainEvent):
@@ -52,6 +53,7 @@ class RegistrationConfirmed(DomainEvent):
 
 # ── Feedback ───────────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class FeedbackSubmitted(DomainEvent):
     feedback_id: uuid.UUID
@@ -61,6 +63,7 @@ class FeedbackSubmitted(DomainEvent):
 
 
 # ── Welfare ────────────────────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class ReportSubmitted(DomainEvent):
@@ -77,6 +80,7 @@ class ReportResolved(DomainEvent):
 
 # ── Opportunities ──────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class OpportunityCreated(DomainEvent):
     opportunity_id: uuid.UUID
@@ -84,6 +88,7 @@ class OpportunityCreated(DomainEvent):
 
 
 # ── Certificates ───────────────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class CertificateIssued(DomainEvent):
@@ -93,6 +98,7 @@ class CertificateIssued(DomainEvent):
 
 
 # ── News ───────────────────────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class NewsPublished(DomainEvent):

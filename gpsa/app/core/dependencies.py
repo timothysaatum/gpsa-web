@@ -10,14 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_token
 from app.db.session import get_db
-from app.models.user import User
 from app.models.enums import UserRole
+from app.models.user import User
 
 logger = structlog.get_logger(__name__)
 
 _bearer = HTTPBearer(auto_error=False)
 
 # ── Token extraction ──────────────────────────────────────────────────────────
+
 
 async def _get_token_payload(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
@@ -52,6 +53,7 @@ async def _get_token_payload(
 
 # ── User resolution ───────────────────────────────────────────────────────────
 
+
 async def get_current_user(
     request: Request,
     payload: Annotated[dict, Depends(_get_token_payload)],
@@ -64,16 +66,18 @@ async def get_current_user(
     """
     user_id_str: str | None = payload.get("sub")
     if not user_id_str:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token subject")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token subject"
+        )
 
     try:
         user_id = uuid.UUID(user_id_str)
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Malformed token subject")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Malformed token subject"
+        )
 
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.deleted_at.is_(None))
-    )
+    result = await db.execute(select(User).where(User.id == user_id, User.deleted_at.is_(None)))
     user = result.scalar_one_or_none()
 
     if user is None:
@@ -112,9 +116,7 @@ async def get_current_user_optional(
     except Exception:
         return None
 
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.deleted_at.is_(None))
-    )
+    result = await db.execute(select(User).where(User.id == user_id, User.deleted_at.is_(None)))
     user = result.scalar_one_or_none()
     if user:
         request.state.actor_id = user.id
@@ -138,6 +140,7 @@ def require_roles(*roles: UserRole):
             user: Annotated[User, Depends(require_roles(UserRole.admin, UserRole.exec))]
         ): ...
     """
+
     async def _check(user: CurrentUser) -> User:
         if user.role not in roles:
             raise HTTPException(
@@ -145,6 +148,7 @@ def require_roles(*roles: UserRole):
                 detail="You do not have permission to perform this action.",
             )
         return user
+
     return _check
 
 

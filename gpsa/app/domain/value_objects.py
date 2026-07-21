@@ -11,8 +11,8 @@ from dataclasses import dataclass
 
 from .kernel import ValueObject
 
-
 # ── Auth / User ────────────────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class Email(ValueObject):
@@ -82,6 +82,7 @@ class FullName(ValueObject):
 
 # ── General ────────────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class URL(ValueObject):
     value: str
@@ -128,6 +129,7 @@ class FileSize(ValueObject):
 
 
 # ── Certificates ───────────────────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class VerificationCode(ValueObject):

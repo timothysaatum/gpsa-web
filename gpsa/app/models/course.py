@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.academic_resource import AcademicResource
+
 from sqlalchemy import CheckConstraint, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,7 +28,7 @@ class Course(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     level: Mapped[int] = mapped_column(SmallInteger, nullable=False)  # 100–600
 
     # Relationships
-    academic_resources: Mapped[list["AcademicResource"]] = relationship(  # type: ignore[name-defined]
+    academic_resources: Mapped[list[AcademicResource]] = relationship(
         back_populates="course", lazy="noload"
     )
 

@@ -5,16 +5,16 @@ Revises: ec3c66ef1a49
 Create Date: 2026-07-18 05:18:00.000000
 
 """
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
-
+from alembic import op
 
 revision: str = "7b6c2f1a9d03"
-down_revision: Union[str, Sequence[str], None] = "ec3c66ef1a49"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "ec3c66ef1a49"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -28,13 +28,28 @@ def upgrade() -> None:
         sa.Column("category", sa.String(length=50), nullable=False),
         sa.Column("event_date", sa.Date(), nullable=True),
         sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_gallery_images_category", "gallery_images", ["category"], unique=False)
-    op.create_index("ix_gallery_images_sort_created", "gallery_images", ["sort_order", "created_at"], unique=False)
+    op.create_index(
+        "ix_gallery_images_sort_created",
+        "gallery_images",
+        ["sort_order", "created_at"],
+        unique=False,
+    )
 
 
 def downgrade() -> None:

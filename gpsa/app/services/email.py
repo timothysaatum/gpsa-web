@@ -9,9 +9,10 @@ For a production system, replace the inline HTML with a proper
 template engine (e.g. Jinja2 with mjml-compiled templates).
 """
 
-import structlog
-import resend
 from datetime import UTC, datetime
+
+import resend
+import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -109,16 +110,20 @@ class EmailService:
         await self.db.flush()
 
         try:
-            response = resend.Emails.send({
-                "from": f"{settings.email_from_name} <{settings.email_from_address}>",
-                "to": [to],
-                "subject": subject,
-                "html": html_body,
-            })
+            response = resend.Emails.send(
+                {
+                    "from": f"{settings.email_from_name} <{settings.email_from_address}>",
+                    "to": [to],
+                    "subject": subject,
+                    "html": html_body,
+                }
+            )
             log_entry.status = EmailStatus.sent
             log_entry.provider_message_id = response.get("id")
             log_entry.sent_at = datetime.now(UTC)
-            logger.info("email_sent", to=to, template=template, msg_id=log_entry.provider_message_id)
+            logger.info(
+                "email_sent", to=to, template=template, msg_id=log_entry.provider_message_id
+            )
 
         except Exception as exc:
             log_entry.status = EmailStatus.failed
@@ -208,14 +213,12 @@ class EmailService:
             <p>Thank you for reaching out.</p>
         """)
 
-    def _welfare_status_template(
-        self, name: str, status: str, notes: str | None
-    ) -> str:
+    def _welfare_status_template(self, name: str, status: str, notes: str | None) -> str:
         notes_block = f"<p><strong>Update from the team:</strong> {notes}</p>" if notes else ""
         return self._base_template(f"""
             <p>Hi <strong>{name}</strong>,</p>
             <p>There is an update on your PharmaCare report.
-               The current status is now: <strong>{status.replace('_', ' ').title()}</strong>.</p>
+               The current status is now: <strong>{status.replace("_", " ").title()}</strong>.</p>
             {notes_block}
             <p>If you have further concerns, please do not hesitate to reach out.</p>
         """)

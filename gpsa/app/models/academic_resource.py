@@ -1,7 +1,15 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, Enum as SAEnum, ForeignKey, Index, SmallInteger, String
+if TYPE_CHECKING:
+    from app.models.course import Course
+    from app.models.user import User
+
+from sqlalchemy import BigInteger, Boolean, ForeignKey, Index, SmallInteger, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -53,7 +61,9 @@ class AcademicResource(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Bas
     duration_mins: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)  # videos only
 
     # Visibility
-    is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # "Best Sample"
+    is_featured: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )  # "Best Sample"
     is_published: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Attribution
@@ -70,10 +80,11 @@ class AcademicResource(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Bas
     reviewed_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     # Relationships
-    course: Mapped["Course"] = relationship(back_populates="academic_resources")  # type: ignore[name-defined]
-    uploaded_by_user: Mapped["User | None"] = relationship(  # type: ignore[name-defined]
+    course: Mapped[Course] = relationship(back_populates="academic_resources")
+    uploaded_by_user: Mapped[User | None] = relationship(
         back_populates="uploaded_resources",
         foreign_keys=[uploaded_by],
     )
+
     def __repr__(self) -> str:
         return f"<AcademicResource id={self.id} title={self.title!r} type={self.content_type}>"

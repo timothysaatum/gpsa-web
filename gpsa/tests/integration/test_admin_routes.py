@@ -2,7 +2,6 @@ from httpx import AsyncClient
 
 from tests.conftest import auth_headers
 
-
 BASE = "/api/v1/admin"
 
 
@@ -27,7 +26,9 @@ class TestAdminRoutes:
         response = await client.get(f"{BASE}/dashboard", headers=auth_headers(admin_token))
         assert response.status_code == 200
 
-    async def test_audit_logs_admin_only(self, client: AsyncClient, exec_token: str, admin_token: str):
+    async def test_audit_logs_admin_only(
+        self, client: AsyncClient, exec_token: str, admin_token: str
+    ):
         exec_response = await client.get(f"{BASE}/audit-logs", headers=auth_headers(exec_token))
         assert exec_response.status_code == 403
 
@@ -45,9 +46,7 @@ class TestAdminRoutes:
         )
         assert response.status_code == 422
 
-    async def test_audit_log_reads_are_audited(
-        self, client: AsyncClient, admin_token: str
-    ):
+    async def test_audit_log_reads_are_audited(self, client: AsyncClient, admin_token: str):
         first = await client.get(f"{BASE}/audit-logs", headers=auth_headers(admin_token))
         assert first.status_code == 200
 

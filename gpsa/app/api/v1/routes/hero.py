@@ -15,8 +15,8 @@ from app.repositories.base import BaseRepository
 from app.schemas.common import AppModel, MessageResponse
 from app.services.audit import AuditService
 
-
 # ── Schemas ───────────────────────────────────────────────────────────────────
+
 
 class HeroSlideCreateRequest(AppModel):
     image_url: str = Field(min_length=1, max_length=1000)
@@ -101,8 +101,11 @@ async def create_hero_slide(
     repo = BaseRepository(HeroSlide, db)
     slide = await repo.create(payload.model_dump())
     await AuditService(db).log(
-        action="CREATE", entity_type="hero_slide", entity_id=slide.id,
-        new_values={"tag": slide.tag}, request=request,
+        action="CREATE",
+        entity_type="hero_slide",
+        entity_id=slide.id,
+        new_values={"tag": slide.tag},
+        request=request,
     )
     await db.commit()
     return HeroSlideResponse.model_validate(slide)
@@ -142,8 +145,11 @@ async def update_hero_slide(
     old_values = {k: str(getattr(slide, k)) for k in updates}
     slide = await repo.update(slide, updates)
     await AuditService(db).log(
-        action="UPDATE", entity_type="hero_slide", entity_id=slide.id,
-        old_values=old_values, new_values={k: str(v) for k, v in updates.items()},
+        action="UPDATE",
+        entity_type="hero_slide",
+        entity_id=slide.id,
+        old_values=old_values,
+        new_values={k: str(v) for k, v in updates.items()},
         request=request,
     )
     await db.commit()
@@ -165,7 +171,10 @@ async def delete_hero_slide(
     slide = await repo.get_by_id_or_404(slide_id)
     await repo.soft_delete(slide)
     await AuditService(db).log(
-        action="DELETE", entity_type="hero_slide", entity_id=slide.id, request=request,
+        action="DELETE",
+        entity_type="hero_slide",
+        entity_id=slide.id,
+        request=request,
     )
     await db.commit()
     return MessageResponse(message="Hero slide deleted.")

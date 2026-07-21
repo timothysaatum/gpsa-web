@@ -46,14 +46,19 @@ class AcademicResourceService:
         self, payload: CourseCreateRequest, actor: User, request: Request
     ) -> CourseResponse:
         assert_permission(can_upload_resource(actor))
-        course = await self.courses.create({
-            "name": payload.name,
-            "code": payload.code.upper() if payload.code else None,
-            "level": payload.level,
-        })
+        course = await self.courses.create(
+            {
+                "name": payload.name,
+                "code": payload.code.upper() if payload.code else None,
+                "level": payload.level,
+            }
+        )
         await self.audit.log(
-            action="CREATE", entity_type="course",
-            entity_id=course.id, new_values={"name": course.name}, request=request,
+            action="CREATE",
+            entity_type="course",
+            entity_id=course.id,
+            new_values={"name": course.name},
+            request=request,
         )
         await self.db.commit()
         return CourseResponse.model_validate(course)
@@ -99,26 +104,29 @@ class AcademicResourceService:
         )
 
         is_published = can_publish_resource(actor)
-        resource = await self.repo.create({
-            "title": payload.title,
-            "content_type": payload.content_type,
-            "course_id": payload.course_id,
-            "level": payload.level,
-            "trimester": payload.trimester,
-            "file_key": key,
-            "file_type": validated.file_type,
-            "mime_type": validated.mime_type,
-            "file_size_bytes": validated.size_bytes,
-            "duration_mins": payload.duration_mins,
-            "is_featured": payload.is_featured,
-            "is_published": is_published,
-            "uploaded_by": actor.id,
-            "reviewed_by": actor.id if is_published else None,
-            "reviewed_at": datetime.now(UTC) if is_published else None,
-        })
+        resource = await self.repo.create(
+            {
+                "title": payload.title,
+                "content_type": payload.content_type,
+                "course_id": payload.course_id,
+                "level": payload.level,
+                "trimester": payload.trimester,
+                "file_key": key,
+                "file_type": validated.file_type,
+                "mime_type": validated.mime_type,
+                "file_size_bytes": validated.size_bytes,
+                "duration_mins": payload.duration_mins,
+                "is_featured": payload.is_featured,
+                "is_published": is_published,
+                "uploaded_by": actor.id,
+                "reviewed_by": actor.id if is_published else None,
+                "reviewed_at": datetime.now(UTC) if is_published else None,
+            }
+        )
 
         await self.audit.log(
-            action="CREATE", entity_type="academic_resource",
+            action="CREATE",
+            entity_type="academic_resource",
             entity_id=resource.id,
             new_values={"title": resource.title, "published": is_published},
             request=request,
@@ -136,14 +144,19 @@ class AcademicResourceService:
         if resource.is_published:
             raise HTTPException(status_code=400, detail="Resource is already published.")
 
-        resource = await self.repo.update(resource, {
-            "is_published": True,
-            "reviewed_by": actor.id,
-            "reviewed_at": datetime.now(UTC),
-        })
+        resource = await self.repo.update(
+            resource,
+            {
+                "is_published": True,
+                "reviewed_by": actor.id,
+                "reviewed_at": datetime.now(UTC),
+            },
+        )
         await self.audit.log(
-            action="PUBLISH", entity_type="academic_resource",
-            entity_id=resource.id, request=request,
+            action="PUBLISH",
+            entity_type="academic_resource",
+            entity_id=resource.id,
+            request=request,
         )
         await self.db.commit()
         return await self._to_response(resource)
@@ -155,16 +168,16 @@ class AcademicResourceService:
             raise HTTPException(status_code=404, detail="Resource not found.")
         return await storage.presign(resource.file_key, expires_in=3600)
 
-    async def delete_resource(
-        self, resource_id: uuid.UUID, actor: User, request: Request
-    ) -> None:
+    async def delete_resource(self, resource_id: uuid.UUID, actor: User, request: Request) -> None:
         resource = await self.repo.get_by_id_or_404(resource_id)
         await self.repo.soft_delete(resource)
         # Note: we keep the R2/S3 object for safety — a separate cleanup job
         # can purge objects whose keys are no longer referenced in the DB.
         await self.audit.log(
-            action="DELETE", entity_type="academic_resource",
-            entity_id=resource.id, request=request,
+            action="DELETE",
+            entity_type="academic_resource",
+            entity_id=resource.id,
+            request=request,
         )
         await self.db.commit()
 

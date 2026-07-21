@@ -4,17 +4,16 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.utils.date_helpers import days_until, deadline_urgency, event_urgency
+from app.utils.date_helpers import days_until, deadline_urgency
 from app.utils.file_validation import (
     FileValidationError,
     validate_academic_file,
-    validate_image_file,
 )
 from app.utils.pagination import PaginationParams, paginate
 from app.utils.slug import make_certificate_code, make_slug
 
-
 # ── Date helpers ──────────────────────────────────────────────────────────────
+
 
 class TestDateHelpers:
     def test_days_until_future(self):
@@ -43,6 +42,7 @@ class TestDateHelpers:
 
 # ── Slug ──────────────────────────────────────────────────────────────────────
 
+
 class TestSlug:
     def test_basic_slug(self):
         assert make_slug("Mid-Year Congress 2025") == "mid-year-congress-2025"
@@ -70,6 +70,7 @@ class TestSlug:
 
 # ── File validation ───────────────────────────────────────────────────────────
 
+
 class TestFileValidation:
     def _make_pdf_bytes(self) -> bytes:
         """Minimal valid PDF magic bytes."""
@@ -86,6 +87,7 @@ class TestFileValidation:
 
 
 # ── Pagination ────────────────────────────────────────────────────────────────
+
 
 class TestPagination:
     def test_paginate_wraps_items(self):

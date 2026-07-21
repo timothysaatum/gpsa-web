@@ -17,8 +17,8 @@ from app.models.enums import OpportunityType, UserRole
 from app.schemas.common import AppModel, MessageResponse, PaginatedResponse
 from app.services.opportunity import OpportunityService
 
-
 # ── Schemas ───────────────────────────────────────────────────────────────────
+
 
 class OpportunityCreateRequest(AppModel):
     title: str = Field(min_length=3, max_length=500)

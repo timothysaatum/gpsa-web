@@ -25,6 +25,7 @@ class FeedbackResponse(AppModel):
 
 class FeedbackSummaryResponse(AppModel):
     """Aggregated stats for an entity — used on event/resource detail pages."""
+
     entity_type: FeedbackEntityType
     entity_id: uuid.UUID
     average_rating: float

@@ -10,8 +10,6 @@ async session so they remain decoupled from the request scope.
 
 from __future__ import annotations
 
-import uuid
-
 import structlog
 
 from app.domain.bus import bus
@@ -49,7 +47,9 @@ def log_all_events(event: DomainEvent) -> None:
 
 
 def on_user_registered(event: UserRegistered) -> None:
-    logger.info("user_registered_event", user_id=str(event.user_id), email=event.email, role=event.role)
+    logger.info(
+        "user_registered_event", user_id=str(event.user_id), email=event.email, role=event.role
+    )
 
 
 def on_email_verified(event: EmailVerified) -> None:
@@ -63,22 +63,27 @@ def on_password_reset(event: PasswordReset) -> None:
 def on_event_created(event: EventCreated) -> None:
     logger.info(
         "event_created_event",
-        event_id=str(event.event_id), title=event.title, event_type=event.event_type,
+        event_id=str(event.event_id),
+        title=event.title,
+        event_type=event.event_type,
     )
 
 
 def on_feedback_submitted(event: FeedbackSubmitted) -> None:
     logger.info(
         "feedback_submitted_event",
-        feedback_id=str(event.feedback_id), entity_type=event.entity_type,
-        entity_id=str(event.entity_id), rating=event.rating,
+        feedback_id=str(event.feedback_id),
+        entity_type=event.entity_type,
+        entity_id=str(event.entity_id),
+        rating=event.rating,
     )
 
 
 def on_report_submitted(event: ReportSubmitted) -> None:
     logger.info(
         "report_submitted_event",
-        report_id=str(event.report_id), report_type=event.report_type,
+        report_id=str(event.report_id),
+        report_type=event.report_type,
         category=event.category,
     )
 
@@ -89,8 +94,10 @@ def on_report_submitted(event: ReportSubmitted) -> None:
 async def on_registration_confirmed(event: RegistrationConfirmed) -> None:
     logger.info(
         "registration_confirmed_event",
-        registration_id=str(event.registration_id), event_id=str(event.event_id),
-        user_id=str(event.user_id) if event.user_id else None, full_name=event.full_name,
+        registration_id=str(event.registration_id),
+        event_id=str(event.event_id),
+        user_id=str(event.user_id) if event.user_id else None,
+        full_name=event.full_name,
     )
     if not event.user_id:
         return
@@ -105,17 +112,18 @@ async def on_registration_confirmed(event: RegistrationConfirmed) -> None:
 async def on_news_published(event: NewsPublished) -> None:
     logger.info(
         "news_published_event",
-        post_id=str(event.post_id), title=event.title, category=event.category,
+        post_id=str(event.post_id),
+        title=event.title,
+        category=event.category,
     )
     from sqlalchemy import select
+
     from app.db.session import AsyncSessionLocal
     from app.models.user import User
     from app.services.notification import NotificationService
 
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(User.id).where(User.deleted_at.is_(None))
-        )
+        result = await db.execute(select(User.id).where(User.deleted_at.is_(None)))
         user_ids = list(result.scalars().all())
         notifier = NotificationService(db)
         for uid in user_ids:
@@ -125,17 +133,17 @@ async def on_news_published(event: NewsPublished) -> None:
 async def on_opportunity_created(event: OpportunityCreated) -> None:
     logger.info(
         "opportunity_created_event",
-        opportunity_id=str(event.opportunity_id), title=event.title,
+        opportunity_id=str(event.opportunity_id),
+        title=event.title,
     )
     from sqlalchemy import select
+
     from app.db.session import AsyncSessionLocal
     from app.models.user import User
     from app.services.notification import NotificationService
 
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(User.id).where(User.deleted_at.is_(None))
-        )
+        result = await db.execute(select(User.id).where(User.deleted_at.is_(None)))
         user_ids = list(result.scalars().all())
         notifier = NotificationService(db)
         for uid in user_ids:
@@ -145,7 +153,8 @@ async def on_opportunity_created(event: OpportunityCreated) -> None:
 async def on_report_resolved(event: ReportResolved) -> None:
     logger.info(
         "report_resolved_event",
-        report_id=str(event.report_id), new_status=event.new_status,
+        report_id=str(event.report_id),
+        new_status=event.new_status,
     )
     from app.db.session import AsyncSessionLocal
     from app.models.welfare import WelfareReport
@@ -161,7 +170,8 @@ async def on_report_resolved(event: ReportResolved) -> None:
 async def on_certificate_issued(event: CertificateIssued) -> None:
     logger.info(
         "certificate_issued_event",
-        certificate_id=str(event.certificate_id), event_id=str(event.event_id),
+        certificate_id=str(event.certificate_id),
+        event_id=str(event.event_id),
         user_id=str(event.user_id),
     )
     from app.db.session import AsyncSessionLocal

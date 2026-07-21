@@ -19,6 +19,7 @@ router = APIRouter(tags=["Users"])
 
 # ── Profile ───────────────────────────────────────────────────────────────────
 
+
 @router.get(
     "/me",
     response_model=UserPublicResponse,
@@ -64,6 +65,7 @@ async def update_my_profile(
 
 
 # ── Admin — user management ───────────────────────────────────────────────────
+
 
 @router.get(
     "/",

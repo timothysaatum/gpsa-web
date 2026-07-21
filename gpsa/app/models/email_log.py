@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Index, String, Text, func
+from sqlalchemy import DateTime, Index, String, Text, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -17,9 +18,7 @@ class EmailLog(UUIDPrimaryKeyMixin, Base):
     """
 
     __tablename__ = "email_logs"
-    __table_args__ = (
-        Index("ix_email_logs_status_created", "status", "created_at"),
-    )
+    __table_args__ = (Index("ix_email_logs_status_created", "status", "created_at"),)
 
     recipient: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     template: Mapped[EmailTemplate] = mapped_column(

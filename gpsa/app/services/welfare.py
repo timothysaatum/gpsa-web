@@ -58,8 +58,10 @@ class WelfareReportRepository(BaseRepository[WelfareReport]):
         report_type: ReportType | None = None,
         status: ReportStatus | None = None,
     ) -> int:
-        q = select(func.count()).select_from(WelfareReport).where(
-            WelfareReport.deleted_at.is_(None)
+        q = (
+            select(func.count())
+            .select_from(WelfareReport)
+            .where(WelfareReport.deleted_at.is_(None))
         )
         if report_type:
             q = q.where(WelfareReport.report_type == report_type)
@@ -97,9 +99,7 @@ class WelfareService:
         self.email = EmailService(db)
         self.bus = bus or domain_bus
 
-    async def submit_report(
-        self, payload: dict[str, Any], request: Request
-    ) -> WelfareReport:
+    async def submit_report(self, payload: dict[str, Any], request: Request) -> WelfareReport:
         data: dict = {
             "report_type": payload["report_type"],
             "category": payload["category"],
@@ -109,9 +109,7 @@ class WelfareService:
             "submitted_at": datetime.now(UTC),
         }
 
-        is_confidential = (
-            payload["report_type"] == ReportType.confidential or data["is_anonymous"]
-        )
+        is_confidential = payload["report_type"] == ReportType.confidential or data["is_anonymous"]
         if is_confidential:
             data["name"] = None
             data["level"] = None
@@ -138,11 +136,13 @@ class WelfareService:
             request=request if not is_confidential else None,
         )
         await self.db.commit()
-        await self.bus.publish_async(ReportSubmitted(
-            report_id=report.id,
-            report_type=str(payload["report_type"]),
-            category=str(payload["category"]),
-        ))
+        await self.bus.publish_async(
+            ReportSubmitted(
+                report_id=report.id,
+                report_type=str(payload["report_type"]),
+                category=str(payload["category"]),
+            )
+        )
         return report
 
     async def list_reports(
@@ -157,9 +157,7 @@ class WelfareService:
         reports = await self.reports.list_filtered(
             report_type=report_type, status=report_status, offset=offset, limit=limit
         )
-        total = await self.reports.count_filtered(
-            report_type=report_type, status=report_status
-        )
+        total = await self.reports.count_filtered(report_type=report_type, status=report_status)
         return reports, total
 
     async def resolve_report(
@@ -198,9 +196,12 @@ class WelfareService:
             request=request,
         )
         await self.db.commit()
-        await self.bus.publish_async(ReportResolved(
-            report_id=report.id, new_status=str(status),
-        ))
+        await self.bus.publish_async(
+            ReportResolved(
+                report_id=report.id,
+                new_status=str(status),
+            )
+        )
         return report
 
     async def get_spotlight(self) -> WelfareSpotlight | None:
@@ -211,11 +212,13 @@ class WelfareService:
     ) -> WelfareSpotlight:
         assert_permission(can_manage_spotlight(actor))
         await self.spotlight_repo.deactivate_all()
-        spotlight = await self.spotlight_repo.create({
-            "summary": summary,
-            "action_taken": action_taken,
-            "is_active": True,
-        })
+        spotlight = await self.spotlight_repo.create(
+            {
+                "summary": summary,
+                "action_taken": action_taken,
+                "is_active": True,
+            }
+        )
         await self.audit.log(
             action="CREATE",
             entity_type="welfare_spotlight",
@@ -251,7 +254,10 @@ class WelfareService:
             "trust_items": [
                 {"icon": "shield", "text": "End-to-End Confidential"},
                 {"icon": "heart_handshake", "text": "Welfare Committee Review"},
-                {"icon": "clock", "text": f"{settings.welfare_avg_response_time_hours}-Hour Response"},
+                {
+                    "icon": "clock",
+                    "text": f"{settings.welfare_avg_response_time_hours}-Hour Response",
+                },
                 {"icon": "phone", "text": "Direct Officer Line"},
             ],
         }

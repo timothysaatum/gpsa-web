@@ -17,6 +17,7 @@ router = APIRouter(tags=["Notifications"])
 
 # ── Schema ────────────────────────────────────────────────────────────────────
 
+
 class NotificationResponse(AppModel):
     id: uuid.UUID
     notification_type: str
@@ -28,6 +29,7 @@ class NotificationResponse(AppModel):
 
 
 # ── Repository ────────────────────────────────────────────────────────────────
+
 
 class NotificationRepository(BaseRepository[Notification]):
     def __init__(self, db: AsyncSession) -> None:
@@ -45,8 +47,11 @@ class NotificationRepository(BaseRepository[Notification]):
 
     async def unread_count(self, user_id: uuid.UUID) -> int:
         from sqlalchemy import func
+
         result = await self.db.execute(
-            select(func.count()).select_from(Notification).where(
+            select(func.count())
+            .select_from(Notification)
+            .where(
                 Notification.user_id == user_id,
                 Notification.is_read.is_(False),
             )
@@ -65,6 +70,7 @@ class NotificationRepository(BaseRepository[Notification]):
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+
 
 @router.get(
     "/",

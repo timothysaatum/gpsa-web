@@ -100,9 +100,7 @@ class NotificationService:
             entity_id=opp_id,
         )
 
-    async def news_published(
-        self, user_id: uuid.UUID, post_id: uuid.UUID, post_title: str
-    ) -> None:
+    async def news_published(self, user_id: uuid.UUID, post_id: uuid.UUID, post_title: str) -> None:
         await self._create(
             user_id=user_id,
             notification_type=NotificationType.news_published,

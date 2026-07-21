@@ -20,6 +20,7 @@ logger = structlog.get_logger(__name__)
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Verify database is reachable before accepting traffic
     from sqlalchemy import text
+
     from app.db.session import AsyncSessionLocal, engine
 
     try:
@@ -55,6 +57,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Register domain event handlers
     from app.domain.handlers import register_event_handlers
+
     register_event_handlers()
     logger.info("domain_event_handlers_registered")
 
@@ -75,6 +78,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 # ── Application factory ───────────────────────────────────────────────────────
+
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -100,10 +104,11 @@ def create_app() -> FastAPI:
 # ── Middleware stack ──────────────────────────────────────────────────────────
 # Order matters — outermost middleware runs first on request, last on response.
 
+
 def _register_middleware(app: FastAPI) -> None:
-    from app.middleware.request_id import RequestIDMiddleware
     from app.middleware.audit import AuditContextMiddleware
     from app.middleware.rate_limit import RateLimitMiddleware
+    from app.middleware.request_id import RequestIDMiddleware
 
     # 1. CORS — must be outermost to handle preflight before auth
     app.add_middleware(
@@ -127,11 +132,13 @@ def _register_middleware(app: FastAPI) -> None:
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 
+
 def _register_routers(app: FastAPI) -> None:
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
 
 # ── Exception handlers ────────────────────────────────────────────────────────
+
 
 def _register_exception_handlers(app: FastAPI) -> None:
 
@@ -162,9 +169,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         """
         Catch-all for unhandled exceptions.
         Logs the full traceback but returns a sanitised message to clients.
