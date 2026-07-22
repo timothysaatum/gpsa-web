@@ -36,6 +36,10 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Home', exact: true },
+  { to: '/academics', label: 'Academics', icon: BookOpen },
+  { to: '/events', label: 'Events', icon: Calendar },
+  { to: '/opportunities', label: 'Opportunities', icon: Briefcase },
+  { to: '/welfare', label: 'Welfare', icon: Heart },
   {
     label: 'About',
     to: '/about',
@@ -43,16 +47,12 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { to: '/about', label: 'Overview', description: 'Explore our departmental mission & vision' },
       { to: '/about/history', label: 'History & Legacy', description: 'Our origins and milestone journey' },
-      { to: '/leadership', label: 'Leadership & Governance', description: 'Current executive committee & leaders' },
+      { to: '/about/leadership', label: 'Leadership & Governance', description: 'Current executive committee & leaders' },
       { to: '/about/past-leadership', label: 'Past Leadership & Recognition', description: 'Former executive teams & honor roll' },
       { to: '/about/impact', label: 'Impact & Strategic Priorities', description: 'Key pillars and strategic roadmap' },
       { to: '/about/faqs', label: 'Documents & FAQs', description: 'Constitution, guides & answers' },
     ],
   },
-  { to: '/academics', label: 'Academics', icon: BookOpen },
-  { to: '/events', label: 'Events', icon: Calendar },
-  { to: '/opportunities', label: 'Opportunities', icon: Briefcase },
-  { to: '/welfare', label: 'Welfare', icon: Heart },
   { to: '/gallery', label: 'Gallery', icon: Image },
   {
     label: 'Alumni',
