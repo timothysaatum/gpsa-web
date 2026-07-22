@@ -3,6 +3,7 @@ import type {
   AcademicResource,
   AdminDashboard,
   AboutContent,
+  HistoryContent,
   AuditLog,
   Certificate,
   CertificateVerify,
@@ -49,6 +50,10 @@ import type {
 
 export const aboutApi = {
   get: () => api.get<AboutContent>('/about/').then((r) => r.data),
+}
+
+export const historyApi = {
+  get: () => api.get<HistoryContent>('/about/history').then((r) => r.data),
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────

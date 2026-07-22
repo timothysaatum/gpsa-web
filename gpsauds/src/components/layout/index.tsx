@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
-  Menu, X, Bell, ChevronDown, LogOut, User, Settings,
-  BookOpen, Calendar, Heart, Briefcase, Newspaper, Award,
-  Info, Image, MapPin, Mail, Phone, ArrowUpToLine, UsersRound, LayoutDashboard
+  Menu, X, Bell, ChevronDown, ChevronRight, LogOut, User, Settings,
+  BookOpen, Calendar, Heart, Briefcase, Award,
+  Info, Image, Mail, GraduationCap, LayoutDashboard, Sparkles, MapPin, Phone, ArrowUpToLine
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { notificationsApi } from '@/api/services'
@@ -12,27 +12,93 @@ import { useAuthStore } from '@/store/authStore'
 import { Button, Badge } from '@/components/ui'
 import { cn, initials } from '@/utils'
 
+// ── Nav Structure Definition ──────────────────────────────────────────────────
 
-// ── Navbar ────────────────────────────────────────────────────────────────────
+interface SubChildItem {
+  to: string
+  label: string
+}
 
-const NAV_LINKS = [
-  { to: '/',             label: 'Home',          exact: true },
-  { to: '/academics',    label: 'Academics',     icon: BookOpen },
-  { to: '/events',       label: 'Events',        icon: Calendar },
-  { to: '/welfare',      label: 'Welfare',       icon: Heart },
-  { to: '/opportunities',label: 'Opportunities', icon: Briefcase },
-  { to: '/news',         label: 'News',          icon: Newspaper },
-  { to: '/leadership',   label: 'Leadership',    icon: UsersRound },
-  { to: '/about',        label: 'About',         icon: Info },
-  { to: '/gallery',      label: 'Gallery',       icon: Image },
+interface NavSubItem {
+  to: string
+  label: string
+  description?: string
+  subItems?: SubChildItem[]
+}
+
+interface NavItem {
+  to?: string
+  label: string
+  exact?: boolean
+  icon?: React.ComponentType<{ className?: string }>
+  children?: NavSubItem[]
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { to: '/', label: 'Home', exact: true },
+  {
+    label: 'About',
+    to: '/about',
+    icon: Info,
+    children: [
+      { to: '/about', label: 'Overview', description: 'Explore our departmental mission & vision' },
+      { to: '/about/history', label: 'History & Legacy', description: 'Our origins and milestone journey' },
+      { to: '/leadership', label: 'Leadership & Governance', description: 'Current executive committee & leaders' },
+      { to: '/about/past-leadership', label: 'Past Leadership & Recognition', description: 'Former executive teams & honor roll' },
+      { to: '/about/impact', label: 'Impact & Strategic Priorities', description: 'Key pillars and strategic roadmap' },
+      { to: '/about/faqs', label: 'Documents & FAQs', description: 'Constitution, guides & answers' },
+    ],
+  },
+  { to: '/academics', label: 'Academics', icon: BookOpen },
+  { to: '/events', label: 'Events', icon: Calendar },
+  { to: '/opportunities', label: 'Opportunities', icon: Briefcase },
+  { to: '/welfare', label: 'Welfare', icon: Heart },
+  { to: '/gallery', label: 'Gallery', icon: Image },
+  {
+    label: 'Alumni',
+    to: '/alumni',
+    icon: GraduationCap,
+    children: [
+      { to: '/alumni', label: 'Overview', description: 'GPSA-UDS Alumni Network hub' },
+      {
+        to: '/alumni/directory',
+        label: 'Directory',
+        description: 'Connect with alumni across sectors',
+        subItems: [{ to: '/alumni/directory/profile', label: 'Alumni Profile' }],
+      },
+      {
+        to: '/alumni/stories',
+        label: 'Stories',
+        description: 'Spotlights and career journeys',
+        subItems: [{ to: '/alumni/stories/spotlight', label: 'Full Spotlight Story' }],
+      },
+      { to: '/alumni/recognition', label: 'Recognition', description: 'Distinguished alumni awards' },
+      { to: '/alumni/mentorship', label: 'Mentorship', description: 'Student-alumni mentorship portal' },
+      { to: '/alumni/give-back', label: 'Give Back', description: 'Support student initiatives & endowments' },
+      {
+        to: '/alumni/classes',
+        label: 'Classes',
+        description: 'Explore graduating year group pages',
+        subItems: [{ to: '/alumni/classes/class', label: 'Individual Class Page' }],
+      },
+      { to: '/alumni/join', label: 'Join Network', description: 'Register as a GPSA-UDS alumnus' },
+    ],
+  },
+  { to: '/contact', label: 'Contact', icon: Mail },
 ]
+
+// ── Navbar Component ──────────────────────────────────────────────────────────
 
 export function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+  const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({})
   const [scrolled, setScrolled] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Unread notification count
   const { data: notifData } = useQuery({
@@ -49,9 +115,18 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Close dropdowns on outside click
+  // Close dropdowns on route change or outside click
   useEffect(() => {
-    const handler = () => { setProfileOpen(false) }
+    setActiveDropdown(null)
+    setMobileOpen(false)
+    setProfileOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    const handler = () => {
+      setProfileOpen(false)
+      setActiveDropdown(null)
+    }
     document.addEventListener('click', handler)
     return () => document.removeEventListener('click', handler)
   }, [])
@@ -59,6 +134,39 @@ export function Navbar() {
   const handleLogout = async () => {
     await logout()
     navigate('/')
+  }
+
+  const handleMouseEnter = (label: string) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    setActiveDropdown(label)
+  }
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setActiveDropdown(null)
+    }, 150)
+  }
+
+  const toggleMobileSubmenu = (label: string) => {
+    setMobileExpanded((prev) => ({ ...prev, [label]: !prev[label] }))
+  }
+
+  const isNavItemActive = (item: NavItem) => {
+    if (item.to) {
+      if (item.exact) return location.pathname === item.to
+      if (location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to))) {
+        return true
+      }
+    }
+    if (item.children) {
+      return item.children.some(
+        (child) =>
+          location.pathname === child.to ||
+          (child.to !== '/' && location.pathname.startsWith(child.to)) ||
+          child.subItems?.some((sub) => location.pathname === sub.to || location.pathname.startsWith(sub.to))
+      )
+    }
+    return false
   }
 
   return (
@@ -71,8 +179,7 @@ export function Navbar() {
       )}
     >
       <div className="section-container">
-        <div className="flex items-center justify-between h-16 lg:h-[70px]">
-
+        <div className="flex items-center justify-between h-16 lg:h-[72px]">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
             <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-full overflow-hidden shadow-card group-hover:shadow-card-md transition-shadow border-2 border-green-500/20">
@@ -86,25 +193,106 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map(({ to, label, exact }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={exact}
-                className={({ isActive }) =>
-                  cn(
-                    'px-3.5 py-2 rounded-lg text-sm font-body font-500 transition-all duration-150',
-                    isActive
-                      ? 'bg-green-gradient text-white'
-                      : 'text-green-700 hover:bg-cream-dark hover:text-green-700'
-                  )
-                }
-              >
-                {label}
-              </NavLink>
-            ))}
+          {/* Desktop Nav */}
+          <nav className="hidden lg:flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+            {NAV_ITEMS.map((item) => {
+              const active = isNavItemActive(item)
+              const hasDropdown = Boolean(item.children?.length)
+
+              if (!hasDropdown && item.to) {
+                return (
+                  <NavLink
+                    key={item.label}
+                    to={item.to}
+                    end={item.exact}
+                    className={({ isActive }) =>
+                      cn(
+                        'px-3.5 py-2 rounded-xl text-sm font-body font-500 transition-all duration-150',
+                        isActive
+                          ? 'bg-green-gradient text-white shadow-sm'
+                          : 'text-green-800 hover:bg-green-50 hover:text-green-700'
+                      )
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                )
+              }
+
+              return (
+                <div
+                  key={item.label}
+                  className="relative"
+                  onMouseEnter={() => handleMouseEnter(item.label)}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <button
+                    onClick={() => setActiveDropdown(activeDropdown === item.label ? null : item.label)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-body font-500 transition-all duration-150',
+                      active || activeDropdown === item.label
+                        ? 'bg-green-50 text-green-700 font-600'
+                        : 'text-green-800 hover:bg-green-50 hover:text-green-700'
+                    )}
+                  >
+                    <span>{item.label}</span>
+                    <ChevronDown
+                      className={cn(
+                        'h-3.5 w-3.5 transition-transform duration-200',
+                        activeDropdown === item.label && 'rotate-180 text-green-700'
+                      )}
+                    />
+                  </button>
+
+                  {/* Mega Dropdown Panel */}
+                  {activeDropdown === item.label && item.children && (
+                    <div
+                      className={cn(
+                        'absolute top-full mt-2 bg-white/95 backdrop-blur-xl border border-green-900/10 shadow-2xl rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200 z-50',
+                        item.label === 'Alumni' ? 'right-0 w-[540px] grid grid-cols-2 gap-3' : 'left-0 w-[440px] grid grid-cols-2 gap-2.5'
+                      )}
+                    >
+                      {item.children.map((child) => (
+                        <div key={child.label} className="flex flex-col">
+                          <Link
+                            to={child.to}
+                            onClick={() => setActiveDropdown(null)}
+                            className="group flex flex-col p-2.5 rounded-xl hover:bg-green-50/80 transition-all border border-transparent hover:border-green-200/50"
+                          >
+                            <span className="text-sm font-600 text-green-900 group-hover:text-green-700 flex items-center justify-between">
+                              {child.label}
+                              <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-green-600" />
+                            </span>
+                            {child.description && (
+                              <span className="text-[11px] text-gray-500 group-hover:text-green-800/70 mt-0.5 line-clamp-1 font-body">
+                                {child.description}
+                              </span>
+                            )}
+                          </Link>
+
+                          {/* Sub-items if available (e.g. Alumni Profile, Spotlight Story, Class Page) */}
+                          {child.subItems && child.subItems.length > 0 && (
+                            <div className="pl-3 mt-1 space-y-1 border-l-2 border-green-100 ml-2">
+                              {child.subItems.map((sub) => (
+                                <Link
+                                  key={sub.label}
+                                  to={sub.to}
+                                  onClick={() => setActiveDropdown(null)}
+                                  className="flex items-center gap-1.5 text-xs text-green-700/80 hover:text-green-800 py-1 px-2 rounded-lg hover:bg-green-100/50 transition-colors font-500"
+                                >
+                                  <Sparkles className="h-3 w-3 text-gold-500" />
+                                  <span>{sub.label}</span>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </nav>
 
           {/* Right actions */}
@@ -131,7 +319,7 @@ export function Navbar() {
                     onClick={() => setProfileOpen((o) => !o)}
                     className="flex items-center gap-2 pl-1 pr-3 py-1.5 rounded-xl hover:bg-cream-dark transition-all"
                   >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:"var(--legacy-gradient)"}}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--legacy-gradient)" }}>
                       <span className="text-xs font-700 text-white">{initials(user.full_name)}</span>
                     </div>
                     <span className="hidden md:block text-sm font-500 text-green-800 max-w-[100px] truncate">
@@ -141,7 +329,7 @@ export function Navbar() {
                   </button>
 
                   {profileOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-56 card shadow-card-lg py-1 animate-fade-in">
+                    <div className="absolute right-0 top-full mt-2 w-56 card shadow-card-lg py-1 animate-fade-in z-50">
                       <div className="px-4 py-3 border-b border-cream-dark">
                         <p className="text-sm font-600 text-green-800 truncate">{user.full_name}</p>
                         <p className="text-xs text-green-700 truncate">{user.email}</p>
@@ -217,29 +405,92 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile Menu Accordion */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-cream-dark bg-white animate-fade-in">
-          <div className="section-container py-4 space-y-1">
-            {NAV_LINKS.map(({ to, label, icon: Icon, exact }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={exact}
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-500 font-body transition-all',
-                    isActive
-                      ? 'bg-green-gradient text-white'
-                      : 'text-green-700 hover:bg-cream-dark hover:text-green-700'
-                  )
-                }
-              >
-                {Icon && <Icon className="h-4 w-4" />}
-                {label}
-              </NavLink>
-            ))}
+        <div className="lg:hidden border-t border-cream-dark bg-white animate-fade-in max-h-[85vh] overflow-y-auto">
+          <div className="section-container py-4 space-y-1.5">
+            {NAV_ITEMS.map((item) => {
+              const hasChildren = Boolean(item.children?.length)
+              const isExpanded = Boolean(mobileExpanded[item.label])
+              const active = isNavItemActive(item)
+              const Icon = item.icon
+
+              if (!hasChildren && item.to) {
+                return (
+                  <NavLink
+                    key={item.label}
+                    to={item.to}
+                    end={item.exact}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-500 font-body transition-all',
+                        isActive
+                          ? 'bg-green-gradient text-white'
+                          : 'text-green-800 hover:bg-cream-dark'
+                      )
+                    }
+                  >
+                    {Icon && <Icon className="h-4 w-4" />}
+                    {item.label}
+                  </NavLink>
+                )
+              }
+
+              return (
+                <div key={item.label} className="rounded-xl border border-cream-dark overflow-hidden">
+                  <button
+                    onClick={() => toggleMobileSubmenu(item.label)}
+                    className={cn(
+                      'w-full flex items-center justify-between px-4 py-3 text-sm font-500 text-green-800 hover:bg-cream-dark transition-colors',
+                      active && 'bg-green-50 text-green-700 font-600'
+                    )}
+                  >
+                    <span className="flex items-center gap-3">
+                      {Icon && <Icon className="h-4 w-4 text-green-600" />}
+                      {item.label}
+                    </span>
+                    <ChevronDown className={cn('h-4 w-4 text-green-600 transition-transform', isExpanded && 'rotate-180')} />
+                  </button>
+
+                  {isExpanded && item.children && (
+                    <div className="bg-cream-light/60 p-2 space-y-1 border-t border-cream-dark">
+                      {item.children.map((child) => (
+                        <div key={child.label} className="space-y-1">
+                          <Link
+                            to={child.to}
+                            onClick={() => setMobileOpen(false)}
+                            className="flex flex-col px-3 py-2 rounded-lg text-sm text-green-900 hover:bg-green-100/60 transition-colors"
+                          >
+                            <span className="font-500">{child.label}</span>
+                            {child.description && (
+                              <span className="text-xs text-gray-500">{child.description}</span>
+                            )}
+                          </Link>
+
+                          {child.subItems && child.subItems.length > 0 && (
+                            <div className="pl-4 space-y-1 border-l-2 border-green-300/40 ml-3">
+                              {child.subItems.map((sub) => (
+                                <Link
+                                  key={sub.label}
+                                  to={sub.to}
+                                  onClick={() => setMobileOpen(false)}
+                                  className="flex items-center gap-1.5 text-xs text-green-700 py-1 px-2 rounded hover:bg-green-100/80 transition-colors"
+                                >
+                                  <Sparkles className="h-3 w-3 text-gold-500" />
+                                  <span>{sub.label}</span>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
             {!isAuthenticated && (
               <div className="pt-3 flex flex-col gap-2">
                 <Button variant="outline" size="md" className="w-full" onClick={() => { navigate('/login'); setMobileOpen(false) }}>
@@ -257,6 +508,7 @@ export function Navbar() {
   )
 }
 
+
 // ── Footer ────────────────────────────────────────────────────────────────────
 
 export function Footer() {
@@ -265,12 +517,13 @@ export function Footer() {
 
   const links = {
     Platform: [
+      { label: 'About Us', to: '/about' },
       { label: 'Academics Hub', to: '/academics' },
       { label: 'Events', to: '/events' },
-      { label: 'Welfare Support', to: '/welfare' },
       { label: 'Opportunities', to: '/opportunities' },
-      { label: 'News', to: '/news' },
-      { label: 'Leadership', to: '/leadership' },
+      { label: 'Welfare Support', to: '/welfare' },
+      { label: 'Alumni Network', to: '/alumni' },
+      { label: 'Contact Us', to: '/contact' },
     ],
     Resources: [
       { label: 'Exam Questions', to: '/academics?type=exam_questions' },

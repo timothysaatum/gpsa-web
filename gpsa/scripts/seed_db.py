@@ -12,7 +12,8 @@ Do NOT run in production.
 import asyncio
 import os
 import sys
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
+UTC = timezone.utc
 from pathlib import Path
 
 # Force development environment for seeding (safety measure)
@@ -668,10 +669,12 @@ async def seed_leadership(db) -> None:
             "is_current": True,
             "sort_order": 1,
             "leaders": [
-                ("Abena Mensah", "President", "Represents GPSA-UDS and leads executive strategy.", "president@gpsauds.org", "+233244100001", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80", 1),
-                ("Kwesi Addo", "Vice President", "Coordinates committee delivery and executive follow-up.", "vicepresident@gpsauds.org", "+233244100002", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80", 2),
-                ("Efua Sarpong", "General Secretary", "Handles records, notices, and official correspondence.", "secretary@gpsauds.org", "+233244100003", "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=800&q=80", 3),
-                ("Daniel Osei", "Financial Secretary", "Manages dues, budgets, and financial reporting.", "finance@gpsauds.org", "+233244100004", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80", 4),
+                ("Jacob N. Adjei", "President", "Leads the association and represents members at all levels.", "president@gpsauds.org", "+233 24 123 4567", "/src/assets/exec_jacob.png", 1),
+                ("Abigail K. Mensah", "Vice President", "Assists the President and oversees strategic implementation.", "vp@gpsauds.org", "+233 24 123 4568", "/src/assets/exec_abigail.png", 2),
+                ("Michael O. Boateng", "General Secretary", "Coordinates communication, documentation and member affairs.", "gensec@gpsauds.org", "+233 24 123 4569", "/src/assets/exec_michael.png", 3),
+                ("Eunice A. Addo", "Financial Secretary", "Manages finances, budgeting and financial reporting.", "finance@gpsauds.org", "+233 24 123 4570", "/src/assets/exec_eunice.png", 4),
+                ("Daniel K. Tetteh", "Organising Secretary", "Coordinates events, programmes and logistics for activities.", "orgsec@gpsauds.org", "+233 24 123 4571", "/src/assets/exec_daniel.png", 5),
+                ("Priscilla O. Lamptey", "Public Relations Officer", "Manages publicity, media relations and brand communication.", "pro@gpsauds.org", "+233 24 123 4572", "/src/assets/exec_priscilla.png", 6),
             ],
         },
         {

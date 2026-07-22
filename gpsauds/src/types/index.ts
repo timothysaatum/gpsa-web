@@ -368,6 +368,51 @@ export interface Feedback {
 
 // ── About ───────────────────────────────────────────────────────────────────
 
+export interface PresidentWelcome {
+  name: string
+  title: string
+  admin_year: string
+  photo_url: string | null
+  message: string
+}
+
+export interface CoreValueDetailed {
+  name: string
+  description: string
+}
+
+export interface WhatWeDoItem {
+  title: string
+  description: string
+  items: string[]
+  href?: string | null
+}
+
+export interface GovernanceBody {
+  title: string
+  description: string
+}
+
+export interface StrategicPriority {
+  title: string
+  description: string
+}
+
+export interface ImpactMetrics {
+  reporting_period: string
+  students_represented: string
+  programmes_organised: string
+  welfare_interventions: string
+  outreach_beneficiaries: string
+  opportunities_shared: string
+  active_partnerships: string
+}
+
+export interface Partner {
+  name: string
+  logo_key: string
+}
+
 export interface AboutContent {
   name: string
   short_name: string
@@ -376,9 +421,16 @@ export interface AboutContent {
   mission: string
   vision: string
   values: string[]
+  core_values_detailed?: CoreValueDetailed[]
   pillars: { title: string; body: string }[]
+  what_we_do?: WhatWeDoItem[]
   timeline: { year: string; title: string; body: string }[]
   stats: SiteStats
+  impact_metrics?: ImpactMetrics
+  president_welcome?: PresidentWelcome
+  governance?: GovernanceBody[]
+  strategic_priorities?: StrategicPriority[]
+  partners?: Partner[]
   featured_news: {
     id: string
     title: string
@@ -408,6 +460,52 @@ export interface AboutContent {
     category: string
   }[]
   welfare: WelfareConfig
+}
+
+export interface HistoryMilestone {
+  year_label: string
+  title: string
+  summary: string
+  icon_name?: string | null
+  image_url?: string | null
+}
+
+export interface HistoryAchievement {
+  category: string
+  title: string
+  summary: string
+  icon_name?: string | null
+}
+
+export interface HistoryMetric {
+  value: string
+  label: string
+  icon_name?: string | null
+  reporting_period?: string | null
+}
+
+export interface HistoryTradition {
+  title: string
+  description: string
+  icon_name?: string | null
+}
+
+export interface HistoryContent {
+  hero_eyebrow: string
+  hero_title: string
+  hero_intro_primary: string
+  hero_intro_secondary: string
+  milestones: HistoryMilestone[]
+  achievements: HistoryAchievement[]
+  metrics: HistoryMetric[]
+  traditions: HistoryTradition[]
+  gallery_preview: {
+    id: string
+    title: string
+    image_url: string
+    thumbnail_url: string | null
+    category: string
+  }[]
 }
 
 export interface FeedbackSummary {

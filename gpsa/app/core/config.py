@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     environment: Literal["development", "staging", "production"] = "development"
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
-    allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    allowed_origins: list[str] = ["*"]
 
     # ── Database ──────────────────────────────────────────────────────────────
     database_url: str

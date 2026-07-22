@@ -18,7 +18,8 @@ import {
   WelfarePage, OpportunitiesPage, OpportunityDetailPage, NewsPage, NewsDetailPage,
   NotificationsPage
 } from '@/pages/other-pages'
-import { AboutPage } from '@/pages/AboutPage'
+import { OverviewPage } from '@/pages/overview'
+import { HistoryLegacyPage } from '@/pages/HistoryLegacyPage'
 import { GalleryPage } from '@/pages/GalleryPage'
 import { LeadershipPage } from '@/pages/LeadershipPage'
 import {
@@ -110,7 +111,9 @@ export default function App() {
               <Route path="events/create" element={<EventCreatePage />} />
               <Route path="events/:id" element={<EventDetailPage />} />
               {/* New standalone pages */}
-              <Route path="about" element={<AboutPage />} />
+              <Route path="about" element={<OverviewPage />} />
+              <Route path="about/history" element={<HistoryLegacyPage />} />
+              <Route path="about/leadership" element={<LeadershipPage />} />
               <Route path="leadership" element={<LeadershipPage />} />
               <Route path="gallery" element={<GalleryPage />} />
               <Route path="welfare" element={<WelfarePage />} />
