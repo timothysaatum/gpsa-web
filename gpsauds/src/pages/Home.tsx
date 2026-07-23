@@ -15,6 +15,8 @@ import slide1 from '@/assets/KCP_4243.jpg'
 import slide2 from '@/assets/KCP_4248.jpg'
 import slide3 from '@/assets/KCP_4495.jpg'
 import type { GalleryItem, HeroSlide } from '@/types'
+import { useCmsPageSettings } from '@/hooks/useCmsPageSettings'
+import { homePageDefaults } from '@/config/cmsPageDefaults'
 
 // ── Hero Carousel ─────────────────────────────────────────────────────────────
 
@@ -389,6 +391,7 @@ function StatsStrip() {
 
 function QuickActions() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('home', homePageDefaults)
   const actions = [
     {
       icon: Users, label: 'Join GPSA',
@@ -418,7 +421,7 @@ function QuickActions() {
   return (
     <section className="section-padding bg-cream-dark">
       <div className="section-container">
-        <SectionHeader title="Quick Actions" subtitle="Jump straight to what you need" />
+        <SectionHeader title={settings.quick_actions_title} subtitle={settings.quick_actions_subtitle} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           {actions.map(({ icon: Icon, label, desc, to, barColor }) => (
             <button
@@ -461,6 +464,7 @@ function QuickActions() {
 
 function LatestUpdates() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('home', homePageDefaults)
 
   const featuredQuery = useQuery({
     queryKey: ['news', 'featured-home'],
@@ -483,8 +487,8 @@ function LatestUpdates() {
     <section className="section-padding">
       <div className="section-container">
         <SectionHeader
-          title="Latest Updates"
-          subtitle="Official announcements and campus news"
+          title={settings.latest_updates_title}
+          subtitle={settings.latest_updates_subtitle}
           action={
             <Button variant="ghost" size="sm" onClick={() => navigate('/news')} rightIcon={<ArrowRight className="h-4 w-4" />}>
               View All
@@ -661,6 +665,7 @@ function EmptySpotlightCard({ onBrowse }: { onBrowse: () => void }) {
 
 function TodayAtGPSA() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('home', homePageDefaults)
 
   const { data: spotlight, isLoading } = useQuery({
     queryKey: ['welfare', 'spotlight'],
@@ -672,7 +677,7 @@ function TodayAtGPSA() {
     return (
       <section className="py-10 lg:py-14">
         <div className="section-container">
-          <SectionHeader title="Today at GPSA-UDS" subtitle="What's happening right now" />
+          <SectionHeader title={settings.today_title} subtitle={settings.today_subtitle} />
           <SpotlightSkeleton />
         </div>
       </section>
@@ -682,7 +687,7 @@ function TodayAtGPSA() {
   return (
     <section className="py-10 lg:py-14" style={{ animation: 'fadeUp 0.5s ease-out' }}>
       <div className="section-container">
-        <SectionHeader title="Today at GPSA-UDS" subtitle="What's happening right now" />
+        <SectionHeader title={settings.today_title} subtitle={settings.today_subtitle} />
 
         {spotlight ? (
           <div className="bg-brand text-white rounded-3xl relative overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5">
@@ -844,6 +849,7 @@ function FeaturedEventBanner() {
 
 function UpcomingEvents() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('home', homePageDefaults)
   const { data, isLoading } = useQuery({
     queryKey: ['events', 'upcoming-list'],
     queryFn: () => eventsApi.list({ event_status: 'upcoming', limit: 3 }),
@@ -853,8 +859,8 @@ function UpcomingEvents() {
     <section className={cn('section-padding', { 'pt-0': true })}>
       <div className="section-container">
         <SectionHeader
-          title="Upcoming Events"
-          subtitle="Don't miss out — register now"
+          title={settings.events_title}
+          subtitle={settings.events_subtitle}
           action={
             <Button variant="ghost" size="sm" onClick={() => navigate('/events')} rightIcon={<ArrowRight className="h-4 w-4" />}>
               View All
@@ -886,6 +892,7 @@ function UpcomingEvents() {
 
 function OpportunitiesPreview() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('home', homePageDefaults)
   const { data, isLoading } = useQuery({
     queryKey: ['opportunities', 'home-list'],
     queryFn: () => opportunitiesApi.list({ limit: 3 }),
@@ -896,8 +903,8 @@ function OpportunitiesPreview() {
     <section className="section-padding bg-cream-dark">
       <div className="section-container">
         <SectionHeader
-          title="Opportunities"
-          subtitle="Internships, scholarships, jobs, and training deadlines"
+          title={settings.opportunities_title}
+          subtitle={settings.opportunities_subtitle}
           action={
             <Button variant="ghost" size="sm" onClick={() => navigate('/opportunities')} rightIcon={<ArrowRight className="h-4 w-4" />}>
               View All
@@ -986,6 +993,7 @@ function GalleryPreviewCard({ item }: { item: Pick<GalleryItem, 'image_url' | 't
 
 function GalleryTeaser() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('home', homePageDefaults)
   const { data, isLoading } = useQuery({
     queryKey: ['gallery', 'home-list'],
     queryFn: () => galleryApi.list({ limit: 6 }),
@@ -998,8 +1006,8 @@ function GalleryTeaser() {
     <section className="section-padding">
       <div className="section-container">
         <SectionHeader
-          title="From Our Gallery"
-          subtitle="Moments that define GPSA-UDS"
+          title={settings.gallery_title}
+          subtitle={settings.gallery_subtitle}
           action={
             <Button variant="ghost" size="sm" onClick={() => navigate('/gallery')} rightIcon={<ArrowRight className="h-4 w-4" />}>
               View Gallery
@@ -1029,6 +1037,7 @@ function GalleryTeaser() {
 
 function JoinCTA() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('home', homePageDefaults)
 
   return (
     <section className="section-padding">
@@ -1044,12 +1053,11 @@ function JoinCTA() {
             <Mail className="h-10 w-10 mx-auto mb-6 text-white/60" />
 
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
-              Join GPSA-UDS Today
+              {settings.join_title}
             </h2>
 
             <p className="text-lg text-white/70 leading-relaxed mb-8 max-w-lg mx-auto">
-              Become part of Ghana's leading pharmaceutical students' association.
-              Access resources, attend events, and connect with fellow students.
+              {settings.join_description}
             </p>
 
             <div className="flex flex-wrap justify-center gap-4">
@@ -1059,14 +1067,14 @@ function JoinCTA() {
                 onClick={() => navigate('/register')}
                 rightIcon={<ArrowRight className="h-4 w-4" />}
               >
-                Create Account
+                {settings.join_primary_label}
               </Button>
               <Button
                 variant="outline-white"
                 size="lg"
                 onClick={() => navigate('/about')}
               >
-                Learn More
+                {settings.join_secondary_label}
               </Button>
             </div>
 

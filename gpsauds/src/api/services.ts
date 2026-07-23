@@ -3,10 +3,12 @@ import type {
   AcademicResource,
   AdminDashboard,
   AboutContent,
-  HistoryContent,
+  HistoryContent, CmsPage,
   AuditLog,
   Certificate,
   CertificateVerify,
+  ContactStatus,
+  ContactSubmission,
   Course,
   Event,
   EventRegistration,
@@ -18,11 +20,18 @@ import type {
   FeedbackSummary,
   GalleryCategory,
   GalleryItem,
+  GovernancePageData,
   HeroSlide,
   HeroSlideCreateRequest,
   HeroSlideUpdateRequest,
   Leader,
   LeadershipTerm,
+  LegacyPageContent,
+  LegacyAwardItem,
+  HistoricalRecordSubmissionInput,
+  ImpactPageData,
+  LeaderNominationInput,
+  RecognitionHonoureeItem,
   LoginRequest,
   MessageResponse,
   NewsCategory,
@@ -54,6 +63,53 @@ export const aboutApi = {
 
 export const historyApi = {
   get: () => api.get<HistoryContent>('/about/history').then((r) => r.data),
+}
+
+export const impactApi = {
+  getPage: () => api.get<ImpactPageData>('/about/impact').then((r) => r.data),
+  listAdmin: (resource: string) => api.get<Array<Record<string, unknown>>>(`/about/impact/admin/${resource}`).then((r) => r.data),
+  create: (resource: string, data: Record<string, unknown>) => api.post(`/about/impact/admin/${resource}`, { data }).then((r) => r.data),
+  update: (resource: string, id: string, data: Record<string, unknown>) => api.patch(`/about/impact/admin/${resource}/${id}`, { data }).then((r) => r.data),
+  delete: (resource: string, id: string) => api.delete(`/about/impact/admin/${resource}/${id}`).then((r) => r.data),
+  uploadFocusImage: (id: string, file: File) => {
+    const data = new FormData(); data.append('file', file)
+    return api.post(`/about/impact/admin/focus-areas/${id}/image`, data, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
+  uploadInitiativeImage: (id: string, file: File) => {
+    const data = new FormData(); data.append('file', file)
+    return api.post(`/about/impact/admin/initiatives/${id}/image`, data, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
+  uploadReport: (id: string, file: File) => {
+    const data = new FormData(); data.append('file', file)
+    return api.post(`/about/impact/admin/reports/${id}/file`, data, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
+  uploadHeroImage: (file: File) => {
+    const data = new FormData(); data.append('file', file)
+    return api.post('/about/impact/admin/settings/hero/image', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
+}
+
+export const governanceApi = {
+  getPage: (params?: { search?: string; category?: string; year?: string; document_type?: string; page?: number; page_size?: number }) =>
+    api.get<GovernancePageData>('/about/governance', { params }).then((r) => r.data),
+  listAdmin: (resource: string) => api.get<Array<Record<string, unknown>>>(`/about/governance/admin/${resource}`).then((r) => r.data),
+  create: (resource: string, data: Record<string, unknown>) => api.post(`/about/governance/admin/${resource}`, { data }).then((r) => r.data),
+  update: (resource: string, id: string, data: Record<string, unknown>) => api.patch(`/about/governance/admin/${resource}/${id}`, { data }).then((r) => r.data),
+  delete: (resource: string, id: string) => api.delete(`/about/governance/admin/${resource}/${id}`).then((r) => r.data),
+  uploadDocument: (id: string, version: string, file: File) => {
+    const data = new FormData(); data.append('file', file)
+    return api.post(`/about/governance/admin/documents/${id}/file`, data, { params: { version }, headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
+}
+
+export const cmsApi = {
+  getPublicPage: <T extends Record<string, unknown>>(slug: string) =>
+    api.get<T>(`/cms/pages/public/${slug}`).then((r) => r.data),
+  getPage: (slug: string) => api.get<CmsPage>(`/cms/pages/${slug}`).then((r) => r.data),
+  updatePage: (slug: string, data: { title: string; content: Record<string, unknown>; is_published: boolean; expected_version?: number }) =>
+    api.put<CmsPage>(`/cms/pages/${slug}`, data).then((r) => r.data),
+  deletePage: (slug: string) =>
+    api.delete<MessageResponse>(`/cms/pages/${slug}`).then((r) => r.data),
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────
@@ -158,6 +214,9 @@ export const academicsApi = {
     api
       .get<PaginatedResponse<AcademicResource>>('/academic-resources/', { params })
       .then((r) => r.data),
+
+  listAllResources: (params?: { offset?: number; limit?: number }) =>
+    api.get<PaginatedResponse<AcademicResource>>('/academic-resources/admin/all', { params }).then((r) => r.data),
 
   getResource: (id: string) =>
     api.get<AcademicResource>(`/academic-resources/${id}`).then((r) => r.data),
@@ -311,6 +370,9 @@ export const opportunitiesApi = {
       .get<PaginatedResponse<Opportunity>>('/opportunities/', { params })
       .then((r) => r.data),
 
+  listAdmin: (params?: { offset?: number; limit?: number }) =>
+    api.get<PaginatedResponse<Opportunity>>('/opportunities/admin/all', { params }).then((r) => r.data),
+
   getById: (id: string) =>
     api.get<Opportunity>(`/opportunities/${id}`).then((r) => r.data),
 
@@ -346,6 +408,9 @@ export const opportunitiesApi = {
 export const newsApi = {
   list: (params?: { category?: NewsCategory; offset?: number; limit?: number }) =>
     api.get<PaginatedResponse<NewsPostSummary>>('/news/', { params }).then((r) => r.data),
+
+  listAdmin: (params?: { offset?: number; limit?: number }) =>
+    api.get<PaginatedResponse<NewsPostSummary>>('/news/admin/all', { params }).then((r) => r.data),
 
   getFeatured: () =>
     api.get<NewsPost | null>('/news/featured').then((r) => r.data),
@@ -439,6 +504,14 @@ export const heroApi = {
 
   delete: (id: string) =>
     api.delete<MessageResponse>(`/hero/${id}`).then((r) => r.data),
+
+  uploadImage: (id: string, file: File) => {
+    const data = new FormData()
+    data.append('file', file)
+    return api.post<HeroSlide>(`/hero/${id}/image`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
 }
 
 // ── Gallery ──────────────────────────────────────────────────────────────────
@@ -457,17 +530,51 @@ export const galleryApi = {
       })
       .then((r) => r.data),
 
+  listAdmin: (params?: { offset?: number; limit?: number }) =>
+    api.get<GalleryItem[]>('/gallery/admin/all', { params }).then((r) => r.data),
+
   update: (id: string, data: {
     title?: string
     description?: string | null
     category?: GalleryCategory
     event_date?: string | null
     sort_order?: number
+    is_published?: boolean
   }) =>
     api.patch<GalleryItem>(`/gallery/${id}`, data).then((r) => r.data),
 
   delete: (id: string) =>
     api.delete<MessageResponse>(`/gallery/${id}`).then((r) => r.data),
+
+  replaceImage: (id: string, file: File) => {
+    const data = new FormData()
+    data.append('file', file)
+    return api.post<GalleryItem>(`/gallery/${id}/image`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
+}
+
+export const contactApi = {
+  submit: (data: {
+    full_name: string
+    email: string
+    phone?: string
+    category: string
+    subject: string
+    message: string
+    consent: boolean
+    website: string
+  }) => api.post<{ reference: string; message: string }>('/contact/', data).then((r) => r.data),
+
+  listAdmin: (params?: { contact_status?: ContactStatus; search?: string; offset?: number; limit?: number }) =>
+    api.get<PaginatedResponse<ContactSubmission>>('/contact/admin', { params }).then((r) => r.data),
+
+  update: (id: string, data: { status?: ContactStatus; admin_notes?: string | null; assigned_to?: string | null }) =>
+    api.patch<ContactSubmission>(`/contact/admin/${id}`, data).then((r) => r.data),
+
+  delete: (id: string) =>
+    api.delete<MessageResponse>(`/contact/admin/${id}`).then((r) => r.data),
 }
 
 // ── Leadership ───────────────────────────────────────────────────────────────
@@ -478,6 +585,9 @@ export const leadershipApi = {
 
   current: () =>
     api.get<LeadershipTerm | null>('/leadership/current').then((r) => r.data),
+
+  listAdmin: () =>
+    api.get<LeadershipTerm[]>('/leadership/admin').then((r) => r.data),
 
   createTerm: (data: {
     title: string
@@ -541,6 +651,56 @@ export const leadershipApi = {
 
   deleteLeader: (id: string) =>
     api.delete<MessageResponse>(`/leadership/leaders/${id}`).then((r) => r.data),
+}
+
+// ── Past Leadership & Recognition ──────────────────────────────────────────
+
+export const legacyApi = {
+  getPage: (year?: string) =>
+    api.get<LegacyPageContent>('/about/legacy', { params: { year } }).then((r) => r.data),
+
+  submitRecord: async ({ file, ...data }: HistoricalRecordSubmissionInput) => {
+    const created = await api.post<MessageResponse & { id: string }>('/about/legacy/submissions', data).then((r) => r.data)
+    if (file) {
+      const formData = new FormData()
+      formData.append('file', file)
+      try {
+        await api.post(`/about/legacy/submissions/${created.id}/file`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+      } catch {
+        return {
+          ...created,
+          message: 'Your record details were received, but the attachment could not be uploaded. The archive team may contact you.',
+        }
+      }
+    }
+    return created
+  },
+
+  submitNomination: (data: LeaderNominationInput) =>
+    api.post<MessageResponse>('/about/legacy/nominations', data).then((r) => r.data),
+  listHonourees: (categorySlug: string) =>
+    api.get<RecognitionHonoureeItem[]>(`/about/legacy/recognition/${categorySlug}`).then((r) => r.data),
+  listAwards: () =>
+    api.get<LegacyAwardItem[]>('/about/legacy/awards').then((r) => r.data),
+
+  listContent: (resource: string) =>
+    api.get<Array<Record<string, unknown>>>(`/about/legacy/admin/content/${resource}`).then((r) => r.data),
+  createContent: (resource: string, data: Record<string, unknown>) =>
+    api.post<Record<string, unknown>>(`/about/legacy/admin/content/${resource}`, { data }).then((r) => r.data),
+  updateContent: (resource: string, id: string, data: Record<string, unknown>) =>
+    api.patch<Record<string, unknown>>(`/about/legacy/admin/content/${resource}/${id}`, { data }).then((r) => r.data),
+  deleteContent: (resource: string, id: string) =>
+    api.delete<MessageResponse>(`/about/legacy/admin/content/${resource}/${id}`).then((r) => r.data),
+  listSubmissions: () =>
+    api.get<Array<Record<string, unknown>>>('/about/legacy/admin/submissions').then((r) => r.data),
+  reviewSubmission: (id: string, status: 'accepted' | 'rejected' | 'published' | 'archived') =>
+    api.patch(`/about/legacy/admin/submissions/${id}`, { status }).then((r) => r.data),
+  listNominations: () =>
+    api.get<Array<Record<string, unknown>>>('/about/legacy/admin/nominations').then((r) => r.data),
+  reviewNomination: (id: string, status: 'approved' | 'rejected' | 'under_review') =>
+    api.patch(`/about/legacy/admin/nominations/${id}`, { status }).then((r) => r.data),
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────

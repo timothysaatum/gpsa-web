@@ -5,7 +5,10 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ExternalLink, Search, Bell, BellOff, ChevronRight, ArrowRight, Calendar, MapPin} from 'lucide-react'
+  Bell, BellOff, BriefcaseBusiness, Calendar, ChevronRight,
+  ExternalLink, FileText, Flame, Link2, MapPin, Search, ArrowRight,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { opportunitiesApi, newsApi, notificationsApi } from '@/api/services'
 
 export { WelfarePage } from './WelfarePage'
@@ -17,6 +20,8 @@ import {
   NEWS_CATEGORY_LABELS, relativeTime,
 } from '@/utils'
 import type { OpportunityType, NewsCategory, NewsPostSummary } from '@/types'
+import { useCmsPageSettings } from '@/hooks/useCmsPageSettings'
+import { newsPageDefaults, opportunitiesPageDefaults } from '@/config/cmsPageDefaults'
 
 // ── Opportunities ─────────────────────────────────────────────────────────────
 
@@ -32,6 +37,7 @@ const OPPORTUNITY_PAGE_SIZE = 12
 
 export function OpportunitiesPage() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('opportunities', opportunitiesPageDefaults)
   const [typeFilter, setTypeFilter] = useState<OpportunityType | 'all'>('all')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<SortKey>('deadline')
@@ -77,10 +83,10 @@ export function OpportunitiesPage() {
 
   const typeOptions: { value: OpportunityType | 'all'; label: string }[] = [
     { value: 'all',         label: 'All Types' },
-    { value: 'internship',  label: '💼 Internship' },
-    { value: 'scholarship', label: '🎓 Scholarship' },
-    { value: 'job',         label: '💻 Job' },
-    { value: 'training',    label: '🛠️ Training' },
+    { value: 'internship',  label: 'Internship' },
+    { value: 'scholarship', label: 'Scholarship' },
+    { value: 'job',         label: 'Job' },
+    { value: 'training',    label: 'Training' },
   ]
 
   const activeFilterCount = (typeFilter !== 'all' ? 1 : 0) + (search ? 1 : 0)
@@ -89,13 +95,13 @@ export function OpportunitiesPage() {
 
   return (
     <>
-      <PageHeader title="Opportunities Hub" subtitle="Discover internships, scholarships, and career opportunities tailored for you." />
+      <PageHeader title={settings.page_title} subtitle={settings.page_subtitle} />
 
       <div className="section-container section-padding">
         {/* ── Mini stats ── */}
         <div className="flex flex-wrap gap-4 mb-8">
-          <StatCard icon="📋" value={totalResults} label="Total" />
-          <StatCard icon="🔥" value={closingSoon.length} label="Closing Soon" />
+          <StatCard icon={FileText} value={totalResults} label="Total" />
+          <StatCard icon={Flame} value={closingSoon.length} label="Closing Soon" />
         </div>
 
         {/* ── Sticky controls ── */}
@@ -107,7 +113,7 @@ export function OpportunitiesPage() {
               <input
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder='Search opportunities...'
+                placeholder={settings.search_placeholder}
                 className="form-input pl-10 h-10 text-sm"
               />
             </div>
@@ -207,7 +213,7 @@ export function OpportunitiesPage() {
         ) : !items.length ? (
           <EmptyState
             icon="💼"
-            title="No opportunities found"
+            title={settings.empty_title}
             description={search ? `Nothing matches "${search}". Try different keywords.` : 'Try adjusting your filters.'}
             action={
               activeFilterCount > 0 ? (
@@ -228,9 +234,9 @@ export function OpportunitiesPage() {
             {showSpotlight && (
               <div className="mb-10">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-lg">🔥</span>
-                  <h2 className="font-display text-xl font-bold text-deep">Closing Soon</h2>
-                  <span className="text-xs text-muted font-500">Apply before the deadline</span>
+                  <Flame className="h-5 w-5 text-amber-700" strokeWidth={1.8} aria-hidden="true" />
+                  <h2 className="font-display text-xl font-bold text-deep">{settings.closing_title}</h2>
+                  <span className="text-xs text-muted font-500">{settings.closing_subtitle}</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {closingSoon.slice(0, 3).map((o) => (
@@ -249,9 +255,9 @@ export function OpportunitiesPage() {
             <div>
               {showSpotlight && items.length > 0 && (
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-lg">📋</span>
+                  <BriefcaseBusiness className="h-5 w-5 text-green-800" strokeWidth={1.8} aria-hidden="true" />
                   <h2 className="font-display text-xl font-bold text-deep">
-                    All Opportunities
+                    {settings.all_title}
                   </h2>
                 </div>
               )}
@@ -286,7 +292,9 @@ export function OpportunitiesPage() {
       {redirectOpp && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-3xl shadow-card-lg w-full max-w-sm p-8 animate-fade-up text-center">
-            <span className="text-4xl mb-4 block">🔗</span>
+            <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-green-100 bg-green-50 text-green-800">
+              <Link2 className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+            </span>
             <h3 className="font-display text-xl font-bold text-green-700 mb-3">External Redirect</h3>
             <p className="text-sm text-muted mb-6">
               You are being redirected to an external website to complete your application for{' '}
@@ -408,10 +416,12 @@ export function OpportunityDetailPage() {
   )
 }
 
-function StatCard({ icon, value, label }: { icon: string; value: number; label: string }) {
+function StatCard({ icon: Icon, value, label }: { icon: LucideIcon; value: number; label: string }) {
   return (
     <div className="flex items-center gap-2.5 bg-white rounded-xl border border-cream-dark px-4 py-2.5 shadow-sm min-w-[100px]">
-      <span className="text-lg">{icon}</span>
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-50 text-green-800">
+        <Icon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+      </span>
       <div>
         <p className="text-lg font-bold text-deep leading-none">{value}</p>
         <p className="text-[11px] text-muted font-500 leading-tight">{label}</p>
@@ -426,6 +436,7 @@ const NEWS_PAGE_SIZE = 9
 
 export function NewsPage() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('news', newsPageDefaults)
   const [catFilter, setCatFilter] = useState<NewsCategory | 'all'>('all')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -485,7 +496,7 @@ export function NewsPage() {
 
   return (
     <>
-      <PageHeader title="News & Announcements" subtitle="Official updates, notices, and important information from GPSA-UDS." />
+      <PageHeader title={settings.page_title} subtitle={settings.page_subtitle} />
 
       <div className="section-container section-padding">
 
@@ -539,7 +550,7 @@ export function NewsPage() {
             <input
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder='Search news…'
+              placeholder={settings.search_placeholder}
               className="form-input pl-11"
             />
           </div>
@@ -574,7 +585,7 @@ export function NewsPage() {
             }
           />
         ) : !paginated.length ? (
-          <EmptyState icon="📰" title="No posts found" description="Try a different search or category." />
+          <EmptyState icon="📰" title={settings.empty_title} description={settings.empty_description} />
         ) : (
           <>
             {/* ── Hero post ── */}
@@ -614,7 +625,7 @@ export function NewsPage() {
                   <div className="mt-8">
                     <div className="flex items-center gap-2 mb-4">
                       <span className="text-lg">⚡</span>
-                      <h2 className="font-display text-xl font-bold text-deep">Latest</h2>
+                      <h2 className="font-display text-xl font-bold text-deep">{settings.latest_title}</h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {latestPosts.map((p) => {
@@ -654,7 +665,7 @@ export function NewsPage() {
               <>
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">📰</span>
-                  <h2 className="font-display text-xl font-bold text-deep">More News</h2>
+                  <h2 className="font-display text-xl font-bold text-deep">{settings.more_title}</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {gridPosts.map((p) => (

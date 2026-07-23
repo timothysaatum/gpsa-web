@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { X, ChevronLeft, ChevronRight, ZoomIn, Calendar} from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, ZoomIn, Calendar, Image as ImageIcon } from 'lucide-react'
 import { galleryApi } from '@/api/services'
 import { Button, EmptyState } from '@/components/ui'
 import { PageHeader } from '@/components/shared'
 import { cn } from '@/utils'
 import type { GalleryCategory, GalleryItem } from '@/types'
+import { useCmsPageSettings } from '@/hooks/useCmsPageSettings'
+import { galleryPageDefaults } from '@/config/cmsPageDefaults'
 
 const CATEGORY_LABEL: Record<GalleryCategory, string> = {
   events:   'Events',
@@ -292,6 +294,7 @@ function Lightbox({
 const LOAD_MORE_STEP = 12
 
 export function GalleryPage() {
+  const { settings } = useCmsPageSettings('gallery', galleryPageDefaults)
   const [activeCategory, setActiveCategory] = useState<GalleryCategory | 'all'>('all')
   const [lightboxIndex, setLightboxIndex]   = useState<number | null>(null)
   const [visibleCount, setVisibleCount]     = useState(LOAD_MORE_STEP)
@@ -347,8 +350,8 @@ export function GalleryPage() {
   return (
     <>
       <PageHeader
-        title="Gallery"
-        subtitle="Moments, memories, and milestones from the GPSA-UDS community."
+        title={settings.page_title}
+        subtitle={settings.page_subtitle}
       />
 
       <div className="section-container section-padding">
@@ -402,13 +405,11 @@ export function GalleryPage() {
             action={<Button variant="primary" size="sm" onClick={() => refetch()}>Retry</Button>}
           />
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <span className="text-5xl mb-5">🖼️</span>
-            <h3 className="font-display text-xl font-semibold text-green-700 mb-2">No photos yet</h3>
-            <p className="text-sm text-muted max-w-sm">
-              Photos for this category will appear here once they're uploaded.
-            </p>
-          </div>
+          <EmptyState
+            icon={<ImageIcon className="h-9 w-9" />}
+            title={settings.empty_title}
+            description={settings.empty_description}
+          />
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -425,7 +426,7 @@ export function GalleryPage() {
                   size="md"
                   onClick={() => setVisibleCount((c) => c + LOAD_MORE_STEP)}
                 >
-                  Load More Photos
+                  {settings.load_more_label}
                 </Button>
                 <p className="text-xs text-muted">
                   Showing {visible.length} of {filteredTotal}

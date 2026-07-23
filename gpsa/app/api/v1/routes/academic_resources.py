@@ -98,6 +98,28 @@ async def list_resources(
         items.append(resp)
     return PaginatedResponse(items=items, total=total, offset=offset, limit=limit)
 
+@router.get(
+    "/admin/all",
+    response_model=PaginatedResponse[AcademicResourceResponse],
+    summary="List all academic resources including pending items",
+    dependencies=[Depends(require_roles(UserRole.exec, UserRole.admin))],
+)
+async def list_all_resources(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    offset: int = 0,
+    limit: int = 100,
+) -> PaginatedResponse[AcademicResourceResponse]:
+    repo = AcademicResourceRepository(db)
+    resources = await repo.list_filtered(published_only=False, offset=offset, limit=limit)
+    total = await repo.count_filtered(published_only=False)
+    service = AcademicResourceService(db)
+    return PaginatedResponse(
+        items=[await service._to_response(resource) for resource in resources],
+        total=total,
+        offset=offset,
+        limit=limit,
+    )
+
 
 @router.get(
     "/{resource_id}",

@@ -1,19 +1,20 @@
 import { Shield, HeartHandshake, Clock, Phone } from 'lucide-react'
 import type { WelfareConfig } from '@/types'
+import type { welfarePageDefaults } from '@/config/cmsPageDefaults'
 
 interface WelfareHeroProps {
   config: WelfareConfig | undefined
   isLoading: boolean
+  settings: typeof welfarePageDefaults
 }
 
-const TRUST_ITEMS = [
-  { Icon: Shield,        text: 'End-to-End Confidential' },
-  { Icon: HeartHandshake,text: 'Welfare Committee Review' },
-  { Icon: Clock,         text: '48-Hour Response' },
-  { Icon: Phone,         text: 'Direct Officer Line' },
-]
-
-export function WelfareHero({ config, isLoading }: WelfareHeroProps) {
+export function WelfareHero({ config, isLoading, settings }: WelfareHeroProps) {
+  const trustItems = [
+    { Icon: Shield, text: settings.trust_confidential },
+    { Icon: HeartHandshake, text: settings.trust_review },
+    { Icon: Clock, text: settings.trust_response },
+    { Icon: Phone, text: settings.trust_contact },
+  ]
   return (
     <div
       className="relative overflow-hidden mt-16 lg:mt-[70px] mx-5 sm:mx-8 lg:mx-10 rounded-2xl"
@@ -32,15 +33,14 @@ export function WelfareHero({ config, isLoading }: WelfareHeroProps) {
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-5 border border-white/10">
               <span className="w-2 h-2 rounded-full bg-green-gradient animate-pulse flex-shrink-0" />
               <span className="text-white/75 text-xs font-600 tracking-wide">
-                Welfare Portal — Confidential &amp; Secure
+                {settings.hero_badge}
               </span>
             </div>
             <h1 className="font-display text-4xl md:text-5xl font-bold text-white leading-tight mb-4">
-              Your Wellbeing<br />Matters Here
+              {settings.hero_title_primary}<br />{settings.hero_title_secondary}
             </h1>
             <p className="text-white/65 text-base leading-relaxed max-w-md">
-              Reach out, report an issue, or request support — we are here for every
-              member of the GPSA-UDS community.
+              {settings.hero_description}
             </p>
           </div>
 
@@ -49,19 +49,19 @@ export function WelfareHero({ config, isLoading }: WelfareHeroProps) {
               <p className="font-display text-3xl font-bold text-white leading-none">
                 {isLoading ? '...' : `${config?.avg_response_time_hours ?? 48}h`}
               </p>
-              <p className="text-white/50 text-[11px] font-600 tracking-wide mt-1">Avg Response Time</p>
+              <p className="text-white/50 text-[11px] font-600 tracking-wide mt-1">{settings.response_label}</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-7 py-4 text-center min-w-[110px]">
               <p className="font-display text-3xl font-bold text-white leading-none">
                 {isLoading ? '...' : `${config?.confidential_percent ?? 100}%`}
               </p>
-              <p className="text-white/50 text-[11px] font-600 tracking-wide mt-1">Confidential</p>
+              <p className="text-white/50 text-[11px] font-600 tracking-wide mt-1">{settings.confidentiality_label}</p>
             </div>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-5 mt-10 border-t border-white/10">
-          {TRUST_ITEMS.map(({ Icon, text }) => (
+          {trustItems.map(({ Icon, text }) => (
             <div key={text} className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
                 <Icon className="h-3.5 w-3.5 text-white" />

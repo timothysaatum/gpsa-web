@@ -13,6 +13,7 @@ Import all ORM models here so that:
 from app.models.academic_resource import AcademicResource
 from app.models.audit import AuditLog
 from app.models.certificate import Certificate
+from app.models.contact import ContactSubmission
 from app.models.course import Course
 from app.models.email_log import EmailLog
 from app.models.enums import (
@@ -36,8 +37,26 @@ from app.models.enums import (
 from app.models.event import Event, EventRegistration
 from app.models.feedback import Feedback
 from app.models.gallery import GalleryImage
+from app.models.governance import (
+    DocumentCategory, DocumentVersion, FaqCategory, FaqEntry, GovernanceDocument,
+)
 from app.models.hero_slide import HeroSlide
 from app.models.leadership import Leader, LeadershipTerm
+from app.models.cms import CmsPage
+from app.models.impact import (
+    ImpactFocusArea, ImpactInitiative, ImpactMetric, ImpactReport,
+    ImpactReportingPeriod, ImpactSdgAlignment, SdgGoal, StrategicPriority,
+)
+from app.models.legacy import (
+    AdministrationAchievement,
+    HistoricalRecordSubmission,
+    LeaderNomination,
+    LeadershipAdministration,
+    LeadershipTimelineEvent,
+    LegacyAward,
+    RecognitionCategory,
+    RecognitionHonouree,
+)
 from app.models.news import NewsPost
 from app.models.notification import Notification
 from app.models.opportunity import Opportunity
@@ -61,6 +80,11 @@ __all__ = [
     "EventRegistration",
     # Gallery
     "GalleryImage",
+    "DocumentCategory",
+    "GovernanceDocument",
+    "DocumentVersion",
+    "FaqCategory",
+    "FaqEntry",
     # Welfare
     "WelfareReport",
     "WelfareSpotlight",
@@ -72,11 +96,29 @@ __all__ = [
     "Notification",
     # Certificates
     "Certificate",
+    "ContactSubmission",
     # Hero
     "HeroSlide",
-    # Leadership
+    # Leadership & Legacy
     "LeadershipTerm",
+    "CmsPage",
+    "ImpactReportingPeriod",
+    "StrategicPriority",
+    "ImpactMetric",
+    "ImpactFocusArea",
+    "ImpactInitiative",
+    "SdgGoal",
+    "ImpactSdgAlignment",
+    "ImpactReport",
     "Leader",
+    "LeadershipAdministration",
+    "AdministrationAchievement",
+    "LeadershipTimelineEvent",
+    "RecognitionCategory",
+    "RecognitionHonouree",
+    "LegacyAward",
+    "HistoricalRecordSubmission",
+    "LeaderNomination",
     # Feedback
     "Feedback",
     # Enums (re-exported for convenience)

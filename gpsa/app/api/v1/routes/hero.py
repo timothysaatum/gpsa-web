@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +14,8 @@ from app.models.hero_slide import HeroSlide
 from app.repositories.base import BaseRepository
 from app.schemas.common import AppModel, MessageResponse
 from app.services.audit import AuditService
+from app.services.storage import storage
+from app.utils.file_validation import FileValidationError, validate_image_file
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -169,3 +171,43 @@ async def delete_hero_slide(
     )
     await db.commit()
     return MessageResponse(message="Hero slide deleted.")
+
+
+@router.post(
+    "/{slide_id}/image",
+    response_model=HeroSlideResponse,
+    summary="Upload a hero slide image (admin only)",
+    dependencies=[Depends(require_roles(UserRole.admin))],
+)
+async def upload_hero_slide_image(
+    slide_id: uuid.UUID,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> HeroSlideResponse:
+    repo = BaseRepository(HeroSlide, db)
+    slide = await repo.get_by_id_or_404(slide_id)
+    content = await file.read()
+    try:
+        valid = validate_image_file(content, file.filename or "hero-image.jpg")
+    except FileValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    key = await storage.upload(
+        valid.content,
+        "hero-slides",
+        file.filename or "hero-image.jpg",
+        valid.mime_type,
+        public=True,
+    )
+    slide.image_url = storage.cdn_url(key)
+    await AuditService(db).log(
+        action="UPLOAD_IMAGE",
+        entity_type="hero_slide",
+        entity_id=slide.id,
+        new_values={"image_key": key},
+        request=request,
+    )
+    await db.commit()
+    await db.refresh(slide)
+    return HeroSlideResponse.model_validate(slide)

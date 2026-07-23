@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+import traceback
 
 import structlog
 from fastapi import FastAPI, Request, status
@@ -171,11 +172,20 @@ def _register_exception_handlers(app: FastAPI) -> None:
         Never expose internal error details in production.
         """
         request_id = getattr(request.state, "request_id", "unknown")
-        logger.exception(
+        # The handler executes after the original exception context unwinds.
+        # Explicit formatting prevents Rich/structlog from recursively walking
+        # Starlette exception groups and pinning the worker CPU.
+        formatted_traceback = "".join(
+            traceback.format_exception(type(exc), exc, exc.__traceback__, limit=50)
+        )
+        logger.error(
             "unhandled_exception",
             path=request.url.path,
             method=request.method,
             request_id=request_id,
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+            traceback=formatted_traceback,
         )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -13,6 +13,7 @@ from app.services.news import NewsService
 from app.services.opportunity import OpportunityService
 from app.repositories.event import EventRepository
 from app.services.welfare import WelfareService
+from app.api.v1.routes.cms import get_published_page
 
 
 class PresidentWelcomeSchema(AppModel):
@@ -491,7 +492,7 @@ async def get_history_content(
         ),
     ]
 
-    return HistoryPageResponse(
+    default_content = HistoryPageResponse(
         milestones=milestones,
         achievements=achievements,
         metrics=metrics,
@@ -507,4 +508,10 @@ async def get_history_content(
             for img in gallery
         ],
     )
-
+    cms_page = await get_published_page(db, "history")
+    if cms_page is None:
+        return default_content
+    content = {**default_content.model_dump(), **cms_page.content}
+    # Gallery is a managed collection and never trusted from arbitrary page JSON.
+    content["gallery_preview"] = default_content.gallery_preview
+    return HistoryPageResponse.model_validate(content)

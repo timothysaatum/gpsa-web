@@ -5,12 +5,17 @@ from app.api.v1.routes.admin import router as admin_router
 from app.api.v1.routes.academic_resources import router as resources_router
 from app.api.v1.routes.auth import router as auth_router
 from app.api.v1.routes.certificates import router as certs_router
+from app.api.v1.routes.contact import router as contact_router
 from app.api.v1.routes.events import router as events_router
 from app.api.v1.routes.feedback import router as feedback_router
 from app.api.v1.routes.gallery import router as gallery_router
+from app.api.v1.routes.governance import router as governance_router
 from app.api.v1.routes.health import router as health_router
 from app.api.v1.routes.hero import router as hero_router
 from app.api.v1.routes.leadership import router as leadership_router
+from app.api.v1.routes.legacy import router as legacy_router
+from app.api.v1.routes.cms import router as cms_router
+from app.api.v1.routes.impact import router as impact_router
 from app.api.v1.routes.stats import router as stats_router
 from app.api.v1.routes.news import router as news_router
 from app.api.v1.routes.notifications import router as notifs_router
@@ -24,6 +29,10 @@ api_router = APIRouter()
 api_router.include_router(health_router)
 api_router.include_router(stats_router)
 api_router.include_router(about_router, prefix="/about")
+api_router.include_router(legacy_router)
+api_router.include_router(cms_router)
+api_router.include_router(impact_router)
+api_router.include_router(governance_router)
 api_router.include_router(admin_router, prefix="/admin")
 
 # ── Auth & Users ──────────────────────────────────────────────────────────────
@@ -39,6 +48,7 @@ api_router.include_router(news_router,      prefix="/news")
 api_router.include_router(notifs_router,    prefix="/notifications")
 api_router.include_router(certs_router,     prefix="/certificates")
 api_router.include_router(feedback_router,  prefix="/feedback")
+api_router.include_router(contact_router,   prefix="/contact")
 api_router.include_router(gallery_router,   prefix="/gallery")
 api_router.include_router(hero_router,      prefix="/hero")
 api_router.include_router(leadership_router, prefix="/leadership")

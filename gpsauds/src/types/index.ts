@@ -278,7 +278,27 @@ export interface GalleryItem {
   category: GalleryCategory
   event_date: string | null
   sort_order: number
+  is_published: boolean
   created_at: string
+}
+
+export type ContactStatus = 'pending' | 'in_progress' | 'resolved' | 'spam'
+
+export interface ContactSubmission {
+  id: string
+  reference: string
+  full_name: string
+  email: string
+  phone: string | null
+  category: string
+  subject: string
+  message: string
+  status: ContactStatus
+  admin_notes: string | null
+  assigned_to: string | null
+  resolved_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 // ── Leadership ───────────────────────────────────────────────────────────────
@@ -408,6 +428,67 @@ export interface ImpactMetrics {
   active_partnerships: string
 }
 
+export interface ImpactPageData {
+  settings: {
+    hero_eyebrow?: string
+    hero_title_primary?: string
+    hero_title_secondary?: string
+    hero_intro?: string
+    hero_image_url?: string
+    hero_image_alt?: string
+    commitment_title?: string
+    commitment_description?: string
+    vision_quote?: string
+    vision_signature?: string
+    cta_title?: string
+    cta_description?: string
+  }
+  reporting_period: null | { id: string; name: string; academic_year: string }
+  priorities: Array<{ id: string; title: string; slug: string; description: string; icon_name?: string | null; detail_url?: string | null }>
+  metrics: Array<{ id: string; label: string; description?: string | null; display_value: string; prefix?: string | null; suffix?: string | null; icon_name?: string | null }>
+  focus_areas: Array<{ id: string; title: string; slug: string; summary: string; image_url?: string | null; image_alt?: string | null; icon_name?: string | null; detail_url?: string | null }>
+  featured_initiatives: Array<{ id: string; title: string; slug: string; summary: string; image_url?: string | null; image_alt?: string | null }>
+  sdg_alignments: Array<{ id: string; summary: string; goal: { id: string; number: number; title: string; official_color: string; official_url: string } }>
+  reports: Array<{ id: string; title: string; description?: string | null; download_url: string; file_name?: string | null }>
+}
+
+export interface GovernancePageData {
+  settings: {
+    hero_eyebrow?: string
+    hero_title_primary?: string
+    hero_title_secondary?: string
+    hero_intro?: string
+    hero_image_url?: string
+    hero_image_alt?: string
+    resource_card_title?: string
+    resource_card_subtitle?: string
+    resource_card_description?: string
+    faq_quote?: string
+    cta_title?: string
+    cta_description?: string
+  }
+  categories: Array<{ id: string; name: string; slug: string; description?: string | null; icon_name?: string | null }>
+  documents: Array<{
+    id: string
+    title: string
+    slug: string
+    description?: string | null
+    document_type: string
+    version?: string | null
+    edition?: string | null
+    academic_year?: string | null
+    publication_date?: string | null
+    file_name?: string | null
+    file_extension?: string | null
+    file_size_bytes?: number | null
+    category: { name: string; slug: string }
+    view_url?: string | null
+    download_url?: string | null
+  }>
+  pagination: { page: number; page_size: number; total: number; pages: number }
+  faqs: Array<{ id: string; question: string; slug: string; answer: string; category?: string | null; related_url?: string | null }>
+}
+
 export interface Partner {
   name: string
   logo_key: string
@@ -506,6 +587,158 @@ export interface HistoryContent {
     thumbnail_url: string | null
     category: string
   }[]
+}
+
+export interface CmsPage {
+  slug: string
+  title: string
+  content: Record<string, unknown>
+  is_published: boolean
+  version: number
+}
+
+// ── Past Leadership & Recognition ──────────────────────────────────────────
+
+export interface LegacyLeaderSummary {
+  id?: string | null
+  full_name: string
+  office: string
+  photo_url?: string | null
+}
+
+export interface LegacyAdministrationLeaderGroup {
+  president?: LegacyLeaderSummary | null
+  vice_president?: LegacyLeaderSummary | null
+  other_executives_count: number
+  other_executives: LegacyLeaderSummary[]
+}
+
+export interface LegacyAdministrationAchievement {
+  id: string
+  title: string
+  summary: string
+  category?: string | null
+  image_url?: string | null
+}
+
+export interface LegacyAdministration {
+  id: string
+  academic_year: string
+  slug: string
+  title: string
+  theme?: string | null
+  slogan?: string | null
+  starts_at?: string | null
+  ends_at?: string | null
+  group_photo_url?: string | null
+  group_photo_alt?: string | null
+  is_current: boolean
+  status: string
+  summary?: string | null
+  executive_count: number
+  committee_count: number
+  initiatives_count: number
+  lives_impacted?: string | null
+  display_order: number
+  top_leadership: LegacyAdministrationLeaderGroup
+  achievements: LegacyAdministrationAchievement[]
+}
+
+export interface LegacyTimelineEvent {
+  id: string
+  year_label: string
+  event_date?: string | null
+  title: string
+  summary: string
+  icon_name?: string | null
+  verification_status: string
+  status: string
+  display_order: number
+}
+
+export interface RecognitionCategoryItem {
+  id: string
+  name: string
+  slug: string
+  description: string
+  icon_name?: string | null
+  honourees_count: number
+}
+
+export interface RecognitionHonoureeItem {
+  id: string
+  category_id: string
+  full_name: string
+  title: string
+  citation?: string | null
+  recognition_year?: string | null
+  class_year?: string | null
+  photo_url?: string | null
+  photo_alt?: string | null
+}
+
+export interface LegacyAwardItem {
+  id: string
+  title: string
+  slug: string
+  award_year: string
+  category: string
+  recipient_type: string
+  recipient_name?: string | null
+  citation: string
+  image_url?: string | null
+  image_alt?: string | null
+  is_featured: boolean
+  display_order: number
+}
+
+export interface LegacyHeroStat {
+  label: string
+  value: string
+  icon_name?: string | null
+}
+
+export interface LegacyPageContent {
+  hero_eyebrow: string
+  hero_headline_primary: string
+  hero_headline_secondary: string
+  hero_supporting_text: string
+  hero_quote_text: string
+  hero_quote_citation: string
+  statistics: LegacyHeroStat[]
+  administrations: LegacyAdministration[]
+  selected_administration?: LegacyAdministration | null
+  timeline: LegacyTimelineEvent[]
+  recognition_categories: RecognitionCategoryItem[]
+  featured_awards: LegacyAwardItem[]
+}
+
+export interface HistoricalRecordSubmissionInput {
+  submitter_name: string
+  submitter_email: string
+  submitter_phone?: string
+  relationship_to_gpsa?: string
+  record_type: string
+  title: string
+  description: string
+  administration_year?: string
+  event_date?: string
+  consent_to_archive: boolean
+  consent_to_publish: boolean
+  file?: File
+}
+
+export interface LeaderNominationInput {
+  nominee_name: string
+  nominee_email?: string
+  category_id?: string
+  administration_year?: string
+  reason: string
+  achievements?: string
+  nominator_name: string
+  nominator_email: string
+  relationship_to_nominee?: string
+  consent_confirmed: boolean
 }
 
 export interface FeedbackSummary {

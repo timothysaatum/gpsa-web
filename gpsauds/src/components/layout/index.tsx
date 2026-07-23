@@ -48,9 +48,9 @@ const NAV_ITEMS: NavItem[] = [
       { to: '/about', label: 'Overview', description: 'Explore our departmental mission & vision' },
       { to: '/about/history', label: 'History & Legacy', description: 'Our origins and milestone journey' },
       { to: '/about/leadership', label: 'Leadership & Governance', description: 'Current executive committee & leaders' },
-      { to: '/about/past-leadership', label: 'Past Leadership & Recognition', description: 'Former executive teams & honor roll' },
+      { to: '/about/legacy', label: 'Past Leadership & Recognition', description: 'Former executive teams & honor roll' },
       { to: '/about/impact', label: 'Impact & Strategic Priorities', description: 'Key pillars and strategic roadmap' },
-      { to: '/about/faqs', label: 'Documents & FAQs', description: 'Constitution, guides & answers' },
+      { to: '/about/governance', label: 'Documents & FAQs', description: 'Official resources, governance documents & answers' },
     ],
   },
   { to: '/gallery', label: 'Gallery', icon: Image },
@@ -596,7 +596,7 @@ export function Footer() {
   ]
 
   return (
-    <div className="section-container">
+    <div className="section-container w-full min-w-0 max-w-full">
       <footer className="relative overflow-hidden rounded-2xl">
         <div className="h-1 w-full" style={{ background: 'var(--legacy-gradient)' }} />
 
@@ -608,11 +608,11 @@ export function Footer() {
               <p className="font-display font-bold text-lg text-white">Stay connected with GPSA-UDS</p>
               <p className="text-sm text-white/50 mt-0.5">Get the latest updates, events and opportunities.</p>
             </div>
-            <div className="flex gap-3 w-full sm:w-auto">
+            <div className="flex min-w-0 gap-3 w-full sm:w-auto">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 sm:w-64 px-4 py-2.5 rounded-xl bg-white/10 border border-white/10 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 transition-colors"
+                className="min-w-0 flex-1 sm:w-64 px-4 py-2.5 rounded-xl bg-white/10 border border-white/10 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 transition-colors"
               />
               <Button variant="gold" size="md">Subscribe</Button>
             </div>

@@ -15,6 +15,8 @@ import { Badge, Button, EmptyState, Skeleton } from '@/components/ui'
 import { PageHeader } from '@/components/shared'
 import { cn, TRIMESTER_LABELS, formatFileSize, CONTENT_TYPE_LABELS } from '@/utils'
 import type { AcademicResource, ContentType, Trimester, Course } from '@/types'
+import { useCmsPageSettings } from '@/hooks/useCmsPageSettings'
+import { academicsPageDefaults } from '@/config/cmsPageDefaults'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -113,6 +115,7 @@ function Breadcrumbs() {
 
 function FeaturedBanner() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('academics', academicsPageDefaults)
   const { data, isLoading } = useQuery({
     queryKey: ['academic-resources', 'featured'],
     queryFn: () => academicsApi.listResources({ is_featured: true, limit: 5, sort_by: 'created_at', sort_order: 'desc' }),
@@ -127,7 +130,7 @@ function FeaturedBanner() {
     <div className="mb-10">
       <div className="flex items-center gap-2 mb-4">
         <Star className="h-4 w-4 fill-gold-500 text-gold-500" />
-        <h2 className="font-display text-xl font-bold text-green-800">Best Samples</h2>
+        <h2 className="font-display text-xl font-bold text-green-800">{settings.featured_title}</h2>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {items.slice(0, 5).map((r) => {
@@ -166,6 +169,7 @@ function FeaturedBanner() {
 
 export function AcademicsPage() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('academics', academicsPageDefaults)
   const { user } = useAuthStore()
   const canUpload = user && (user.role === 'exec' || user.role === 'admin')
 
@@ -223,8 +227,8 @@ export function AcademicsPage() {
     <>
       <Breadcrumbs />
       <PageHeader
-        title="Academics Hub"
-        subtitle="Access structured resources to prepare smarter and perform better."
+        title={settings.page_title}
+        subtitle={settings.page_subtitle}
       >
         {canUpload && (
           <Button
@@ -233,7 +237,7 @@ export function AcademicsPage() {
             leftIcon={<Upload className="h-4 w-4" />}
             onClick={() => navigate('/academics/upload')}
           >
-            Upload Resource
+            {settings.upload_button_label}
           </Button>
         )}
       </PageHeader>
@@ -253,7 +257,7 @@ export function AcademicsPage() {
               <input
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); resetPage() }}
-                placeholder="Search by title…"
+                placeholder={settings.search_placeholder}
                 className="form-input pl-11"
               />
             </div>
@@ -371,8 +375,8 @@ export function AcademicsPage() {
         ) : !items.length ? (
           <EmptyState
             icon="📭"
-            title="No resources found"
-            description="Try adjusting your filters or search query."
+            title={settings.empty_title}
+            description={settings.empty_description}
           />
         ) : (
           <>

@@ -25,6 +25,12 @@ from app.core.config import settings
 logger = structlog.get_logger(__name__)
 
 _LOGIN_PATH = f"{settings.api_v1_prefix}/auth/login"
+_PUBLIC_FORM_PATHS = {
+    f"{settings.api_v1_prefix}/about/legacy/submissions",
+    f"{settings.api_v1_prefix}/about/legacy/nominations",
+    f"{settings.api_v1_prefix}/contact/",
+}
+_PUBLIC_FORM_LIMIT = 10
 
 
 @dataclass
@@ -69,9 +75,22 @@ def reset_attempts(key: str) -> None:
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Block repeated login attempts from the same IP."""
+    """Block repeated login attempts and public-form spam from the same IP."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if request.method == "POST" and request.url.path in _PUBLIC_FORM_PATHS:
+            key = f"public-form:{_bucket_key(request)}"
+            bucket = _store[key]
+            now = time.monotonic()
+            if now - bucket.window_start > _WINDOW_SECONDS:
+                _store[key] = _AttemptBucket()
+                bucket = _store[key]
+            if bucket.count >= _PUBLIC_FORM_LIMIT:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many submissions. Please try again later."},
+                )
+            bucket.count += 1
         if request.method == "POST" and request.url.path == _LOGIN_PATH:
             key = _bucket_key(request)
             if is_rate_limited(key):

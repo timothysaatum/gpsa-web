@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import Integer, String, Text
+from sqlalchemy import Boolean, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -12,12 +12,14 @@ class GalleryImage(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "gallery_images"
 
     image_url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    image_key: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     thumbnail_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     category: Mapped[str] = mapped_column(String(50), nullable=False)
     event_date: Mapped[date | None] = mapped_column(nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     def __repr__(self) -> str:
         return f"<GalleryImage id={self.id} title={self.title!r} category={self.category!r}>"

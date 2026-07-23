@@ -106,6 +106,26 @@ async def list_opportunities(
         limit=limit,
     )
 
+@router.get(
+    "/admin/all",
+    response_model=PaginatedResponse[OpportunityResponse],
+    summary="List all opportunities including drafts and expired items",
+    dependencies=[Depends(require_roles(UserRole.exec, UserRole.admin))],
+)
+async def list_all_opportunities(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    offset: int = 0,
+    limit: int = 100,
+) -> PaginatedResponse[OpportunityResponse]:
+    service = OpportunityService(db)
+    opportunities = await service.repo.list(offset=offset, limit=limit)
+    return PaginatedResponse(
+        items=[OpportunityResponse.model_validate(item) for item in opportunities],
+        total=await service.repo.count(),
+        offset=offset,
+        limit=limit,
+    )
+
 
 @router.get("/{opp_id}", response_model=OpportunityResponse)
 async def get_opportunity(

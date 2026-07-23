@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -6,18 +6,24 @@ import {
   Image, Newspaper, Plus, RefreshCw, ScrollText, Shield, Upload, Users,
 } from 'lucide-react'
 import {
-  academicsApi, adminApi, eventsApi, galleryApi, leadershipApi, newsApi,
+  academicsApi, adminApi, cmsApi, contactApi, eventsApi, galleryApi, governanceApi, impactApi, leadershipApi, legacyApi, newsApi,
   opportunitiesApi, usersApi, welfareApi,
 } from '@/api/services'
 import { Badge, Button, EmptyState, Skeleton } from '@/components/ui'
 import { formatDate, formatDateTime } from '@/utils'
 import type {
-  EventType, GalleryCategory, Leader, LeadershipTerm, NewsCategory, OpportunityType,
-  ReportStatus, UserRole,
+  ContactStatus, ContactSubmission, EventType, GalleryCategory, GalleryItem, Leader, LeadershipTerm, NewsCategory,
+  OpportunityType, ReportStatus, UserRole,
 } from '@/types'
 import { AdminPageHeader, AdminStatCard } from './AdminLayout'
 import { HeroSlidesPage } from './HeroSlidesPage'
 import { useAuthStore } from '@/store/authStore'
+import { historyContentTemplate } from '@/pages/HistoryLegacyPage'
+import { leadershipPageDefaults } from '@/pages/LeadershipPage'
+import {
+  academicsPageDefaults, contactPageDefaults, eventsPageDefaults, galleryPageDefaults, homePageDefaults, newsPageDefaults,
+  opportunitiesPageDefaults, welfarePageDefaults,
+} from '@/config/cmsPageDefaults'
 
 const input = 'form-input'
 const label = 'form-label'
@@ -155,14 +161,58 @@ function AuditList({ items, compact = false }: { items: any[]; compact?: boolean
 }
 
 export function AdminHomePage() {
-  return <HeroSlidesPage />
+  return <><CmsDocumentEditor slug="home" title="Home Page Settings" initialContent={homePageDefaults} /><HeroSlidesPage /></>
 }
 
 export function AdminAboutPage() {
+  const qc = useQueryClient()
+  const { data } = useQuery({ queryKey: ['cms-page', 'history'], queryFn: () => cmsApi.getPage('history'), retry: false })
+  const [content, setContent] = useState(() => JSON.stringify(historyContentTemplate, null, 2))
+  const [published, setPublished] = useState(true)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    if (data) {
+      setContent(JSON.stringify(data.content, null, 2))
+      setPublished(data.is_published)
+    }
+  }, [data])
+  const save = useMutation({
+    mutationFn: () => {
+      let parsed: Record<string, unknown>
+      try {
+        parsed = JSON.parse(content)
+      } catch {
+        throw new Error('Content must be valid JSON.')
+      }
+      return cmsApi.updatePage('history', {
+        title: 'History & Legacy',
+        content: parsed,
+        is_published: published,
+        expected_version: data?.version,
+      })
+    },
+    onSuccess: () => {
+      setError('')
+      qc.invalidateQueries({ queryKey: ['cms-page', 'history'] })
+      qc.invalidateQueries({ queryKey: ['history'] })
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to save the page.'),
+  })
   return (
     <>
-      <AdminPageHeader title="About Page" description="The public About page is backend-backed. Structured editing for mission, vision, values, pillars, and timeline is the next module." />
-      <InfoPanel title="Current capability" items={['Live About API is active', 'Stats, news, events, gallery, and welfare are pulled from backend', 'Next step: editable site_pages content_json form']} />
+      <AdminPageHeader title="History & Legacy" description="Edit the complete History page document. Gallery images remain managed in Gallery." />
+      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+        <label className="block">
+          <span className="form-label">Structured page content</span>
+          <textarea className="form-input min-h-[560px] font-mono text-xs" value={content} onChange={(event) => setContent(event.target.value)} spellCheck={false} />
+        </label>
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          <Check label="Published" checked={published} onChange={setPublished} />
+          <Button loading={save.isPending} onClick={() => save.mutate()}>Save History Page</Button>
+          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+          {save.isSuccess && <p role="status" className="text-sm text-green-700">History page saved.</p>}
+        </div>
+      </div>
     </>
   )
 }
@@ -170,12 +220,14 @@ export function AdminAboutPage() {
 export function AdminNewsPage() {
   const qc = useQueryClient()
   const [form, setForm] = useState({ title: '', category: 'general' as NewsCategory, summary: '', body: '', banner_emoji: '📣', is_featured: false, is_urgent: false, is_strip_announcement: false, publish_immediately: false })
-  const { data, isLoading } = useQuery({ queryKey: ['admin-news'], queryFn: () => newsApi.list({ limit: 100 }) })
+  const { data, isLoading } = useQuery({ queryKey: ['admin-news'], queryFn: () => newsApi.listAdmin({ limit: 100 }) })
   const create = useMutation({ mutationFn: () => newsApi.create(form), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-news'] }); setForm((f) => ({ ...f, title: '', summary: '', body: '' })) } })
   const del = useMutation({ mutationFn: newsApi.delete, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-news'] }) })
   const publish = useMutation({ mutationFn: newsApi.publish, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-news'] }) })
 
   return (
+    <>
+    <CmsDocumentEditor slug="news" title="News Page Settings" initialContent={newsPageDefaults} />
     <CrudPage title="News" description="Create announcements, updates, urgent posts, and strip announcements.">
       <form onSubmit={(e) => { e.preventDefault(); create.mutate() }} className="admin-form">
         <Field label="Title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} required />
@@ -194,6 +246,7 @@ export function AdminNewsPage() {
         <Button size="sm" variant="destructive" onClick={() => del.mutate(p.id)}>Delete</Button>
       </>} />
     </CrudPage>
+    </>
   )
 }
 
@@ -204,6 +257,8 @@ export function AdminEventsPage() {
   const create = useMutation({ mutationFn: () => eventsApi.create({ ...form, end_datetime: form.end_datetime || null }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-events'] }); setForm((f) => ({ ...f, title: '', description: '', location: '' })) } })
   const del = useMutation({ mutationFn: eventsApi.deleteEvent, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-events'] }) })
   return (
+    <>
+    <CmsDocumentEditor slug="events" title="Events Page Settings" initialContent={eventsPageDefaults} />
     <CrudPage title="Events" description="Create and manage public events.">
       <form onSubmit={(e) => { e.preventDefault(); create.mutate() }} className="admin-form">
         <Field label="Title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} required />
@@ -218,16 +273,19 @@ export function AdminEventsPage() {
       </form>
       <AdminList isLoading={isLoading} items={data?.items ?? []} title={(e) => e.title} meta={(e) => `${e.event_type} · ${formatDateTime(e.start_datetime)} · ${e.location}`} actions={(e) => <Button size="sm" variant="destructive" onClick={() => del.mutate(e.id)}>Delete</Button>} />
     </CrudPage>
+    </>
   )
 }
 
 export function AdminOpportunitiesPage() {
   const qc = useQueryClient()
   const [form, setForm] = useState({ title: '', organization: '', opp_type: 'internship' as OpportunityType, description: '', location: '', deadline: '', external_link: '' })
-  const { data, isLoading } = useQuery({ queryKey: ['admin-opportunities'], queryFn: () => opportunitiesApi.list({ include_expired: true, limit: 100 }) })
+  const { data, isLoading } = useQuery({ queryKey: ['admin-opportunities'], queryFn: () => opportunitiesApi.listAdmin({ limit: 100 }) })
   const create = useMutation({ mutationFn: () => opportunitiesApi.create({ ...form, location: form.location || null }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-opportunities'] }); setForm((f) => ({ ...f, title: '', organization: '', description: '', location: '', deadline: '', external_link: '' })) } })
   const del = useMutation({ mutationFn: opportunitiesApi.delete, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-opportunities'] }) })
   return (
+    <>
+    <CmsDocumentEditor slug="opportunities" title="Opportunities Page Settings" initialContent={opportunitiesPageDefaults} />
     <CrudPage title="Opportunities" description="Publish internships, scholarships, jobs, and training opportunities.">
       <form onSubmit={(e) => { e.preventDefault(); create.mutate() }} className="admin-form">
         <Field label="Title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} required />
@@ -241,13 +299,14 @@ export function AdminOpportunitiesPage() {
       </form>
       <AdminList isLoading={isLoading} items={data?.items ?? []} title={(o) => o.title} meta={(o) => `${o.organization} · ${o.opp_type} · deadline ${formatDate(o.deadline)}`} actions={(o) => <Button size="sm" variant="destructive" onClick={() => del.mutate(o.id)}>Delete</Button>} />
     </CrudPage>
+    </>
   )
 }
 
 export function AdminGalleryPage() {
   const qc = useQueryClient()
   const [form, setForm] = useState({ title: '', description: '', category: 'events' as GalleryCategory, event_date: '', sort_order: 0, file: null as File | null })
-  const { data, isLoading } = useQuery({ queryKey: ['admin-gallery'], queryFn: () => galleryApi.list({ limit: 100 }) })
+  const { data, isLoading } = useQuery({ queryKey: ['admin-gallery'], queryFn: () => galleryApi.listAdmin({ limit: 200 }) })
   const create = useMutation({
     mutationFn: () => {
       const fd = new FormData()
@@ -257,12 +316,22 @@ export function AdminGalleryPage() {
       fd.append('category', form.category)
       if (form.event_date) fd.append('event_date', form.event_date)
       fd.append('sort_order', String(form.sort_order))
+      fd.append('is_published', 'true')
       return galleryApi.create(fd)
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-gallery'] }); setForm((f) => ({ ...f, title: '', description: '', file: null })) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-gallery'] })
+      qc.invalidateQueries({ queryKey: ['gallery'] })
+      setForm((f) => ({ ...f, title: '', description: '', file: null }))
+    },
   })
-  const del = useMutation({ mutationFn: galleryApi.delete, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-gallery'] }) })
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['admin-gallery'] })
+    qc.invalidateQueries({ queryKey: ['gallery'] })
+  }
   return (
+    <>
+    <CmsDocumentEditor slug="gallery" title="Gallery Page Settings" initialContent={galleryPageDefaults} />
     <CrudPage title="Gallery" description="Upload and organize public website photos.">
       <form onSubmit={(e) => { e.preventDefault(); create.mutate() }} className="admin-form">
         <Field label="Title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} required />
@@ -272,22 +341,152 @@ export function AdminGalleryPage() {
         <label><span className={label}>Image</span><input className={input} type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setForm((f) => ({ ...f, file: e.target.files?.[0] ?? null }))} required /></label>
         <Button type="submit" loading={create.isPending} leftIcon={<Upload className="h-4 w-4" />}>Upload Image</Button>
       </form>
-      <AdminList isLoading={isLoading} items={data ?? []} title={(g) => g.title} meta={(g) => `${g.category} · ${g.event_date ? formatDate(g.event_date) : 'No date'}`} actions={(g) => <Button size="sm" variant="destructive" onClick={() => del.mutate(g.id)}>Delete</Button>} />
+      <div className="space-y-4">
+        {isLoading ? <Skeleton className="h-96 rounded-xl" /> : (data ?? []).map((item) => (
+          <GalleryAdminEditor key={item.id} item={item} onSaved={refresh} />
+        ))}
+        {!isLoading && !data?.length && <EmptyState title="No gallery images" description="Upload the first image using the form." />}
+      </div>
     </CrudPage>
+    </>
+  )
+}
+
+export function AdminContactPage() {
+  const [statusFilter, setStatusFilter] = useState<ContactStatus | ''>('')
+  const [search, setSearch] = useState('')
+  const qc = useQueryClient()
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-contact', statusFilter, search],
+    queryFn: () => contactApi.listAdmin({
+      contact_status: statusFilter || undefined,
+      search: search || undefined,
+      limit: 100,
+    }),
+  })
+  const refresh = () => qc.invalidateQueries({ queryKey: ['admin-contact'] })
+  return (
+    <>
+      <CmsDocumentEditor slug="contact" title="Contact Page Settings" initialContent={contactPageDefaults} />
+      <AdminPageHeader title="Contact enquiries" description="Review, assign and resolve messages sent through the public Contact page." />
+      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field label="Search" value={search} onChange={setSearch} placeholder="Reference, name, email or subject" />
+        <Select label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as ContactStatus | '')} options={[
+          { label: 'All statuses', value: '' }, 'pending', 'in_progress', 'resolved', 'spam',
+        ]} />
+      </div>
+      <div className="space-y-4">
+        {isLoading ? <Skeleton className="h-96 rounded-xl" /> : (data?.items ?? []).map((item) => (
+          <ContactAdminEditor key={item.id} item={item} onSaved={refresh} />
+        ))}
+        {!isLoading && !data?.items.length && <EmptyState title="No enquiries found" description="New contact messages will appear here." />}
+      </div>
+    </>
+  )
+}
+
+function ContactAdminEditor({ item, onSaved }: { item: ContactSubmission; onSaved: () => void }) {
+  const isAdmin = useAuthStore((state) => state.user?.role === 'admin')
+  const [status, setStatus] = useState<ContactStatus>(item.status)
+  const [notes, setNotes] = useState(item.admin_notes ?? '')
+  const update = useMutation({
+    mutationFn: () => contactApi.update(item.id, { status, admin_notes: notes || null }),
+    onSuccess: onSaved,
+  })
+  const remove = useMutation({ mutationFn: () => contactApi.delete(item.id), onSuccess: onSaved })
+  return (
+    <article className="rounded-xl border border-cream-dark bg-white p-5 shadow-card">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={item.status === 'resolved' ? 'green' : item.status === 'spam' ? 'red' : 'gold'}>{item.status.replace('_', ' ')}</Badge>
+            <span className="font-mono text-xs text-muted">{item.reference}</span>
+            <span className="text-xs text-muted">{formatDateTime(item.created_at)}</span>
+          </div>
+          <h3 className="font-display text-2xl font-bold text-deep mt-3">{item.subject}</h3>
+          <p className="text-sm text-muted mt-1">{item.full_name} · <a className="text-green-700" href={`mailto:${item.email}`}>{item.email}</a>{item.phone ? ` · ${item.phone}` : ''}</p>
+          <p className="text-[11px] font-700 uppercase tracking-wider text-muted mt-2">{item.category}</p>
+        </div>
+      </div>
+      <p className="mt-4 whitespace-pre-wrap rounded-xl bg-cream-dark p-4 text-sm text-deep">{item.message}</p>
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-3 mt-4">
+        <Select label="Status" value={status} onChange={(value) => setStatus(value as ContactStatus)} options={['pending','in_progress','resolved','spam']} />
+        <Textarea label="Internal notes" value={notes} onChange={setNotes} rows={3} />
+      </div>
+      <div className="mt-3 flex gap-3">
+        <Button size="sm" loading={update.isPending} onClick={() => update.mutate()}>Save enquiry</Button>
+        {isAdmin && <Button size="sm" variant="destructive" loading={remove.isPending} onClick={() => {
+          if (window.confirm(`Delete enquiry ${item.reference}?`)) remove.mutate()
+        }}>Delete</Button>}
+      </div>
+    </article>
+  )
+}
+
+function GalleryAdminEditor({ item, onSaved }: { item: GalleryItem; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    title: item.title,
+    description: item.description ?? '',
+    category: item.category,
+    event_date: item.event_date ?? '',
+    sort_order: item.sort_order,
+    is_published: item.is_published,
+  })
+  const save = useMutation({
+    mutationFn: () => galleryApi.update(item.id, {
+      ...form,
+      description: form.description || null,
+      event_date: form.event_date || null,
+    }),
+    onSuccess: onSaved,
+  })
+  const replace = useMutation({
+    mutationFn: (file: File) => galleryApi.replaceImage(item.id, file),
+    onSuccess: onSaved,
+  })
+  const remove = useMutation({ mutationFn: () => galleryApi.delete(item.id), onSuccess: onSaved })
+  return (
+    <div className="rounded-xl border border-cream-dark bg-white p-5 shadow-card">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <img src={item.thumbnail_url ?? item.image_url} alt="" className="h-24 w-full sm:w-32 rounded-xl object-cover bg-cream-dark" />
+        <div className="grid flex-1 grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Title" value={form.title} onChange={(title) => setForm((old) => ({ ...old, title }))} required />
+          <Select label="Category" value={form.category} onChange={(category) => setForm((old) => ({ ...old, category: category as GalleryCategory }))} options={['events','academic','health','outreach','social','welfare']} />
+          <Field label="Event date" type="date" value={form.event_date} onChange={(event_date) => setForm((old) => ({ ...old, event_date }))} />
+          <Field label="Display order" type="number" value={String(form.sort_order)} onChange={(sort_order) => setForm((old) => ({ ...old, sort_order: Number(sort_order) }))} />
+          <div className="sm:col-span-2"><Textarea label="Description" value={form.description} onChange={(description) => setForm((old) => ({ ...old, description }))} /></div>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Check label="Published" checked={form.is_published} onChange={(is_published) => setForm((old) => ({ ...old, is_published }))} />
+        <Button size="sm" loading={save.isPending} onClick={() => save.mutate()}>Save changes</Button>
+        <label className="btn-sm btn-outline cursor-pointer">
+          <Upload className="h-4 w-4" />Replace image
+          <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) replace.mutate(file) }} />
+        </label>
+        <Button size="sm" variant="destructive" loading={remove.isPending} onClick={() => {
+          if (window.confirm(`Delete “${item.title}”?`)) remove.mutate()
+        }}>Delete</Button>
+      </div>
+    </div>
   )
 }
 
 export function AdminLeadershipPage() {
   const qc = useQueryClient()
-  const { data: terms = [], isLoading } = useQuery({ queryKey: ['admin-leadership'], queryFn: () => leadershipApi.list({ include_inactive: true, limit: 100 }) })
+  const { data: terms = [], isLoading } = useQuery({ queryKey: ['admin-leadership'], queryFn: leadershipApi.listAdmin })
   const [term, setTerm] = useState({ title: '', academic_year: '', theme: '', summary: '', is_current: false })
   const [leader, setLeader] = useState({ term_id: '', full_name: '', office: '', bio: '', email: '', phone: '', sort_order: 0 })
   const createTerm = useMutation({ mutationFn: () => leadershipApi.createTerm({ ...term, theme: term.theme || null, summary: term.summary || null }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-leadership'] }); setTerm({ title: '', academic_year: '', theme: '', summary: '', is_current: false }) } })
   const createLeader = useMutation({ mutationFn: () => leadershipApi.createLeader({ ...leader, term_id: leader.term_id || terms[0]?.id, bio: leader.bio || null, email: leader.email || null, phone: leader.phone || null }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-leadership'] }); setLeader((l) => ({ ...l, full_name: '', office: '', bio: '', email: '', phone: '' })) } })
   const uploadPhoto = useMutation({ mutationFn: ({ id, file }: { id: string; file: File }) => { const fd = new FormData(); fd.append('file', file); return leadershipApi.uploadLeaderPhoto(id, fd) }, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-leadership'] }) })
+  const deleteLeader = useMutation({ mutationFn: leadershipApi.deleteLeader, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-leadership'] }) })
+  const updateLeader = useMutation({ mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) => leadershipApi.updateLeader(id, { is_active }), onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-leadership'] }) })
+  const deleteTerm = useMutation({ mutationFn: leadershipApi.deleteTerm, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-leadership'] }) })
   const flatLeaders = terms.flatMap((t) => t.leaders.map((l) => ({ ...l, term: t })))
   return (
     <CrudPage title="Leadership" description="Maintain every administration, officer, office, contact, and real leader photo.">
+      <CmsDocumentEditor slug="leadership" title="Leadership Page Settings" initialContent={leadershipPageDefaults} />
       <form onSubmit={(e) => { e.preventDefault(); createTerm.mutate() }} className="admin-form">
         <h3 className="font-display text-2xl font-bold text-deep">Administration</h3>
         <Field label="Title" value={term.title} onChange={(v) => setTerm((f) => ({ ...f, title: v }))} required />
@@ -305,23 +504,398 @@ export function AdminLeadershipPage() {
         <Textarea label="Bio" value={leader.bio} onChange={(v) => setLeader((f) => ({ ...f, bio: v }))} />
         <Button type="button" onClick={() => createLeader.mutate()} disabled={!terms.length} loading={createLeader.isPending}>Save Officer</Button>
       </form>
-      <AdminList isLoading={isLoading} items={flatLeaders} title={(l: Leader & { term: LeadershipTerm }) => l.full_name} meta={(l) => `${l.office} · ${l.term.academic_year}`} actions={(l) => <label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />Photo<input type="file" className="sr-only" accept="image/png,image/jpeg,image/webp" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadPhoto.mutate({ id: l.id, file }) }} /></label>} />
+      <div className="mt-6 rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+        <h3 className="font-display text-2xl font-bold text-deep mb-3">Administration terms</h3>
+        <AdminList isLoading={isLoading} items={terms} title={(t) => t.title} meta={(t) => `${t.academic_year} · ${t.is_current ? 'Current' : 'Archive'}`} actions={(t) => <Button size="sm" variant="destructive" disabled={t.is_current} onClick={() => deleteTerm.mutate(t.id)}>Delete</Button>} />
+      </div>
+      <AdminList isLoading={isLoading} items={flatLeaders} title={(l: Leader & { term: LeadershipTerm }) => l.full_name} meta={(l) => `${l.office} · ${l.term.academic_year} · ${l.is_active ? 'Active' : 'Hidden'}`} actions={(l) => <>
+        <Button size="sm" variant="outline" onClick={() => updateLeader.mutate({ id: l.id, is_active: !l.is_active })}>{l.is_active ? 'Hide' : 'Activate'}</Button>
+        <label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />Photo<input type="file" className="sr-only" accept="image/png,image/jpeg,image/webp" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadPhoto.mutate({ id: l.id, file }) }} /></label>
+        <Button size="sm" variant="destructive" onClick={() => deleteLeader.mutate(l.id)}>Delete</Button>
+      </>} />
     </CrudPage>
   )
+}
+
+const legacyResources = ['administrations', 'achievements', 'timeline', 'categories', 'honourees', 'awards']
+
+export function AdminLegacyPage() {
+  const qc = useQueryClient()
+  const [resource, setResource] = useState('administrations')
+  const [draft, setDraft] = useState('{}')
+  const [error, setError] = useState('')
+  const { data = [], isLoading } = useQuery({
+    queryKey: ['admin-legacy', resource],
+    queryFn: () => legacyApi.listContent(resource),
+  })
+  const refresh = () => qc.invalidateQueries({ queryKey: ['admin-legacy', resource] })
+  const create = useMutation({
+    mutationFn: () => legacyApi.createContent(resource, JSON.parse(draft)),
+    onSuccess: () => { setDraft('{}'); setError(''); refresh() },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to create content.'),
+  })
+  const del = useMutation({
+    mutationFn: (id: string) => legacyApi.deleteContent(resource, id),
+    onSuccess: refresh,
+  })
+  return (
+    <>
+      <AdminPageHeader title="Past Leadership CMS" description="Manage administrations, achievements, milestones, recognition and awards." />
+      <CmsDocumentEditor
+        slug="past-leadership"
+        title="Past Leadership Page Settings"
+        initialContent={{
+          hero_eyebrow: 'PAST LEADERSHIP & RECOGNITION',
+          hero_headline_primary: 'Leadership remembered.',
+          hero_headline_secondary: 'Excellence recognised.',
+          hero_supporting_text: 'Honouring the leaders, champions and achievers who have shaped GPSA-UDS.',
+          hero_quote_text: "Good leadership isn't about position. It's about purpose, service and impact.",
+          hero_quote_citation: 'Once Pharmily, Always Pharmily.',
+          statistics: [],
+        }}
+      />
+      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
+        <Select label="Collection" value={resource} onChange={setResource} options={legacyResources} />
+        <label className="block mt-4">
+          <span className="form-label">New record (JSON)</span>
+          <textarea className="form-input min-h-40 font-mono text-xs" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        </label>
+        <div className="mt-3 flex items-center gap-3">
+          <Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create record</Button>
+          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+        </div>
+      </div>
+      <div className="space-y-4">
+        {isLoading ? <Skeleton className="h-60 rounded-xl" /> : data.map((item) => (
+          <LegacyItemEditor
+            key={String(item.id)}
+            resource={resource}
+            item={item}
+            onSaved={refresh}
+            onDelete={() => del.mutate(String(item.id))}
+          />
+        ))}
+        {!isLoading && !data.length && <EmptyState title="No records" description={`Create the first ${resource} record above.`} />}
+      </div>
+      <LegacyReviewQueues />
+    </>
+  )
+}
+
+function LegacyReviewQueues() {
+  const qc = useQueryClient()
+  const { data: submissions = [] } = useQuery({ queryKey: ['legacy-submissions'], queryFn: legacyApi.listSubmissions })
+  const { data: nominations = [] } = useQuery({ queryKey: ['legacy-nominations'], queryFn: legacyApi.listNominations })
+  const reviewSubmission = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'accepted' | 'rejected' }) => legacyApi.reviewSubmission(id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['legacy-submissions'] }),
+  })
+  const reviewNomination = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'approved' | 'rejected' | 'under_review' }) => legacyApi.reviewNomination(id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['legacy-nominations'] }),
+  })
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mt-7">
+      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+        <h3 className="font-display text-2xl font-bold text-deep mb-3">Historical submissions</h3>
+        <div className="space-y-3">
+          {submissions.map((item) => <div key={String(item.id)} className="rounded-xl border border-cream-dark p-3">
+            <p className="font-700 text-sm">{String(item.title)}</p>
+            <p className="text-xs text-muted">{String(item.submitter_name)} · {String(item.status)}</p>
+            {Boolean(item.file_url) && <a className="text-xs text-green-700 underline" href={String(item.file_url)} target="_blank" rel="noreferrer">Review attachment</a>}
+            <div className="flex gap-2 mt-2"><Button size="sm" onClick={() => reviewSubmission.mutate({ id: String(item.id), status: 'accepted' })}>Accept</Button><Button size="sm" variant="destructive" onClick={() => reviewSubmission.mutate({ id: String(item.id), status: 'rejected' })}>Reject</Button></div>
+          </div>)}
+          {!submissions.length && <p className="text-sm text-muted">No submissions awaiting review.</p>}
+        </div>
+      </div>
+      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+        <h3 className="font-display text-2xl font-bold text-deep mb-3">Leader nominations</h3>
+        <div className="space-y-3">
+          {nominations.map((item) => <div key={String(item.id)} className="rounded-xl border border-cream-dark p-3">
+            <p className="font-700 text-sm">{String(item.nominee_name)}</p>
+            <p className="text-xs text-muted">{String(item.nominator_name)} · {String(item.status)}</p>
+            <div className="flex gap-2 mt-2"><Button size="sm" onClick={() => reviewNomination.mutate({ id: String(item.id), status: 'approved' })}>Approve</Button><Button size="sm" variant="outline" onClick={() => reviewNomination.mutate({ id: String(item.id), status: 'under_review' })}>Review</Button><Button size="sm" variant="destructive" onClick={() => reviewNomination.mutate({ id: String(item.id), status: 'rejected' })}>Reject</Button></div>
+          </div>)}
+          {!nominations.length && <p className="text-sm text-muted">No nominations awaiting review.</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CmsDocumentEditor({ slug, title, initialContent }: {
+  slug: string
+  title: string
+  initialContent: Record<string, unknown>
+}) {
+  const qc = useQueryClient()
+  const isAdmin = useAuthStore((state) => state.user?.role === 'admin')
+  const { data } = useQuery({ queryKey: ['cms-page', slug], queryFn: () => cmsApi.getPage(slug), retry: false })
+  const [value, setValue] = useState(JSON.stringify(initialContent, null, 2))
+  const [published, setPublished] = useState(true)
+  const [error, setError] = useState('')
+  const isSimpleSettings = Object.values(initialContent).every((item) =>
+    ['string', 'number', 'boolean'].includes(typeof item)
+  )
+  const parsedSettings = (() => {
+    try { return JSON.parse(value) as Record<string, unknown> }
+    catch { return initialContent }
+  })()
+  const updateSetting = (key: string, nextValue: string) => {
+    setValue(JSON.stringify({ ...parsedSettings, [key]: nextValue }, null, 2))
+  }
+  useEffect(() => {
+    if (data) {
+      setValue(JSON.stringify(data.content, null, 2))
+      setPublished(data.is_published)
+    }
+  }, [data])
+  const save = useMutation({
+    mutationFn: () => cmsApi.updatePage(slug, {
+      title,
+      content: JSON.parse(value),
+      is_published: published,
+      expected_version: data?.version,
+    }),
+    onSuccess: () => {
+      setError('')
+      qc.invalidateQueries({ queryKey: ['cms-page', slug] })
+      qc.invalidateQueries({ queryKey: ['cms-page-public', slug] })
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to save settings.'),
+  })
+  const remove = useMutation({
+    mutationFn: () => cmsApi.deletePage(slug),
+    onSuccess: () => {
+      setValue(JSON.stringify(initialContent, null, 2))
+      setPublished(false)
+      qc.invalidateQueries({ queryKey: ['cms-page', slug] })
+      qc.invalidateQueries({ queryKey: ['cms-page-public', slug] })
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to delete settings.'),
+  })
+  return (
+    <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
+      <h3 className="font-display text-2xl font-bold text-deep mb-3">{title}</h3>
+      {isSimpleSettings ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.keys(initialContent).map((key) => {
+            const fieldLabel = key.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+            const fieldValue = String(parsedSettings[key] ?? '')
+            const isLongText = key.includes('description') || key.includes('subtitle')
+            return (
+              <label key={key} className={isLongText ? 'md:col-span-2' : ''}>
+                <span className="form-label">{fieldLabel}</span>
+                {isLongText ? (
+                  <textarea
+                    className="form-input min-h-24"
+                    value={fieldValue}
+                    onChange={(event) => updateSetting(key, event.target.value)}
+                  />
+                ) : (
+                  <input
+                    className="form-input"
+                    value={fieldValue}
+                    onChange={(event) => updateSetting(key, event.target.value)}
+                  />
+                )}
+              </label>
+            )
+          })}
+        </div>
+      ) : (
+        <textarea className="form-input min-h-64 font-mono text-xs" value={value} onChange={(e) => setValue(e.target.value)} />
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        <Check label="Published" checked={published} onChange={setPublished} />
+        <Button size="sm" loading={save.isPending} onClick={() => { try { JSON.parse(value); save.mutate() } catch { setError('Settings must be valid JSON.') } }}>Save settings</Button>
+        {isAdmin && data && (
+          <Button
+            size="sm"
+            variant="destructive"
+            loading={remove.isPending}
+            onClick={() => {
+              if (window.confirm(`Delete ${title}? The public page will use its safe defaults until settings are saved again.`)) {
+                remove.mutate()
+              }
+            }}
+          >
+            Delete settings
+          </Button>
+        )}
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      </div>
+    </div>
+  )
+}
+
+function LegacyItemEditor({ resource, item, onSaved, onDelete }: {
+  resource: string
+  item: Record<string, unknown>
+  onSaved: () => void
+  onDelete: () => void
+}) {
+  const editable = Object.fromEntries(Object.entries(item).filter(([key]) => !['id', 'created_at', 'updated_at', 'deleted_at'].includes(key)))
+  const [value, setValue] = useState(JSON.stringify(editable, null, 2))
+  const [error, setError] = useState('')
+  const update = useMutation({
+    mutationFn: () => legacyApi.updateContent(resource, String(item.id), JSON.parse(value)),
+    onSuccess: () => { setError(''); onSaved() },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to update record.'),
+  })
+  return (
+    <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+      <textarea className="form-input min-h-52 font-mono text-xs" value={value} onChange={(e) => setValue(e.target.value)} />
+      <div className="mt-3 flex items-center gap-3">
+        <Button size="sm" loading={update.isPending} onClick={() => { try { JSON.parse(value); update.mutate() } catch { setError('Record must be valid JSON.') } }}>Save</Button>
+        <Button size="sm" variant="destructive" onClick={onDelete}>Delete</Button>
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      </div>
+    </div>
+  )
+}
+
+const impactResources = ['periods', 'priorities', 'metrics', 'focus-areas', 'initiatives', 'sdg-goals', 'sdg-alignments', 'reports']
+
+export function AdminImpactPage() {
+  const qc = useQueryClient()
+  const [resource, setResource] = useState('periods')
+  const [draft, setDraft] = useState('{}')
+  const [error, setError] = useState('')
+  const { data = [], isLoading } = useQuery({ queryKey: ['admin-impact', resource], queryFn: () => impactApi.listAdmin(resource) })
+  const refresh = () => qc.invalidateQueries({ queryKey: ['admin-impact', resource] })
+  const create = useMutation({
+    mutationFn: () => impactApi.create(resource, JSON.parse(draft)),
+    onSuccess: () => { setDraft('{}'); setError(''); refresh(); qc.invalidateQueries({ queryKey: ['impact-page'] }) },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to create impact content.'),
+  })
+  const del = useMutation({ mutationFn: (id: string) => impactApi.delete(resource, id), onSuccess: refresh })
+  return (
+    <>
+      <AdminPageHeader title="Impact & Strategic Priorities" description="Manage verified reporting periods, priorities, metrics, initiatives, SDG evidence and reports." />
+      <CmsDocumentEditor slug="impact" title="Impact Page Settings" initialContent={{
+        hero_eyebrow: 'IMPACT & STRATEGIC PRIORITIES',
+        hero_title_primary: 'Creating impact.',
+        hero_title_secondary: 'Shaping the future.',
+        hero_intro: 'GPSA-UDS advances pharmacy education, student welfare, leadership, research, professional development, community health and responsible partnerships.',
+        commitment_title: 'Our Commitment',
+        commitment_description: 'To develop competent pharmacists, foster leadership, promote research and serve our communities.',
+        vision_quote: 'Our vision is a future where every pharmacist is a leader, every community is healthier, and pharmacy practice continues to transform lives.',
+        vision_signature: 'Once Pharmily, Always Pharmily.',
+        cta_title: 'Be part of the change.',
+        cta_description: 'Together, we can build a healthier future.',
+      }} />
+      <div className="mb-5 rounded-xl border border-cream-dark bg-white p-5 shadow-card">
+        <h3 className="font-display text-2xl font-bold text-deep">Hero media</h3>
+        <p className="mt-1 text-sm text-muted">Save page settings first, then upload a verified institutional image.</p>
+        <label className="btn-sm btn-outline mt-3 cursor-pointer"><Upload className="h-4 w-4" />Upload hero image<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) impactApi.uploadHeroImage(file).then(() => qc.invalidateQueries({ queryKey: ['cms-page', 'impact'] })) }} /></label>
+      </div>
+      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
+        <Select label="Impact collection" value={resource} onChange={setResource} options={impactResources} />
+        <label className="block mt-4"><span className="form-label">New record (JSON)</span><textarea className="form-input min-h-44 font-mono text-xs" value={draft} onChange={(e) => setDraft(e.target.value)} /></label>
+        <div className="mt-3 flex items-center gap-3"><Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create record</Button>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}</div>
+      </div>
+      <div className="space-y-4">
+        {isLoading ? <Skeleton className="h-60 rounded-xl" /> : data.map((item) => <ImpactItemEditor key={String(item.id)} resource={resource} item={item} onSaved={refresh} onDelete={() => del.mutate(String(item.id))} />)}
+        {!isLoading && !data.length && <EmptyState title="No impact records" description={`Create the first ${resource} record when verified information is available.`} />}
+      </div>
+    </>
+  )
+}
+
+function ImpactItemEditor({ resource, item, onSaved, onDelete }: { resource: string; item: Record<string, unknown>; onSaved: () => void; onDelete: () => void }) {
+  const editable = Object.fromEntries(Object.entries(item).filter(([key]) => !['id', 'created_at', 'updated_at', 'deleted_at', 'file_key', 'image_key'].includes(key)))
+  const [value, setValue] = useState(JSON.stringify(editable, null, 2))
+  const [error, setError] = useState('')
+  const update = useMutation({ mutationFn: () => impactApi.update(resource, String(item.id), JSON.parse(value)), onSuccess: () => { setError(''); onSaved() }, onError: (err) => setError(err instanceof Error ? err.message : 'Unable to save record.') })
+  return <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+    <textarea className="form-input min-h-52 font-mono text-xs" value={value} onChange={(e) => setValue(e.target.value)} />
+    <div className="mt-3 flex flex-wrap items-center gap-3">
+      <Button size="sm" loading={update.isPending} onClick={() => { try { JSON.parse(value); update.mutate() } catch { setError('Record must be valid JSON.') } }}>Save</Button>
+      {resource === 'focus-areas' && <label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />Image<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) impactApi.uploadFocusImage(String(item.id), file).then(onSaved) }} /></label>}
+      {resource === 'initiatives' && <label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />Image<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) impactApi.uploadInitiativeImage(String(item.id), file).then(onSaved) }} /></label>}
+      {resource === 'reports' && <label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />Report<input type="file" accept=".pdf,.doc,.docx" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) impactApi.uploadReport(String(item.id), file).then(onSaved) }} /></label>}
+      <Button size="sm" variant="destructive" onClick={onDelete}>Delete</Button>
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+    </div>
+  </div>
+}
+
+const governanceResources = ['categories', 'documents', 'faq-categories', 'faqs', 'versions']
+
+export function AdminGovernancePage() {
+  const qc = useQueryClient()
+  const [resource, setResource] = useState('categories')
+  const [draft, setDraft] = useState('{}')
+  const [error, setError] = useState('')
+  const { data = [], isLoading } = useQuery({ queryKey: ['admin-governance', resource], queryFn: () => governanceApi.listAdmin(resource) })
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['admin-governance', resource] })
+    qc.invalidateQueries({ queryKey: ['governance-page'] })
+  }
+  const create = useMutation({
+    mutationFn: () => governanceApi.create(resource, JSON.parse(draft)),
+    onSuccess: () => { setDraft('{}'); setError(''); refresh() },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to create governance content.'),
+  })
+  const del = useMutation({ mutationFn: (id: string) => governanceApi.delete(resource, id), onSuccess: refresh })
+  return <>
+    <AdminPageHeader title="Documents & FAQs" description="Manage page copy, dynamic categories, secure document records and versions, publishing controls, and verified FAQ answers." />
+    <CmsDocumentEditor slug="governance" title="Documents & FAQs Page Settings" initialContent={{
+      hero_eyebrow: 'DOCUMENTS & FAQS',
+      hero_title_primary: 'Knowledge today.',
+      hero_title_secondary: 'Stronger legacy tomorrow.',
+      hero_intro: 'Access approved GPSA-UDS documents, policies, reports, plans, forms and answers to common questions.',
+      resource_card_title: 'Essential Resources',
+      resource_card_subtitle: 'All in One Place',
+      resource_card_description: 'Transparent. Organised. Accessible.',
+      faq_quote: 'Information empowers. Guidelines guide. Legacy endures.',
+      cta_title: 'Be part of the legacy.',
+      cta_description: 'Access resources. Stay informed. Make an impact.',
+    }} />
+    <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
+      <Select label="Content collection" value={resource} onChange={setResource} options={governanceResources} />
+      {resource !== 'versions' && <><label className="block mt-4"><span className="form-label">New record (JSON)</span><textarea className="form-input min-h-44 font-mono text-xs" value={draft} onChange={(e) => setDraft(e.target.value)} /></label>
+      <div className="mt-3 flex items-center gap-3"><Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create draft</Button>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}</div></>}
+      {resource === 'versions' && <p className="mt-4 text-sm text-muted">Versions are created from a document record using its secure upload control.</p>}
+    </div>
+    <div className="space-y-4">
+      {isLoading ? <Skeleton className="h-60 rounded-xl" /> : data.map((item) => <GovernanceItemEditor key={String(item.id)} resource={resource} item={item} onSaved={refresh} onDelete={() => del.mutate(String(item.id))} />)}
+      {!isLoading && !data.length && <EmptyState title="No records yet" description="Create verified content when official information is available." />}
+    </div>
+  </>
+}
+
+function GovernanceItemEditor({ resource, item, onSaved, onDelete }: { resource: string; item: Record<string, unknown>; onSaved: () => void; onDelete: () => void }) {
+  const editable = Object.fromEntries(Object.entries(item).filter(([key]) => !['id', 'created_at', 'updated_at', 'deleted_at', 'file_key', 'checksum', 'file_name', 'mime_type', 'file_extension', 'file_size_bytes'].includes(key)))
+  const [value, setValue] = useState(JSON.stringify(editable, null, 2))
+  const [version, setVersion] = useState(String(item.version || '1.0'))
+  const [error, setError] = useState('')
+  const update = useMutation({ mutationFn: () => governanceApi.update(resource, String(item.id), JSON.parse(value)), onSuccess: () => { setError(''); onSaved() }, onError: (err) => setError(err instanceof Error ? err.message : 'Unable to save record.') })
+  if (resource === 'versions') return <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card"><p className="font-bold text-deep">{String(item.file_name)}</p><p className="text-sm text-muted">Version {String(item.version)} · {String(item.status)} {item.is_current ? '· Current' : ''}</p></div>
+  return <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+    <textarea aria-label={`Edit ${resource} record`} className="form-input min-h-52 font-mono text-xs" value={value} onChange={(e) => setValue(e.target.value)} />
+    <div className="mt-3 flex flex-wrap items-end gap-3">
+      <Button size="sm" loading={update.isPending} onClick={() => { try { JSON.parse(value); update.mutate() } catch { setError('Record must be valid JSON.') } }}>Save</Button>
+      {resource === 'documents' && <><label><span className="form-label">Upload version</span><input className="form-input w-28" value={version} onChange={(e) => setVersion(e.target.value)} /></label><label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />Upload file<input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file && version.trim()) governanceApi.uploadDocument(String(item.id), version.trim(), file).then(onSaved).catch((err) => setError(err instanceof Error ? err.message : 'Upload failed.')) }} /></label></>}
+      <Button size="sm" variant="destructive" onClick={onDelete}>Delete</Button>
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+    </div>
+  </div>
 }
 
 export function AdminAcademicsPage() {
   const qc = useQueryClient()
   const { data: courses = [] } = useQuery({ queryKey: ['admin-courses'], queryFn: () => academicsApi.listCourses() })
-  const { data, isLoading } = useQuery({ queryKey: ['admin-resources'], queryFn: () => academicsApi.listResources({ limit: 100 }) })
-  return <CrudPage title="Academics" description="Review resources and use the public upload flow for new resources."><InfoPanel title="Resource workflow" items={['Exec/admin uploads are supported', 'Admin can publish reviewed resources', 'Course management exists through API']} /><AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.title} meta={(r) => `${r.content_type} · Level ${r.level} · ${r.is_published ? 'Published' : 'Pending'}`} actions={(r) => !r.is_published ? <Button size="sm" variant="outline" onClick={() => academicsApi.publishResource(r.id).then(() => qc.invalidateQueries({ queryKey: ['admin-resources'] }))}>Publish</Button> : <CheckCircle2 className="h-5 w-5 text-green-700" />} /><p className="text-sm text-muted mt-4">{courses.length} courses configured.</p></CrudPage>
+  const { data, isLoading } = useQuery({ queryKey: ['admin-resources'], queryFn: () => academicsApi.listAllResources({ limit: 100 }) })
+  return <><CmsDocumentEditor slug="academics" title="Academics Page Settings" initialContent={academicsPageDefaults} /><CrudPage title="Academics" description="Review resources and use the public upload flow for new resources."><InfoPanel title="Resource workflow" items={['Exec/admin uploads are supported', 'Admin can publish reviewed resources', 'Course management exists through API']} /><AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.title} meta={(r) => `${r.content_type} · Level ${r.level} · ${r.is_published ? 'Published' : 'Pending'}`} actions={(r) => !r.is_published ? <Button size="sm" variant="outline" onClick={() => academicsApi.publishResource(r.id).then(() => qc.invalidateQueries({ queryKey: ['admin-resources'] }))}>Publish</Button> : <CheckCircle2 className="h-5 w-5 text-green-700" />} /><p className="text-sm text-muted mt-4">{courses.length} courses configured.</p></CrudPage></>
 }
 
 export function AdminWelfarePage() {
   const qc = useQueryClient()
   const { data, isLoading } = useQuery({ queryKey: ['admin-welfare'], queryFn: () => welfareApi.listReports({ limit: 100 }) })
   const resolve = useMutation({ mutationFn: ({ id, status }: { id: string; status: ReportStatus }) => welfareApi.resolveReport(id, { status, admin_notes: 'Updated from admin dashboard.' }), onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-welfare'] }) })
-  return <CrudPage title="Welfare" description="Review welfare reports and move them through the resolution workflow."><AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.is_anonymous ? 'Anonymous report' : r.name ?? 'Student report'} meta={(r) => `${r.category} · ${r.report_type} · ${r.status}`} actions={(r) => <><Button size="sm" variant="outline" onClick={() => resolve.mutate({ id: r.id, status: 'in_review' })}>Review</Button><Button size="sm" onClick={() => resolve.mutate({ id: r.id, status: 'resolved' })}>Resolve</Button></>} /></CrudPage>
+  return <><CmsDocumentEditor slug="welfare" title="Welfare Page Settings" initialContent={welfarePageDefaults} /><CrudPage title="Welfare" description="Review welfare reports and move them through the resolution workflow."><AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.is_anonymous ? 'Anonymous report' : r.name ?? 'Student report'} meta={(r) => `${r.category} · ${r.report_type} · ${r.status}`} actions={(r) => <><Button size="sm" variant="outline" onClick={() => resolve.mutate({ id: r.id, status: 'in_review' })}>Review</Button><Button size="sm" onClick={() => resolve.mutate({ id: r.id, status: 'resolved' })}>Resolve</Button></>} /></CrudPage></>
 }
 
 export function AdminUsersPage() {
