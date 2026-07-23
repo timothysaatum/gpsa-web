@@ -17,7 +17,6 @@ from app.services.audit import AuditService
 from app.services.storage import storage
 from app.utils.file_validation import FileValidationError, validate_image_file
 
-
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class HeroSlideCreateRequest(AppModel):

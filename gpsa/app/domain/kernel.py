@@ -11,9 +11,10 @@ Provides:
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, Protocol
+from datetime import UTC, datetime
+from typing import Any, Protocol
 
 
 class Entity(Protocol):
@@ -33,7 +34,7 @@ class DomainEvent:
     """
 
     event_id: uuid.UUID = field(default_factory=uuid.uuid4)
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class ValueObject:

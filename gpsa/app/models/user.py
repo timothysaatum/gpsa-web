@@ -1,13 +1,23 @@
-import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum as SAEnum, Integer, SmallInteger, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, SmallInteger, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.enums import UserRole
+
+if TYPE_CHECKING:
+    from app.models.academic_resource import AcademicResource
+    from app.models.audit import AuditLog
+    from app.models.certificate import Certificate
+    from app.models.event import EventRegistration
+    from app.models.feedback import Feedback
+    from app.models.news import NewsPost
+    from app.models.notification import Notification
+    from app.models.token import PasswordResetToken, RefreshToken
 
 
 class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):

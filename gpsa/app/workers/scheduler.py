@@ -10,11 +10,10 @@ The scheduler is started and shut down via the FastAPI lifespan context manager
 in main.py — it is never started independently.
 """
 
+import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-
-import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -57,8 +56,8 @@ async def update_event_statuses() -> None:
     from sqlalchemy import update
 
     from app.db.session import AsyncSessionLocal
-    from app.models.event import Event
     from app.models.enums import EventStatus
+    from app.models.event import Event
 
     now = datetime.now(UTC)
 

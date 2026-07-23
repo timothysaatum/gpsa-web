@@ -7,7 +7,6 @@ from dataclasses import dataclass
 
 from .kernel import DomainEvent
 
-
 # ── Auth ───────────────────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)

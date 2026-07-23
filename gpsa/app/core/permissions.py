@@ -12,7 +12,6 @@ If a permission is not listed, it is denied.
 from app.models.enums import UserRole
 from app.models.user import User
 
-
 # ── Academic Resources ────────────────────────────────────────────────────────
 
 def can_upload_resource(user: User) -> bool:

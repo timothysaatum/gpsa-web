@@ -12,8 +12,9 @@ Do NOT run in production.
 import asyncio
 import os
 import sys
-from datetime import date, datetime, timedelta, timezone
-UTC = timezone.utc
+from datetime import UTC, date, datetime, timedelta
+
+UTC = UTC
 from pathlib import Path
 
 # Force development environment for seeding (safety measure)
@@ -22,11 +23,15 @@ os.environ.setdefault("ENVIRONMENT", "development")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # ── IMPORTANT: Configure logging BEFORE any other imports that use logger ─────
-from app.core.config import settings
-from app.core.logging import configure_logging, get_logger   # Use get_logger from logging.py
+from sqlalchemy import select
 
+from app.core.config import settings
+from app.core.logging import configure_logging, get_logger  # Use get_logger from logging.py
 from app.core.security import hash_password
 from app.db.session import AsyncSessionLocal
+from app.models.academic_resource import AcademicResource
+from app.models.audit import AuditLog
+from app.models.course import Course
 from app.models.enums import (
     ContentType,
     EventStatus,
@@ -41,18 +46,14 @@ from app.models.enums import (
     UserRole,
     WelfareCategory,
 )
-from app.models.academic_resource import AcademicResource
-from app.models.audit import AuditLog
 from app.models.event import Event, EventRegistration
 from app.models.gallery import GalleryImage
 from app.models.hero_slide import HeroSlide
 from app.models.leadership import Leader, LeadershipTerm
 from app.models.news import NewsPost
 from app.models.opportunity import Opportunity
-from app.models.course import Course
 from app.models.user import User
 from app.models.welfare import WelfareReport, WelfareSpotlight
-from sqlalchemy import select
 
 # Configure logging FIRST
 configure_logging()

@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date
 from typing import Literal
 
 from pydantic import EmailStr, Field, field_validator

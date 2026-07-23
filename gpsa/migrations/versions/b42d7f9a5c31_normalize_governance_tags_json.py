@@ -3,7 +3,8 @@
 Revision ID: b42d7f9a5c31
 Revises: a31f6e8c4b20
 """
-from typing import Sequence
+from collections.abc import Sequence
+
 from alembic import op
 
 revision: str = "b42d7f9a5c31"

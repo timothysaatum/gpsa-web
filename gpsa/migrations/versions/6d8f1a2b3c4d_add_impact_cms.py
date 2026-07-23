@@ -3,10 +3,10 @@
 Revision ID: 6d8f1a2b3c4d
 Revises: 000ee02cd3df
 """
-from typing import Sequence
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision: str = "6d8f1a2b3c4d"
 down_revision: str | Sequence[str] | None = "000ee02cd3df"

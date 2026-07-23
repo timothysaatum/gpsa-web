@@ -4,12 +4,11 @@ Revision ID: 84b1c7d9e2f0
 Revises: 6d8f1a2b3c4d
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
-
 
 revision: str = "84b1c7d9e2f0"
 down_revision: str | Sequence[str] | None = "6d8f1a2b3c4d"

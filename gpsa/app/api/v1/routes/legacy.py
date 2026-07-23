@@ -1,12 +1,14 @@
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from pydantic import Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.api.v1.routes.cms import get_published_page
 from app.core.dependencies import CurrentUser, require_roles
 from app.db.session import get_db
 from app.models.enums import UserRole
@@ -21,15 +23,15 @@ from app.models.legacy import (
     RecognitionCategory,
     RecognitionHonouree,
 )
-
+from app.repositories.base import BaseRepository
 from app.schemas.common import AppModel, MessageResponse
 from app.schemas.legacy import (
     AdministrationAchievementSchema,
     AdministrationLeaderGroupSchema,
     AdministrationResponse,
     HeroStatSchema,
-    HistoricalRecordSubmissionRequest,
     HistoricalRecordSubmissionCreated,
+    HistoricalRecordSubmissionRequest,
     LeaderNominationRequest,
     LeaderSummarySchema,
     LegacyAwardResponse,
@@ -42,10 +44,7 @@ from app.schemas.legacy import (
 )
 from app.services.audit import AuditService
 from app.services.storage import storage
-from app.repositories.base import BaseRepository
-from pydantic import Field
 from app.utils.file_validation import FileValidationError, validate_attachment_file
-from app.api.v1.routes.cms import get_published_page
 
 router = APIRouter(prefix="/about/legacy", tags=["Past Leadership & Recognition"])
 
@@ -169,9 +168,13 @@ async def get_legacy_page(
     )
     terms_res = await db.execute(terms_stmt)
     terms = list(terms_res.scalars().unique().all())
-    for t in terms:
-        active_leaders = [l for l in t.leaders if l.deleted_at is None and l.is_active]
-        leaders_by_term[t.id] = active_leaders
+    for term in terms:
+        active_leaders = [
+            leader
+            for leader in term.leaders
+            if leader.deleted_at is None and leader.is_active
+        ]
+        leaders_by_term[term.id] = active_leaders
 
     administrations_formatted: list[AdministrationResponse] = []
     selected_admin: AdministrationResponse | None = None
@@ -184,13 +187,14 @@ async def get_legacy_page(
         vp: LeaderSummarySchema | None = None
         others: list[LeaderSummarySchema] = []
 
-        for l in sorted(leaders_list, key=lambda x: x.sort_order):
-            office_lower = (l.office or "").lower()
+        for leader in sorted(leaders_list, key=lambda item: item.sort_order):
+            office_lower = (leader.office or "").lower()
             summary = LeaderSummarySchema(
-                id=l.id,
-                full_name=l.full_name,
-                office=l.office,
-                photo_url=l.photo_url or (storage.cdn_url(l.photo_key) if l.photo_key else None),
+                id=leader.id,
+                full_name=leader.full_name,
+                office=leader.office,
+                photo_url=leader.photo_url
+                or (storage.cdn_url(leader.photo_key) if leader.photo_key else None),
             )
             if "vice" in office_lower and "president" in office_lower and not vp:
                 vp = summary
@@ -246,9 +250,7 @@ async def get_legacy_page(
 
         administrations_formatted.append(admin_resp)
 
-        if year and (admin.academic_year == year or admin.slug == year):
-            selected_admin = admin_resp
-        elif not selected_admin and admin.is_current:
+        if year and (admin.academic_year == year or admin.slug == year) or not selected_admin and admin.is_current:
             selected_admin = admin_resp
 
     if not selected_admin and administrations_formatted:
@@ -648,7 +650,7 @@ async def review_admin_submission(
     if payload.review_notes:
         submission.review_notes = payload.review_notes
     submission.reviewed_by = current_user.id
-    submission.reviewed_at = datetime.now(timezone.utc)
+    submission.reviewed_at = datetime.now(UTC)
 
     await AuditService(db).log(
         action="REVIEW_HISTORICAL_SUBMISSION",
@@ -698,7 +700,7 @@ async def review_admin_nomination(
     if payload.review_notes:
         nomination.review_notes = payload.review_notes
     nomination.reviewed_by = current_user.id
-    nomination.reviewed_at = datetime.now(timezone.utc)
+    nomination.reviewed_at = datetime.now(UTC)
 
     await AuditService(db).log(
         action="REVIEW_LEADER_NOMINATION",

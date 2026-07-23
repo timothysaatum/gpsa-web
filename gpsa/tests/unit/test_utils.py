@@ -4,15 +4,13 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.utils.date_helpers import days_until, deadline_urgency, event_urgency
+from app.utils.date_helpers import days_until, deadline_urgency
 from app.utils.file_validation import (
     FileValidationError,
     validate_academic_file,
-    validate_image_file,
 )
 from app.utils.pagination import PaginationParams, paginate
 from app.utils.slug import make_certificate_code, make_slug
-
 
 # ── Date helpers ──────────────────────────────────────────────────────────────
 

@@ -7,7 +7,6 @@ Each test gets an isolated transaction, rolled back after the test.
 import pytest
 from httpx import AsyncClient
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -63,7 +62,8 @@ class TestRegister:
 class TestLogin:
     async def _register_and_verify(self, client: AsyncClient, db_session) -> None:
         """Helper — register then manually mark email verified."""
-        from sqlalchemy import select, update
+        from sqlalchemy import update
+
         from app.models.user import User
 
         await client.post(f"{BASE}/register", json=VALID_REGISTER)

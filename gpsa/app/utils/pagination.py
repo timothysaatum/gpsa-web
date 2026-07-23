@@ -14,7 +14,7 @@ Usage:
         return paginate(items, total, params)
 """
 
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from fastapi import Query
 from pydantic import BaseModel

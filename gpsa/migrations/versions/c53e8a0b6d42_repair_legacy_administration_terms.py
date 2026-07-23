@@ -8,7 +8,7 @@ Early development databases created ``leadership_administrations`` before its
 that introduced it. Preserve those records by deriving corresponding terms
 from their existing institutional metadata before enforcing the relationship.
 """
-from typing import Sequence
+from collections.abc import Sequence
 
 from alembic import op
 

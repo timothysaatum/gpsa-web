@@ -2,7 +2,6 @@ from httpx import AsyncClient
 
 from tests.conftest import auth_headers
 
-
 BASE = "/api/v1/admin"
 
 

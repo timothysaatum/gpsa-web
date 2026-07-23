@@ -4,7 +4,6 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.mixins import SoftDeleteMixin
 from app.models.token import PasswordResetToken, RefreshToken
 from app.models.user import User
 from app.repositories.base import BaseRepository

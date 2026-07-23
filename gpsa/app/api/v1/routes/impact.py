@@ -1,9 +1,9 @@
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import Field
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,17 +11,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.routes.cms import get_published_page
 from app.core.dependencies import CurrentUser, require_roles
 from app.db.session import get_db
+from app.models.cms import CmsPage
 from app.models.enums import UserRole
 from app.models.impact import (
-    ImpactFocusArea, ImpactInitiative, ImpactMetric, ImpactReport,
-    ImpactReportingPeriod, ImpactSdgAlignment, SdgGoal, StrategicPriority,
+    ImpactFocusArea,
+    ImpactInitiative,
+    ImpactMetric,
+    ImpactReport,
+    ImpactReportingPeriod,
+    ImpactSdgAlignment,
+    SdgGoal,
+    StrategicPriority,
 )
-from app.models.cms import CmsPage
 from app.repositories.base import BaseRepository
 from app.schemas.common import AppModel, MessageResponse
 from app.services.audit import AuditService
 from app.services.storage import storage
-from app.utils.file_validation import FileValidationError, validate_attachment_file, validate_image_file
+from app.utils.file_validation import (
+    FileValidationError,
+    validate_attachment_file,
+    validate_image_file,
+)
 
 router = APIRouter(prefix="/about/impact", tags=["Impact & Strategic Priorities"])
 
@@ -85,7 +95,7 @@ def _clean(resource: str, data: dict[str, Any], allowed: set[str]) -> dict[str, 
     if clean.get("published_at") and isinstance(clean["published_at"], str):
         clean["published_at"] = datetime.fromisoformat(clean["published_at"].replace("Z", "+00:00"))
     if clean.get("status") == PUBLISHED and not clean.get("published_at"):
-        clean["published_at"] = datetime.now(timezone.utc)
+        clean["published_at"] = datetime.now(UTC)
     return clean
 
 

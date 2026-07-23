@@ -9,8 +9,8 @@ import structlog
 from sqlalchemy import select
 
 from app.db.session import AsyncSessionLocal
-from app.models.event import Event, EventRegistration
 from app.models.enums import EventStatus
+from app.models.event import Event, EventRegistration
 from app.services.email import EmailService
 from app.services.notification import NotificationService
 
@@ -95,10 +95,9 @@ async def notify_all_users_new_opportunity(opp_id: str, opp_title: str) -> None:
     in the request cycle, as the user list can be large.
     """
     import uuid as uuid_mod
-    from sqlalchemy import and_
 
-    from app.models.user import User
     from app.models.enums import UserRole
+    from app.models.user import User
 
     async with AsyncSessionLocal() as db:
         try:
@@ -136,11 +135,11 @@ async def retry_failed_emails(max_retries: int = 3) -> None:
     """
     from datetime import UTC, datetime, timedelta
 
+    import resend
+
     from app.core.config import settings
     from app.models.email_log import EmailLog
     from app.models.enums import EmailStatus
-
-    import resend
 
     resend.api_key = settings.resend_api_key
 

@@ -6,7 +6,6 @@ from pydantic import EmailStr, Field, field_validator
 from app.models.enums import UserRole
 from app.schemas.common import AppModel
 
-
 # ── Registration ──────────────────────────────────────────────────────────────
 
 class UserRegisterRequest(AppModel):

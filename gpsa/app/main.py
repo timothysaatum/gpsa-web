@@ -1,6 +1,6 @@
+import traceback
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-import traceback
 
 import structlog
 from fastapi import FastAPI, Request, status
@@ -39,6 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Verify database is reachable before accepting traffic
     from sqlalchemy import text
+
     from app.db.session import AsyncSessionLocal, engine
 
     try:
@@ -102,9 +103,9 @@ def create_app() -> FastAPI:
 # Order matters — outermost middleware runs first on request, last on response.
 
 def _register_middleware(app: FastAPI) -> None:
-    from app.middleware.request_id import RequestIDMiddleware
     from app.middleware.audit import AuditContextMiddleware
     from app.middleware.rate_limit import RateLimitMiddleware
+    from app.middleware.request_id import RequestIDMiddleware
 
     # 1. CORS — must be outermost to handle preflight before auth
     app.add_middleware(

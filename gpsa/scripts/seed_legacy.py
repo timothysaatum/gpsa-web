@@ -1,6 +1,5 @@
 import asyncio
-import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,12 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import AsyncSessionLocal
 from app.models.leadership import Leader, LeadershipTerm
 from app.models.legacy import (
-    AdministrationAchievement,
     LeadershipAdministration,
     LeadershipTimelineEvent,
     LegacyAward,
     RecognitionCategory,
-    RecognitionHonouree,
 )
 
 
@@ -40,7 +37,7 @@ async def seed_legacy_data(db: AsyncSession):
             "initiatives_count": 28,
             "lives_impacted": "5,600+",
             "display_order": 1,
-            "published_at": datetime.now(timezone.utc),
+            "published_at": datetime.now(UTC),
         },
         {
             "academic_year": "2023/2024",
@@ -60,7 +57,7 @@ async def seed_legacy_data(db: AsyncSession):
             "initiatives_count": 24,
             "lives_impacted": "4,800+",
             "display_order": 2,
-            "published_at": datetime.now(timezone.utc),
+            "published_at": datetime.now(UTC),
         },
         {
             "academic_year": "2022/2023",
@@ -80,7 +77,7 @@ async def seed_legacy_data(db: AsyncSession):
             "initiatives_count": 20,
             "lives_impacted": "4,000+",
             "display_order": 3,
-            "published_at": datetime.now(timezone.utc),
+            "published_at": datetime.now(UTC),
         },
         {
             "academic_year": "2021/2022",
@@ -100,7 +97,7 @@ async def seed_legacy_data(db: AsyncSession):
             "initiatives_count": 18,
             "lives_impacted": "3,500+",
             "display_order": 4,
-            "published_at": datetime.now(timezone.utc),
+            "published_at": datetime.now(UTC),
         },
         {
             "academic_year": "2020/2021",
@@ -120,7 +117,7 @@ async def seed_legacy_data(db: AsyncSession):
             "initiatives_count": 15,
             "lives_impacted": "3,000+",
             "display_order": 5,
-            "published_at": datetime.now(timezone.utc),
+            "published_at": datetime.now(UTC),
         },
     ]
 

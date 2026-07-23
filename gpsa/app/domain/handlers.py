@@ -10,8 +10,6 @@ async session so they remain decoupled from the request scope.
 
 from __future__ import annotations
 
-import uuid
-
 import structlog
 
 from app.domain.bus import bus
@@ -108,6 +106,7 @@ async def on_news_published(event: NewsPublished) -> None:
         post_id=str(event.post_id), title=event.title, category=event.category,
     )
     from sqlalchemy import select
+
     from app.db.session import AsyncSessionLocal
     from app.models.user import User
     from app.services.notification import NotificationService
@@ -128,6 +127,7 @@ async def on_opportunity_created(event: OpportunityCreated) -> None:
         opportunity_id=str(event.opportunity_id), title=event.title,
     )
     from sqlalchemy import select
+
     from app.db.session import AsyncSessionLocal
     from app.models.user import User
     from app.services.notification import NotificationService

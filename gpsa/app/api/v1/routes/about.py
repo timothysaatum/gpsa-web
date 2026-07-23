@@ -4,16 +4,16 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.routes.cms import get_published_page
 from app.api.v1.routes.stats import get_stats
 from app.db.session import get_db
 from app.models.enums import EventStatus
 from app.models.gallery import GalleryImage
+from app.repositories.event import EventRepository
 from app.schemas.common import AppModel
 from app.services.news import NewsService
 from app.services.opportunity import OpportunityService
-from app.repositories.event import EventRepository
 from app.services.welfare import WelfareService
-from app.api.v1.routes.cms import get_published_page
 
 
 class PresidentWelcomeSchema(AppModel):

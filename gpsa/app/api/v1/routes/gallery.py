@@ -1,4 +1,5 @@
 import uuid
+from contextlib import suppress
 from datetime import date, datetime
 from typing import Annotated
 
@@ -15,7 +16,6 @@ from app.schemas.common import AppModel, MessageResponse
 from app.services.audit import AuditService
 from app.services.storage import storage
 from app.utils.file_validation import validate_image_file
-
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
@@ -221,12 +221,8 @@ async def replace_gallery_image(
     )
     await db.commit()
     if old_key:
-        try:
+        with suppress(Exception):
             await storage.delete(old_key)
-        except Exception:
-            # The database already points at the new object. A storage cleanup
-            # failure must not turn a successful replacement into a 500.
-            pass
     return GalleryImageResponse.model_validate(img)
 
 
@@ -250,8 +246,6 @@ async def delete_gallery_image(
     )
     await db.commit()
     if img.image_key:
-        try:
+        with suppress(Exception):
             await storage.delete(img.image_key)
-        except Exception:
-            pass
     return MessageResponse(message="Gallery image deleted.")

@@ -5,7 +5,6 @@ from pydantic import Field, model_validator
 
 from app.models.enums import EventStatus, EventType
 from app.schemas.common import AppModel
-from app.schemas.user import UserSummaryResponse
 
 
 class EventCreateRequest(AppModel):
