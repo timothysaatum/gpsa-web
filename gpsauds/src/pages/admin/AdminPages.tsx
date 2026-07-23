@@ -3,16 +3,16 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BarChart3, BookOpen, Briefcase, CalendarDays, CheckCircle2,
-  Image, Newspaper, Plus, RefreshCw, ScrollText, Shield, Upload, Users,
+  Image, Newspaper, Plus, RefreshCw, ScrollText, Shield, Trash2, Upload, Users,
 } from 'lucide-react'
 import {
-  academicsApi, adminApi, cmsApi, contactApi, eventsApi, galleryApi, governanceApi, impactApi, leadershipApi, legacyApi, newsApi,
+  academicsApi, aboutApi, adminApi, cmsApi, contactApi, eventsApi, galleryApi, governanceApi, impactApi, leadershipApi, legacyApi, newsApi,
   opportunitiesApi, usersApi, welfareApi,
 } from '@/api/services'
 import { Badge, Button, EmptyState, Skeleton } from '@/components/ui'
 import { formatDate, formatDateTime } from '@/utils'
 import type {
-  ContactStatus, ContactSubmission, EventType, GalleryCategory, GalleryItem, Leader, LeadershipTerm, NewsCategory,
+  ContactStatus, ContactSubmission, EventType, GalleryCategory, GalleryItem, Leader, LeadershipTerm, NewsCategory, Partner,
   OpportunityType, ReportStatus, UserRole,
 } from '@/types'
 import { AdminPageHeader, AdminStatCard } from './AdminLayout'
@@ -164,6 +164,165 @@ export function AdminHomePage() {
   return <><CmsDocumentEditor slug="home" title="Home Page Settings" initialContent={homePageDefaults} /><HeroSlidesPage /></>
 }
 
+function PartnerAdminRow({ partner, onChanged }: { partner: Partner; onChanged: () => void }) {
+  const [name, setName] = useState(partner.name)
+  const [websiteUrl, setWebsiteUrl] = useState(partner.website_url ?? '')
+  const [sortOrder, setSortOrder] = useState(String(partner.sort_order))
+  const [published, setPublished] = useState(partner.is_published)
+  const [error, setError] = useState('')
+  const save = useMutation({
+    mutationFn: () => aboutApi.updatePartner(partner.id, {
+      name: name.trim(),
+      website_url: websiteUrl.trim() || null,
+      sort_order: Number(sortOrder) || 0,
+      is_published: published,
+    }),
+    onSuccess: () => { setError(''); onChanged() },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to update partner.'),
+  })
+  const upload = useMutation({
+    mutationFn: (file: File) => aboutApi.uploadPartnerLogo(partner.id, file),
+    onSuccess: () => { setError(''); onChanged() },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to upload logo.'),
+  })
+  const remove = useMutation({
+    mutationFn: () => aboutApi.deletePartner(partner.id),
+    onSuccess: onChanged,
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to delete partner.'),
+  })
+
+  return (
+    <div className="rounded-xl border border-cream-dark bg-white p-4 shadow-card">
+      <div className="grid gap-4 lg:grid-cols-[72px_1.4fr_1.4fr_90px_auto] lg:items-end">
+        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-cream-dark bg-cream p-2">
+          {partner.logo_url
+            ? <img src={partner.logo_url} alt={`${partner.name} logo`} className="h-full w-full object-contain" />
+            : <span className="text-lg font-800 text-green-800">{partner.name.slice(0, 2).toUpperCase()}</span>}
+        </div>
+        <label>
+          <span className={label}>Partner name</span>
+          <input className={input} value={name} onChange={(e) => setName(e.target.value)} maxLength={200} />
+        </label>
+        <label>
+          <span className={label}>Website URL</span>
+          <input className={input} type="url" placeholder="https://…" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} />
+        </label>
+        <label>
+          <span className={label}>Order</span>
+          <input className={input} type="number" min="0" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
+        </label>
+        <Check label="Published" checked={published} onChange={setPublished} />
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Button size="sm" loading={save.isPending} onClick={() => save.mutate()}>Save</Button>
+        <label className="btn-sm btn-outline cursor-pointer">
+          <Upload className="h-4 w-4" />
+          {partner.logo_url ? 'Replace logo' : 'Upload logo'}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) upload.mutate(file)
+              e.target.value = ''
+            }}
+          />
+        </label>
+        <Button
+          size="sm"
+          variant="destructive"
+          loading={remove.isPending}
+          leftIcon={<Trash2 className="h-4 w-4" />}
+          onClick={() => {
+            if (window.confirm(`Delete ${partner.name}? Its uploaded logo will also be removed.`)) remove.mutate()
+          }}
+        >
+          Delete
+        </Button>
+        {upload.isPending && <span className="text-sm text-muted">Uploading and validating logo…</span>}
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      </div>
+    </div>
+  )
+}
+
+function PartnerManager() {
+  const qc = useQueryClient()
+  const [name, setName] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [logo, setLogo] = useState<File | null>(null)
+  const [error, setError] = useState('')
+  const { data = [], isLoading } = useQuery({
+    queryKey: ['admin-partners'],
+    queryFn: aboutApi.listPartnersAdmin,
+  })
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['admin-partners'] })
+    qc.invalidateQueries({ queryKey: ['about'] })
+  }
+  const create = useMutation({
+    mutationFn: async () => {
+      const partner = await aboutApi.createPartner({
+        name: name.trim(),
+        website_url: websiteUrl.trim() || null,
+        sort_order: data.length,
+        is_published: true,
+      })
+      return logo ? aboutApi.uploadPartnerLogo(partner.id, logo) : partner
+    },
+    onSuccess: () => {
+      setName('')
+      setWebsiteUrl('')
+      setLogo(null)
+      setError('')
+      refresh()
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Unable to create partner.'),
+  })
+
+  return (
+    <section className="mb-6 rounded-xl border border-cream-dark bg-cream p-5 shadow-card">
+      <div className="mb-5">
+        <h2 className="font-display text-2xl font-bold text-deep">Partners</h2>
+        <p className="mt-1 text-sm text-muted">Create, order, publish and upload official partner logos. PNG or WebP with a transparent background works best.</p>
+      </div>
+      <div className="mb-5 grid gap-4 rounded-xl border border-cream-dark bg-white p-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
+        <label>
+          <span className={label}>Partner name</span>
+          <input className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Organisation name" maxLength={200} />
+        </label>
+        <label>
+          <span className={label}>Website URL</span>
+          <input className={input} type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://…" />
+        </label>
+        <label className="btn-sm btn-outline cursor-pointer">
+          <Upload className="h-4 w-4" />
+          {logo ? logo.name : 'Choose logo'}
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
+        </label>
+        <Button
+          size="sm"
+          loading={create.isPending}
+          disabled={name.trim().length < 2}
+          leftIcon={<Plus className="h-4 w-4" />}
+          onClick={() => create.mutate()}
+        >
+          Add partner
+        </Button>
+        {error && <p role="alert" className="text-sm text-red-700 lg:col-span-4">{error}</p>}
+      </div>
+      {isLoading ? (
+        <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
+      ) : data.length ? (
+        <div className="space-y-3">{data.map((partner) => <PartnerAdminRow key={partner.id} partner={partner} onChanged={refresh} />)}</div>
+      ) : (
+        <EmptyState icon="🤝" title="No partners yet" description="Add the first partner and upload its official logo." />
+      )}
+    </section>
+  )
+}
+
 export function AdminAboutPage() {
   const qc = useQueryClient()
   const { data } = useQuery({ queryKey: ['cms-page', 'history'], queryFn: () => cmsApi.getPage('history'), retry: false })
@@ -200,7 +359,8 @@ export function AdminAboutPage() {
   })
   return (
     <>
-      <AdminPageHeader title="History & Legacy" description="Edit the complete History page document. Gallery images remain managed in Gallery." />
+      <AdminPageHeader title="About Content" description="Manage public partners and edit the complete History & Legacy page document." />
+      <PartnerManager />
       <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
         <label className="block">
           <span className="form-label">Structured page content</span>

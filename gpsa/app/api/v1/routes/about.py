@@ -1,19 +1,29 @@
+import uuid
+from contextlib import suppress
 from typing import Annotated
+from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Request, UploadFile
+from pydantic import Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.routes.cms import get_published_page
 from app.api.v1.routes.stats import get_stats
+from app.core.dependencies import CurrentUser, require_roles
 from app.db.session import get_db
-from app.models.enums import EventStatus
+from app.models.enums import EventStatus, UserRole
 from app.models.gallery import GalleryImage
+from app.models.partner import Partner
+from app.repositories.base import BaseRepository
 from app.repositories.event import EventRepository
-from app.schemas.common import AppModel
+from app.schemas.common import AppModel, MessageResponse
+from app.services.audit import AuditService
 from app.services.news import NewsService
 from app.services.opportunity import OpportunityService
+from app.services.storage import storage
 from app.services.welfare import WelfareService
+from app.utils.file_validation import validate_image_file
 
 
 class PresidentWelcomeSchema(AppModel):
@@ -62,8 +72,41 @@ class ImpactMetricsSchema(AppModel):
 
 
 class PartnerSchema(AppModel):
+    id: uuid.UUID
     name: str
-    logo_key: str
+    logo_url: str | None = None
+    website_url: str | None = None
+    sort_order: int = 0
+    is_published: bool = True
+
+
+class PartnerCreate(AppModel):
+    name: str = Field(min_length=2, max_length=200)
+    website_url: str | None = Field(default=None, max_length=1000)
+    sort_order: int = Field(default=0, ge=0, le=10_000)
+    is_published: bool = True
+
+    @field_validator("website_url")
+    @classmethod
+    def validate_website_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        parsed = urlparse(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("Website URL must be a complete HTTP or HTTPS URL.")
+        return value
+
+
+class PartnerUpdate(AppModel):
+    name: str | None = Field(default=None, min_length=2, max_length=200)
+    website_url: str | None = Field(default=None, max_length=1000)
+    sort_order: int | None = Field(default=None, ge=0, le=10_000)
+    is_published: bool | None = None
+
+    @field_validator("website_url")
+    @classmethod
+    def validate_website_url(cls, value: str | None) -> str | None:
+        return PartnerCreate.validate_website_url(value)
 
 
 class AboutContentResponse(AppModel):
@@ -116,6 +159,12 @@ async def get_about_content(
         .limit(5)
     )
     gallery = list(gallery_result.scalars().all())
+    partner_result = await db.execute(
+        select(Partner)
+        .where(Partner.deleted_at.is_(None), Partner.is_published.is_(True))
+        .order_by(Partner.sort_order.asc(), Partner.created_at.asc())
+    )
+    partners = list(partner_result.scalars().all())
 
     return AboutContentResponse(
         name="Ghana Pharmaceutical Students' Association, UDS",
@@ -274,17 +323,7 @@ async def get_about_content(
             {"year": "2021", "title": "Expansion of professional programmes", "body": "Academic support expanded through shared learning material."},
             {"year": "2024", "title": "Launch of digital student platform", "body": "Events, resources, welfare, news, gallery, and opportunities moved into one public platform."},
         ],
-        partners=[
-            {"name": "University for Development Studies", "logo_key": "uds"},
-            {"name": "School of Pharmacy", "logo_key": "sop"},
-            {"name": "National GPSA", "logo_key": "ngpsa"},
-            {"name": "Pharmaceutical Society of Ghana", "logo_key": "psgh"},
-            {"name": "Pharmacy Council", "logo_key": "pc"},
-            {"name": "Korle Bu Teaching Hospital", "logo_key": "kbth"},
-            {"name": "Tobinco Pharmaceuticals", "logo_key": "tobinco"},
-            {"name": "Ernest Chemists Foundation", "logo_key": "ernest"},
-            {"name": "GSK Ghana", "logo_key": "gsk"},
-        ],
+        partners=[PartnerSchema.model_validate(partner) for partner in partners],
         stats=stats,
         featured_news={
             "id": str(news.id),
@@ -325,6 +364,149 @@ async def get_about_content(
         ],
         welfare=welfare,
     )
+
+
+@router.get(
+    "/partners/admin",
+    response_model=list[PartnerSchema],
+    dependencies=[Depends(require_roles(UserRole.exec, UserRole.admin))],
+)
+async def list_partners_admin(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[PartnerSchema]:
+    result = await db.execute(
+        select(Partner)
+        .where(Partner.deleted_at.is_(None))
+        .order_by(Partner.sort_order.asc(), Partner.created_at.asc())
+        .limit(200)
+    )
+    partners = list(result.scalars().all())
+    return [PartnerSchema.model_validate(partner) for partner in partners]
+
+
+@router.post(
+    "/partners",
+    response_model=PartnerSchema,
+    status_code=201,
+    dependencies=[Depends(require_roles(UserRole.exec, UserRole.admin))],
+)
+async def create_partner(
+    payload: PartnerCreate,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PartnerSchema:
+    partner = await BaseRepository(Partner, db).create(payload.model_dump())
+    await AuditService(db).log(
+        action="CREATE",
+        entity_type="partner",
+        entity_id=partner.id,
+        new_values=payload.model_dump(),
+        request=request,
+    )
+    await db.commit()
+    return PartnerSchema.model_validate(partner)
+
+
+@router.patch(
+    "/partners/{partner_id}",
+    response_model=PartnerSchema,
+    dependencies=[Depends(require_roles(UserRole.exec, UserRole.admin))],
+)
+async def update_partner(
+    partner_id: uuid.UUID,
+    payload: PartnerUpdate,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> PartnerSchema:
+    repo = BaseRepository(Partner, db)
+    partner = await repo.get_by_id_or_404(partner_id)
+    updates = payload.model_dump(exclude_unset=True)
+    partner = await repo.update(partner, updates)
+    await AuditService(db).log(
+        action="UPDATE",
+        entity_type="partner",
+        entity_id=partner.id,
+        new_values=updates,
+        request=request,
+    )
+    await db.commit()
+    return PartnerSchema.model_validate(partner)
+
+
+@router.post(
+    "/partners/{partner_id}/logo",
+    response_model=PartnerSchema,
+    dependencies=[Depends(require_roles(UserRole.exec, UserRole.admin))],
+)
+async def upload_partner_logo(
+    partner_id: uuid.UUID,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    file: UploadFile = File(..., description="Partner logo (JPEG, PNG, WebP or GIF; max 10 MB)"),
+) -> PartnerSchema:
+    repo = BaseRepository(Partner, db)
+    partner = await repo.get_by_id_or_404(partner_id)
+    validated = validate_image_file(await file.read(), file.filename or "partner-logo.png")
+    new_key = await storage.upload(
+        content=validated.content,
+        folder="partners",
+        filename=file.filename or "partner-logo.png",
+        mime_type=validated.mime_type,
+        public=True,
+    )
+    old_key = partner.logo_key
+    try:
+        partner = await repo.update(
+            partner,
+            {"logo_key": new_key, "logo_url": storage.cdn_url(new_key)},
+        )
+        await AuditService(db).log(
+            action="UPLOAD_LOGO",
+            entity_type="partner",
+            entity_id=partner.id,
+            new_values={"logo_key": new_key},
+            request=request,
+        )
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        with suppress(Exception):
+            await storage.delete(new_key)
+        raise
+    if old_key:
+        with suppress(Exception):
+            await storage.delete(old_key)
+    return PartnerSchema.model_validate(partner)
+
+
+@router.delete(
+    "/partners/{partner_id}",
+    response_model=MessageResponse,
+    dependencies=[Depends(require_roles(UserRole.exec, UserRole.admin))],
+)
+async def delete_partner(
+    partner_id: uuid.UUID,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MessageResponse:
+    repo = BaseRepository(Partner, db)
+    partner = await repo.get_by_id_or_404(partner_id)
+    await repo.soft_delete(partner)
+    await AuditService(db).log(
+        action="DELETE",
+        entity_type="partner",
+        entity_id=partner.id,
+        request=request,
+    )
+    await db.commit()
+    if partner.logo_key:
+        with suppress(Exception):
+            await storage.delete(partner.logo_key)
+    return MessageResponse(message="Partner deleted.")
 
 
 class HistoryMilestoneSchema(AppModel):

@@ -494,8 +494,12 @@ export interface GovernancePageData {
 }
 
 export interface Partner {
+  id: string
   name: string
-  logo_key: string
+  logo_url: string | null
+  website_url: string | null
+  sort_order: number
+  is_published: boolean
 }
 
 export interface AboutContent {

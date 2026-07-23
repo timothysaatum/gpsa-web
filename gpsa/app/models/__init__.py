@@ -70,6 +70,7 @@ from app.models.legacy import (
 from app.models.news import NewsPost
 from app.models.notification import Notification
 from app.models.opportunity import Opportunity
+from app.models.partner import Partner
 from app.models.token import PasswordResetToken, RefreshToken
 from app.models.user import User
 from app.models.welfare import WelfareReport, WelfareSpotlight
@@ -100,6 +101,8 @@ __all__ = [
     "WelfareSpotlight",
     # Opportunities
     "Opportunity",
+    # Partners
+    "Partner",
     # News
     "NewsPost",
     # Notifications

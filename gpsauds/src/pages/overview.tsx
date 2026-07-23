@@ -112,15 +112,15 @@ const fallback: AboutContent = {
     { year: '2024', title: 'Launch of digital student platform', body: 'Events, resources, welfare, news, gallery, and opportunities moved into one public platform.' },
   ],
   partners: [
-    { name: 'University for Development Studies', logo_key: 'UDS' },
-    { name: 'School of Pharmacy', logo_key: 'SOP' },
-    { name: 'National GPSA', logo_key: 'GPSA' },
-    { name: 'Pharmaceutical Society of Ghana', logo_key: 'PSGH' },
-    { name: 'Pharmacy Council', logo_key: 'PC' },
-    { name: 'Korle Bu Teaching Hospital', logo_key: 'KBTH' },
-    { name: 'Tobinco Pharmaceuticals', logo_key: 'Tobinco' },
-    { name: 'Ernest Chemists Foundation', logo_key: 'Ernest' },
-    { name: 'GSK Ghana', logo_key: 'GSK' },
+    { id: 'fallback-uds', name: 'University for Development Studies', logo_url: null, website_url: null, sort_order: 0, is_published: true },
+    { id: 'fallback-sop', name: 'School of Pharmacy', logo_url: null, website_url: null, sort_order: 1, is_published: true },
+    { id: 'fallback-gpsa', name: 'National GPSA', logo_url: null, website_url: null, sort_order: 2, is_published: true },
+    { id: 'fallback-psgh', name: 'Pharmaceutical Society of Ghana', logo_url: null, website_url: null, sort_order: 3, is_published: true },
+    { id: 'fallback-pc', name: 'Pharmacy Council', logo_url: null, website_url: null, sort_order: 4, is_published: true },
+    { id: 'fallback-kbth', name: 'Korle Bu Teaching Hospital', logo_url: null, website_url: null, sort_order: 5, is_published: true },
+    { id: 'fallback-medochemie', name: 'Medochemie Ghana Ltd.', logo_url: null, website_url: null, sort_order: 6, is_published: true },
+    { id: 'fallback-ernest', name: 'Ernest Chemists Foundation', logo_url: null, website_url: null, sort_order: 7, is_published: true },
+    { id: 'fallback-gsk', name: 'GSK Ghana', logo_url: null, website_url: null, sort_order: 8, is_published: true },
   ],
   stats: { total_users: 1250, active_members: 320, total_events: 28, total_resources: 150 },
   featured_news: null,
@@ -852,39 +852,32 @@ function LogoGSK() {
   )
 }
 
-function LogoOthers() {
-  return (
-    <div className="w-8 h-8 rounded-full bg-blue-100/80 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-        <circle cx="6" cy="12" r="2" />
-        <circle cx="12" cy="12" r="2" />
-        <circle cx="18" cy="12" r="2" />
-      </svg>
-    </div>
-  )
-}
-
 function HistoryAndPartnersGrid({
   timeline,
-  partners: _partners,
+  partners = [],
   navigate,
 }: {
   timeline: AboutContent['timeline']
   partners?: AboutContent['partners']
   navigate: ReturnType<typeof useNavigate>
 }) {
-  const partnerList = [
-    { name: 'UDS', component: <LogoUDS /> },
-    { name: 'School of Pharmacy', component: <LogoSOP /> },
-    { name: 'National GPSA', component: <LogoGPSA /> },
-    { name: 'Pharmaceutical Society of Ghana', component: <LogoPSGH /> },
-    { name: 'Pharmacy Council', component: <LogoPC /> },
-    { name: 'Korle Bu Teaching Hospital', component: <LogoKBTH /> },
-    { name: 'Medochemie Ghana Ltd.', component: <LogoMedochemie /> },
-    { name: 'Ernest Chemists Foundation', component: <LogoErnest /> },
-    { name: 'GSK Ghana', component: <LogoGSK /> },
-    { name: 'Others', component: <LogoOthers /> },
-  ]
+  const fallbackLogo = (name: string) => {
+    const normalized = name.toLowerCase()
+    if (normalized.includes('university for development') || normalized === 'uds') return <LogoUDS />
+    if (normalized.includes('school of pharmacy')) return <LogoSOP />
+    if (normalized.includes('national gpsa')) return <LogoGPSA />
+    if (normalized.includes('pharmaceutical society')) return <LogoPSGH />
+    if (normalized.includes('pharmacy council')) return <LogoPC />
+    if (normalized.includes('korle bu')) return <LogoKBTH />
+    if (normalized.includes('medochemie')) return <LogoMedochemie />
+    if (normalized.includes('ernest chemists')) return <LogoErnest />
+    if (normalized.includes('gsk')) return <LogoGSK />
+    return (
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-800 ring-1 ring-green-200">
+        {name.slice(0, 2).toUpperCase()}
+      </span>
+    )
+  }
 
   return (
     <section className="py-12 lg:py-16 bg-slate-100/70 border-t border-slate-200/80">
@@ -921,11 +914,11 @@ function HistoryAndPartnersGrid({
 
               {/* Large Capsule Outdoor Photo with Green Outline Ring matching overview.png */}
               <div className="relative shrink-0 my-auto">
-                <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-[36px] sm:rounded-[44px] p-1.5 bg-emerald-500/20 border-2 border-emerald-600/50 shadow-md overflow-hidden transition-transform duration-500 hover:scale-105">
+                <div className="w-40 h-40 sm:w-52 sm:h-52 rounded-[40px] sm:rounded-[48px] p-1.5 bg-emerald-500/20 border-2 border-emerald-600/50 shadow-md overflow-hidden transition-transform duration-500 hover:scale-105">
                   <img
                     src={outdoorStudentsImg}
                     alt="GPSA UDS Pharmacy Students"
-                    className="w-full h-full object-cover rounded-[30px] sm:rounded-[38px]"
+                    className="w-full h-full object-cover rounded-[34px] sm:rounded-[42px]"
                   />
                 </div>
               </div>
@@ -949,23 +942,45 @@ function HistoryAndPartnersGrid({
 
             {/* 5-Column x 2-Row Brand Partner Grid matching overview.png */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-y-7 gap-x-3 items-center py-4 my-2">
-              {partnerList.map((partner) => (
-                <div key={partner.name} className="flex items-center gap-2">
-                  {partner.component}
-                  <span className="text-[11px] font-medium text-slate-800 leading-tight">
-                    {partner.name}
-                  </span>
-                </div>
-              ))}
+              {partners.map((partner) => {
+                const content = (
+                  <>
+                    {partner.logo_url ? (
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
+                        <img src={partner.logo_url} alt="" className="h-full w-full object-contain" loading="lazy" />
+                      </span>
+                    ) : fallbackLogo(partner.name)}
+                    <span className="text-[11px] font-medium text-slate-800 leading-tight">
+                      {partner.name}
+                    </span>
+                  </>
+                )
+                return partner.website_url ? (
+                  <a
+                    key={partner.id}
+                    href={partner.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-lg transition-opacity hover:opacity-75"
+                    aria-label={`Visit ${partner.name} website`}
+                  >
+                    {content}
+                  </a>
+                ) : (
+                  <div key={partner.id} className="flex items-center gap-2">
+                    {content}
+                  </div>
+                )
+              })}
             </div>
           </div>
 
           <div className="mt-6 pt-5 border-t border-slate-100 flex justify-center">
             <button
-              onClick={() => navigate('/about')}
+              onClick={() => navigate('/contact')}
               className="px-6 py-2 rounded-lg border border-slate-300 hover:border-emerald-700 text-slate-800 font-semibold text-xs transition-all flex items-center justify-center gap-2 hover:bg-slate-50 shadow-2xs"
             >
-              <span>View All Partners</span>
+              <span>Partner with GPSA-UDS</span>
             </button>
           </div>
         </div>
