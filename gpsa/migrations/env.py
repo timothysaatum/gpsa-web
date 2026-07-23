@@ -6,12 +6,12 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+import app.models  # noqa: F401 — registers all ORM models on Base.metadata
+from app.core.config import settings
+
 # ── Import Base + all models for autogenerate ─────────────────────────────────
 # This must happen before target_metadata is read.
 from app.db.base import Base
-import app.models  # noqa: F401 — registers all ORM models on Base.metadata
-
-from app.core.config import settings
 
 # ── Alembic config object ─────────────────────────────────────────────────────
 config = context.config

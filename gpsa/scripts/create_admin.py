@@ -16,7 +16,6 @@ from pathlib import Path
 # Ensure project root is on sys.path when run directly
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -30,6 +29,7 @@ from app.models.user import User
 configure_logging()
 
 import structlog
+
 logger = structlog.get_logger(__name__)
 
 

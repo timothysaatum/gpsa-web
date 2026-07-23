@@ -1,3 +1,4 @@
+import traceback
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Verify database is reachable before accepting traffic
     from sqlalchemy import text
+
     from app.db.session import AsyncSessionLocal, engine
 
     try:
@@ -101,9 +103,9 @@ def create_app() -> FastAPI:
 # Order matters — outermost middleware runs first on request, last on response.
 
 def _register_middleware(app: FastAPI) -> None:
-    from app.middleware.request_id import RequestIDMiddleware
     from app.middleware.audit import AuditContextMiddleware
     from app.middleware.rate_limit import RateLimitMiddleware
+    from app.middleware.request_id import RequestIDMiddleware
 
     # 1. CORS — must be outermost to handle preflight before auth
     app.add_middleware(
@@ -171,11 +173,20 @@ def _register_exception_handlers(app: FastAPI) -> None:
         Never expose internal error details in production.
         """
         request_id = getattr(request.state, "request_id", "unknown")
-        logger.exception(
+        # The handler executes after the original exception context unwinds.
+        # Explicit formatting prevents Rich/structlog from recursively walking
+        # Starlette exception groups and pinning the worker CPU.
+        formatted_traceback = "".join(
+            traceback.format_exception(type(exc), exc, exc.__traceback__, limit=50)
+        )
+        logger.error(
             "unhandled_exception",
             path=request.url.path,
             method=request.method,
             request_id=request_id,
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+            traceback=formatted_traceback,
         )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -11,7 +11,6 @@ uploading it through the academic resources endpoint.
 Requires: python-magic (libmagic bindings)
 """
 
-import io
 from dataclasses import dataclass
 
 import magic

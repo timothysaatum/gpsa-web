@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -18,7 +18,17 @@ from app.services.storage import storage
 from app.utils.file_validation import validate_image_file
 
 
-class LeaderResponse(AppModel):
+class PublicLeaderResponse(AppModel):
+    id: uuid.UUID
+    term_id: uuid.UUID
+    full_name: str
+    office: str
+    bio: str | None
+    photo_url: str | None
+    sort_order: int
+
+
+class LeaderResponse(PublicLeaderResponse):
     id: uuid.UUID
     term_id: uuid.UUID
     full_name: str
@@ -44,6 +54,17 @@ class LeadershipTermResponse(AppModel):
     sort_order: int
     created_at: datetime
     leaders: list[LeaderResponse] = []
+
+
+class PublicLeadershipTermResponse(AppModel):
+    id: uuid.UUID
+    title: str
+    academic_year: str
+    start_date: date | None
+    end_date: date | None
+    theme: str | None
+    summary: str | None
+    leaders: list[PublicLeaderResponse] = []
 
 
 class LeadershipTermCreateRequest(AppModel):
@@ -121,13 +142,12 @@ async def _get_term_or_404(db: AsyncSession, term_id: uuid.UUID) -> LeadershipTe
     return term
 
 
-@router.get("/", response_model=list[LeadershipTermResponse], summary="List all leadership terms")
+@router.get("/", response_model=list[PublicLeadershipTermResponse], summary="List published leadership terms")
 async def list_terms(
     db: Annotated[AsyncSession, Depends(get_db)],
-    include_inactive: bool = False,
     offset: int = 0,
     limit: int = 50,
-) -> list[LeadershipTermResponse]:
+) -> list[PublicLeadershipTermResponse]:
     q = (
         select(LeadershipTerm)
         .options(selectinload(LeadershipTerm.leaders))
@@ -138,16 +158,32 @@ async def list_terms(
     )
     result = await db.execute(q)
     terms = list(result.scalars().unique().all())
-    if not include_inactive:
-        for term in terms:
-            term.leaders = [leader for leader in term.leaders if leader.deleted_at is None and leader.is_active]
-    return [LeadershipTermResponse.model_validate(term) for term in terms]
+    for term in terms:
+        term.leaders = [leader for leader in term.leaders if leader.deleted_at is None and leader.is_active]
+    return [PublicLeadershipTermResponse.model_validate(term) for term in terms]
 
 
-@router.get("/current", response_model=LeadershipTermResponse | None, summary="Get current leadership")
+@router.get("/admin", response_model=list[LeadershipTermResponse], summary="List all leadership records", dependencies=[_manager_dependency()])
+async def list_admin_terms(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    offset: int = 0,
+    limit: int = 100,
+) -> list[LeadershipTermResponse]:
+    result = await db.execute(
+        select(LeadershipTerm)
+        .options(selectinload(LeadershipTerm.leaders))
+        .where(LeadershipTerm.deleted_at.is_(None))
+        .order_by(LeadershipTerm.is_current.desc(), LeadershipTerm.sort_order.asc())
+        .offset(offset)
+        .limit(min(limit, 200))
+    )
+    return [LeadershipTermResponse.model_validate(term) for term in result.scalars().unique().all()]
+
+
+@router.get("/current", response_model=PublicLeadershipTermResponse | None, summary="Get current leadership")
 async def get_current_leadership(
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> LeadershipTermResponse | None:
+) -> PublicLeadershipTermResponse | None:
     result = await db.execute(
         select(LeadershipTerm)
         .options(selectinload(LeadershipTerm.leaders))
@@ -162,7 +198,7 @@ async def get_current_leadership(
     if term is None:
         return None
     term.leaders = [leader for leader in term.leaders if leader.deleted_at is None and leader.is_active]
-    return LeadershipTermResponse.model_validate(term)
+    return PublicLeadershipTermResponse.model_validate(term)
 
 
 @router.post(
@@ -236,6 +272,8 @@ async def delete_term(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> MessageResponse:
     term = await _get_term_or_404(db, term_id)
+    if term.is_current:
+        raise HTTPException(status_code=409, detail="Set another administration as current before deleting this term.")
     await BaseRepository(LeadershipTerm, db).soft_delete(term)
     await AuditService(db).log(action="DELETE", entity_type="leadership_term", entity_id=term.id, request=request)
     await db.commit()

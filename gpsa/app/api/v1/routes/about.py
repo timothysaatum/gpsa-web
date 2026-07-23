@@ -4,14 +4,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.routes.cms import get_published_page
 from app.api.v1.routes.stats import get_stats
 from app.db.session import get_db
 from app.models.enums import EventStatus
 from app.models.gallery import GalleryImage
+from app.repositories.event import EventRepository
 from app.schemas.common import AppModel
 from app.services.news import NewsService
 from app.services.opportunity import OpportunityService
-from app.repositories.event import EventRepository
 from app.services.welfare import WelfareService
 
 
@@ -491,7 +492,7 @@ async def get_history_content(
         ),
     ]
 
-    return HistoryPageResponse(
+    default_content = HistoryPageResponse(
         milestones=milestones,
         achievements=achievements,
         metrics=metrics,
@@ -507,4 +508,10 @@ async def get_history_content(
             for img in gallery
         ],
     )
-
+    cms_page = await get_published_page(db, "history")
+    if cms_page is None:
+        return default_content
+    content = {**default_content.model_dump(), **cms_page.content}
+    # Gallery is a managed collection and never trusted from arbitrary page JSON.
+    content["gallery_preview"] = default_content.gallery_preview
+    return HistoryPageResponse.model_validate(content)

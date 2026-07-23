@@ -14,7 +14,7 @@ from app.core.permissions import assert_permission, can_publish_news, can_write_
 from app.domain.bus import bus as domain_bus
 from app.domain.events import NewsPublished
 from app.domain.kernel import DomainEventBus
-from app.models.enums import NewsCategory, UserRole
+from app.models.enums import NewsCategory
 from app.models.news import NewsPost
 from app.models.user import User
 from app.repositories.base import BaseRepository
@@ -34,7 +34,6 @@ class NewsRepository(BaseRepository[NewsPost]):
         offset: int = 0,
         limit: int = 20,
     ) -> list[NewsPost]:
-        from sqlalchemy import select
 
         q = (
             self._base_query()

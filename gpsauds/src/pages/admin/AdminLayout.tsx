@@ -1,7 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   BarChart3, BookOpen, Briefcase, CalendarDays, FileText, Home, Image,
-  LayoutDashboard, LogOut, Newspaper, ScrollText, Settings, Shield, Users,
+  LayoutDashboard, LogOut, Mail, Newspaper, ScrollText, Settings, Shield, Users,
 } from 'lucide-react'
 import gpsaLogo from '@/assets/gpsa-logo.jpg'
 import { Button } from '@/components/ui'
@@ -23,10 +23,14 @@ const navGroups: { label: string; links: AdminNavLink[] }[] = [
       { to: '/admin/home', label: 'Home Page', icon: Home },
       { to: '/admin/about', label: 'About Page', icon: FileText },
       { to: '/admin/leadership', label: 'Leadership', icon: Users },
+      { to: '/admin/legacy', label: 'Past Leadership', icon: ScrollText },
+      { to: '/admin/impact', label: 'Impact', icon: BarChart3 },
+      { to: '/admin/governance', label: 'Documents & FAQs', icon: FileText },
       { to: '/admin/news', label: 'News', icon: Newspaper },
       { to: '/admin/events', label: 'Events', icon: CalendarDays },
       { to: '/admin/opportunities', label: 'Opportunities', icon: Briefcase },
       { to: '/admin/gallery', label: 'Gallery', icon: Image },
+      { to: '/admin/contact', label: 'Contact Enquiries', icon: Mail },
     ],
   },
   {

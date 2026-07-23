@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom'
 import { Home, ChevronRight } from 'lucide-react'
 import { welfareApi } from '@/api/services'
 import { ActionCards, ReportFormPanel, WelfareHero, WelfareQuote, SpotlightCard, useWelfareForm } from './welfare'
+import { useCmsPageSettings } from '@/hooks/useCmsPageSettings'
+import { welfarePageDefaults } from '@/config/cmsPageDefaults'
 
 export function WelfarePage() {
+  const { settings } = useCmsPageSettings('welfare', welfarePageDefaults)
   const { activeCard, submitted, form, mutation, isAnonymous, openForm, closeForm } = useWelfareForm()
 
   const { data: config, isLoading: configLoading } = useQuery({
@@ -34,16 +37,16 @@ export function WelfarePage() {
       </div>
 
       {/* Hero */}
-      <WelfareHero config={config} isLoading={configLoading} />
+      <WelfareHero config={config} isLoading={configLoading} settings={settings} />
 
       {/* Body */}
       <div className="section-container section-padding">
         <div className="mb-6">
-          <h2 className="font-display text-2xl font-bold text-deep mb-1">How can we help?</h2>
-          <p className="text-sm text-muted">Select the option that best describes what you need.</p>
+          <h2 className="font-display text-2xl font-bold text-deep mb-1">{settings.help_title}</h2>
+          <p className="text-sm text-muted">{settings.help_description}</p>
         </div>
 
-        <ActionCards activeCard={activeCard} onSelect={openForm} />
+        <ActionCards activeCard={activeCard} onSelect={openForm} settings={settings} />
         <ReportFormPanel
           activeCard={activeCard}
           submitted={submitted}

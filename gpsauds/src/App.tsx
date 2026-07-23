@@ -1,7 +1,6 @@
 import { Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 import { RootLayout, AuthLayout } from '@/components/layout/RootLayout'
 import { ProtectedRoute, GuestRoute } from '@/components/shared/RouteGuards'
@@ -20,15 +19,19 @@ import {
 } from '@/pages/other-pages'
 import { OverviewPage } from '@/pages/overview'
 import { HistoryLegacyPage } from '@/pages/HistoryLegacyPage'
+import { PastLeadershipPage } from '@/pages/PastLeadershipPage'
 import { GalleryPage } from '@/pages/GalleryPage'
 import { LeadershipPage } from '@/pages/LeadershipPage'
+import { ImpactPage } from '@/pages/ImpactPage'
+import { DocumentsFaqPage } from '@/pages/DocumentsFaqPage'
+import { ContactPage } from '@/pages/ContactPage'
 import {
   ProfilePage, CertificatesPage, CertificateVerifyPage, SettingsPage
 } from '@/pages/profile-pages'
 import { AdminLayout } from '@/pages/admin/AdminLayout'
 import {
-  AdminAboutPage, AdminAcademicsPage, AdminAuditLogsPage, AdminDashboardPage,
-  AdminEventsPage, AdminGalleryPage, AdminHomePage, AdminLeadershipPage,
+  AdminAboutPage, AdminAcademicsPage, AdminAuditLogsPage, AdminContactPage, AdminDashboardPage,
+  AdminEventsPage, AdminGalleryPage, AdminGovernancePage, AdminHomePage, AdminImpactPage, AdminLeadershipPage, AdminLegacyPage,
   AdminNewsPage, AdminOpportunitiesPage, AdminSettingsPage, AdminUsersPage,
   AdminWelfarePage,
 } from '@/pages/admin/AdminPages'
@@ -114,8 +117,13 @@ export default function App() {
               <Route path="about" element={<OverviewPage />} />
               <Route path="about/history" element={<HistoryLegacyPage />} />
               <Route path="about/leadership" element={<LeadershipPage />} />
+              <Route path="about/legacy" element={<PastLeadershipPage />} />
+              <Route path="about/impact" element={<ImpactPage />} />
+              <Route path="about/governance" element={<DocumentsFaqPage />} />
+              <Route path="about/past-leadership" element={<PastLeadershipPage />} />
               <Route path="leadership" element={<LeadershipPage />} />
               <Route path="gallery" element={<GalleryPage />} />
+              <Route path="contact" element={<ContactPage />} />
               <Route path="welfare" element={<WelfarePage />} />
               <Route path="opportunities" element={<OpportunitiesPage />} />
               <Route path="opportunities/:id" element={<OpportunityDetailPage />} />
@@ -139,10 +147,14 @@ export default function App() {
                 <Route path="home" element={<AdminHomePage />} />
                 <Route path="about" element={<AdminAboutPage />} />
                 <Route path="leadership" element={<AdminLeadershipPage />} />
+                <Route path="legacy" element={<AdminLegacyPage />} />
+                <Route path="impact" element={<AdminImpactPage />} />
+                <Route path="governance" element={<AdminGovernancePage />} />
                 <Route path="news" element={<AdminNewsPage />} />
                 <Route path="events" element={<AdminEventsPage />} />
                 <Route path="opportunities" element={<AdminOpportunitiesPage />} />
                 <Route path="gallery" element={<AdminGalleryPage />} />
+                <Route path="contact" element={<AdminContactPage />} />
                 <Route path="academics" element={<AdminAcademicsPage />} />
                 <Route path="welfare" element={<AdminWelfarePage />} />
                 <Route element={<ProtectedRoute roles={['admin']} />}>
@@ -168,7 +180,6 @@ export default function App() {
           </Routes>
         </Suspense>
       </BrowserRouter>
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   )
 }

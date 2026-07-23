@@ -12,7 +12,6 @@ from app.models.enums import NewsCategory, UserRole
 from app.schemas.common import AppModel, MessageResponse, PaginatedResponse
 from app.services.news import NewsService
 
-
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class NewsCreateRequest(AppModel):
@@ -88,6 +87,26 @@ async def list_news(
     return PaginatedResponse(
         items=[NewsSummaryResponse.model_validate(p) for p in posts],
         total=total,
+        offset=offset,
+        limit=limit,
+    )
+
+@router.get(
+    "/admin/all",
+    response_model=PaginatedResponse[NewsSummaryResponse],
+    summary="List all news posts including drafts",
+    dependencies=[Depends(require_roles(UserRole.exec, UserRole.admin))],
+)
+async def list_all_news(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    offset: int = 0,
+    limit: int = 100,
+) -> PaginatedResponse[NewsSummaryResponse]:
+    service = NewsService(db)
+    posts = await service.repo.list(offset=offset, limit=limit)
+    return PaginatedResponse(
+        items=[NewsSummaryResponse.model_validate(post) for post in posts],
+        total=await service.repo.count(),
         offset=offset,
         limit=limit,
     )

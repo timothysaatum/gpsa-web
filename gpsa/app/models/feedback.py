@@ -1,13 +1,18 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Enum as SAEnum, ForeignKey, Index, SmallInteger, Text, func
+from sqlalchemy import CheckConstraint, ForeignKey, Index, SmallInteger, Text, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import UUIDPrimaryKeyMixin
 from app.models.enums import FeedbackEntityType
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class Feedback(UUIDPrimaryKeyMixin, Base):

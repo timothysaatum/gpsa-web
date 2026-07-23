@@ -13,7 +13,7 @@ import outdoorStudentsImg from '@/assets/outdoor_students.png'
 import ctaStudentsImg from '@/assets/cta_students.png'
 import udsGateHeroRight from '@/assets/uds_gate_hero_right.png'
 
-const fallbackHistory: HistoryContent = {
+export const historyContentTemplate: HistoryContent = {
   hero_eyebrow: 'ABOUT GPSA-UDS',
   hero_title: 'Our History & Legacy',
   hero_intro_primary:
@@ -128,13 +128,15 @@ const fallbackHistory: HistoryContent = {
 
 export function HistoryLegacyPage() {
   const navigate = useNavigate()
-  const { data } = useQuery({
+  const { data: history, isLoading, isError, refetch } = useQuery({
     queryKey: ['history'],
     queryFn: historyApi.get,
     staleTime: 5 * 60 * 1000,
   })
 
-  const history = data ?? fallbackHistory
+  if (isLoading) return <div className="section-container py-20"><p className="text-center text-slate-500">Loading history…</p></div>
+  if (isError) return <div className="section-container py-20 text-center"><p className="text-slate-700">History content is temporarily unavailable.</p><button className="mt-4 btn-primary" onClick={() => void refetch()}>Try again</button></div>
+  if (!history) return null
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-800 font-body py-6 space-y-6 sm:space-y-8">
@@ -142,20 +144,20 @@ export function HistoryLegacyPage() {
       <HistoryHero history={history} />
 
       {/* 2. Our Journey Timeline */}
-      <HistoryJourneyTimeline milestones={history.milestones ?? fallbackHistory.milestones} />
+      <HistoryJourneyTimeline milestones={history.milestones} />
 
       {/* 3. Milestones & Achievements + By The Numbers */}
       <MilestonesAndNumbers
-        achievements={history.achievements ?? fallbackHistory.achievements}
-        metrics={history.metrics ?? fallbackHistory.metrics}
+        achievements={history.achievements}
+        metrics={history.metrics}
       />
 
       {/* 4. Traditions — The Pharmily Spirit */}
-      <PharmilyTraditionsSection traditions={history.traditions ?? fallbackHistory.traditions} />
+      <PharmilyTraditionsSection traditions={history.traditions} />
 
       {/* 5. Historical Photo Gallery Preview */}
       <HistoricalPhotoPreview
-        gallery={history.gallery_preview ?? fallbackHistory.gallery_preview}
+        gallery={history.gallery_preview}
         onViewGallery={() => navigate('/gallery')}
       />
 
@@ -433,8 +435,7 @@ function HistoricalPhotoPreview({
   gallery: HistoryContent['gallery_preview']
   onViewGallery: () => void
 }) {
-  // Always display 6 photos matching history_and_legacy.png 6-column grid
-  const photos = gallery && gallery.length >= 6 ? gallery.slice(0, 6) : fallbackHistory.gallery_preview!
+  const photos = gallery.slice(0, 6)
 
   return (
     <div className="section-container">

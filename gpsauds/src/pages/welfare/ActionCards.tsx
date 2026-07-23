@@ -1,10 +1,14 @@
 import { Button } from '@/components/ui'
 import { cn } from '@/utils'
 import type { ReportType } from '@/types'
+import { HandHeart, ShieldCheck, TriangleAlert } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { welfarePageDefaults } from '@/config/cmsPageDefaults'
 
 interface ActionCardConfig {
   type: ReportType
-  icon: string
+  icon: LucideIcon
+  iconStyle: string
   num: string
   title: string
   desc: string
@@ -15,49 +19,38 @@ interface ActionCardConfig {
   btnVariant: 'destructive' | 'primary' | 'outline'
 }
 
-const CARDS: ActionCardConfig[] = [
-  {
-    type: 'issue', icon: '⚠️', num: '01',
-    title: 'Report an Issue',
-    desc: 'Academic concerns, lecturer issues, facility problems, or general complaints.',
-    cta: 'Report Now',
-    accentBar: 'bg-red-600',
-    numStyle: 'bg-red-50 text-red-600',
-    activeRing: 'ring-red-600/20 border-red-300',
-    btnVariant: 'destructive',
-  },
-  {
-    type: 'support', icon: '🧠', num: '02',
-    title: 'Request Support',
-    desc: 'Personal struggles, financial difficulty, or academic pressure — we can help.',
-    cta: 'Get Help',
-    accentBar: 'bg-green-gradient',
-    numStyle: 'bg-green-gradient text-white',
-    activeRing: 'ring-green-300 border-green-700',
-    btnVariant: 'primary',
-  },
-  {
-    type: 'confidential', icon: '🔒', num: '03',
-    title: 'Confidential Report',
-    desc: 'Sensitive issues where your identity must remain fully protected and private.',
-    cta: 'Submit Confidentially',
-    accentBar: 'bg-violet-500',
-    numStyle: 'bg-violet-100 text-violet-700',
-    activeRing: 'ring-violet-300 border-violet-400',
-    btnVariant: 'outline',
-  },
-]
-
 interface ActionCardsProps {
   activeCard: ReportType | null
   onSelect: (type: ReportType) => void
+  settings: typeof welfarePageDefaults
 }
 
-export function ActionCards({ activeCard, onSelect }: ActionCardsProps) {
+export function ActionCards({ activeCard, onSelect, settings }: ActionCardsProps) {
+  const cards: ActionCardConfig[] = [
+    {
+      type: 'issue', icon: TriangleAlert, iconStyle: 'bg-red-50 text-red-700 ring-red-100', num: '01',
+      title: settings.issue_title, desc: settings.issue_description, cta: settings.issue_cta,
+      accentBar: 'bg-red-600', numStyle: 'bg-red-50 text-red-600',
+      activeRing: 'ring-red-600/20 border-red-300', btnVariant: 'destructive',
+    },
+    {
+      type: 'support', icon: HandHeart, iconStyle: 'bg-green-50 text-green-800 ring-green-100', num: '02',
+      title: settings.support_title, desc: settings.support_description, cta: settings.support_cta,
+      accentBar: 'bg-green-gradient', numStyle: 'bg-green-gradient text-white',
+      activeRing: 'ring-green-300 border-green-700', btnVariant: 'primary',
+    },
+    {
+      type: 'confidential', icon: ShieldCheck, iconStyle: 'bg-violet-50 text-violet-700 ring-violet-100', num: '03',
+      title: settings.confidential_title, desc: settings.confidential_description, cta: settings.confidential_cta,
+      accentBar: 'bg-violet-500', numStyle: 'bg-violet-100 text-violet-700',
+      activeRing: 'ring-violet-300 border-violet-400', btnVariant: 'outline',
+    },
+  ]
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-2">
-      {CARDS.map((c) => {
+      {cards.map((c) => {
         const isActive = activeCard === c.type
+        const Icon = c.icon
         return (
           <div
             key={c.type}
@@ -76,7 +69,9 @@ export function ActionCards({ activeCard, onSelect }: ActionCardsProps) {
             </span>
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xl">{c.icon}</span>
+                <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1', c.iconStyle)}>
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} aria-hidden="true" />
+                </span>
                 <h3 className="font-body font-700 text-deep text-[17px] leading-snug">{c.title}</h3>
               </div>
               <p className="text-sm text-muted leading-relaxed">{c.desc}</p>

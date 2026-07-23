@@ -7,8 +7,9 @@ import { z } from 'zod'
 import {
   MapPin, Calendar, X, CheckCircle, AlertCircle, Search,
   ChevronLeft, ChevronRight, Plus, SlidersHorizontal, Clock,
-  User,
+  User, BookOpen, HeartHandshake, HandHeart, UsersRound, Presentation,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { eventsApi } from '@/api/services'
 import { useAuthStore } from '@/store/authStore'
 import { extractError } from '@/api/client'
@@ -16,6 +17,21 @@ import { Button, Badge, EmptyState, Skeleton } from '@/components/ui'
 import { EventCard, PageHeader } from '@/components/shared'
 import { cn, formatDateTime, EVENT_TYPE_LABELS } from '@/utils'
 import type { EventStatus, EventType } from '@/types'
+import { useCmsPageSettings } from '@/hooks/useCmsPageSettings'
+import { eventsPageDefaults } from '@/config/cmsPageDefaults'
+
+const EVENT_TYPE_ICONS: Record<string, LucideIcon> = {
+  academic: BookOpen,
+  welfare: HeartHandshake,
+  outreach: HandHeart,
+  social: UsersRound,
+  conference: Presentation,
+}
+
+function EventTypeIcon({ type, className = 'h-6 w-6' }: { type: string; className?: string }) {
+  const Icon = EVENT_TYPE_ICONS[type] ?? Calendar
+  return <Icon className={className} strokeWidth={1.8} aria-hidden="true" />
+}
 
 // ── Registration Modal ────────────────────────────────────────────────────────
 
@@ -263,6 +279,7 @@ function EventsBreadcrumbs({ eventTitle }: { eventTitle?: string }) {
 
 function FeaturedEventBanner() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('events', eventsPageDefaults)
   const { data: event, isLoading } = useQuery({
     queryKey: ['events', 'featured'],
     queryFn: eventsApi.getFeatured,
@@ -283,22 +300,22 @@ function FeaturedEventBanner() {
         }}
       />
 
-      <div className="text-6xl lg:text-7xl flex-shrink-0 relative">
-        {event.banner_emoji ?? '🎓'}
+      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-gold-400 lg:h-20 lg:w-20">
+        <EventTypeIcon type={event.event_type} className="h-7 w-7 lg:h-8 lg:w-8" />
       </div>
 
       <div className="flex-1 relative">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-700 uppercase tracking-widest mb-4"
           style={{ background: 'rgba(255,255,255,0.12)', color: 'var(--gold-old)' }}>
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--gold-old)' }} />
-          Featured Event
+          {settings.featured_label}
         </span>
         <h2 className="font-display text-2xl lg:text-4xl font-bold text-white mb-3 leading-tight">
           {event.title}
         </h2>
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-white/60 text-sm mb-5">
-          <span className="flex items-center gap-1.5">📅 {formatDateTime(event.start_datetime)}</span>
-          <span className="flex items-center gap-1.5">📍 {event.location}</span>
+          <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4" aria-hidden="true" />{formatDateTime(event.start_datetime)}</span>
+          <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden="true" />{event.location}</span>
         </div>
         <Button variant="gold" size="md" onClick={(e) => { e.stopPropagation(); navigate(`/events/${event.id}`) }}>
           View Event →
@@ -328,6 +345,7 @@ type CreateEventForm = z.infer<typeof createEventSchema>
 
 export function EventsPage() {
   const navigate = useNavigate()
+  const { settings } = useCmsPageSettings('events', eventsPageDefaults)
   const { user } = useAuthStore()
   const canCreate = user && (user.role === 'exec' || user.role === 'admin')
 
@@ -378,8 +396,8 @@ export function EventsPage() {
     <>
       <EventsBreadcrumbs />
       <PageHeader
-        title="Events & Activities"
-        subtitle="Stay updated and register for upcoming GPSA programs."
+        title={settings.page_title}
+        subtitle={settings.page_subtitle}
       >
         {canCreate && (
           <Button
@@ -388,7 +406,7 @@ export function EventsPage() {
             leftIcon={<Plus className="h-4 w-4" />}
             onClick={() => navigate('/events/create')}
           >
-            Create Event
+            {settings.create_button_label}
           </Button>
         )}
       </PageHeader>
@@ -408,7 +426,7 @@ export function EventsPage() {
               <input
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); resetPage() }}
-                placeholder="Search events…"
+                placeholder={settings.search_placeholder}
                 className="form-input pl-11"
               />
             </div>
@@ -483,7 +501,7 @@ export function EventsPage() {
             action={<Button variant="primary" size="sm" onClick={() => refetch()}>Retry</Button>}
           />
         ) : !items.length ? (
-          <EmptyState icon="📅" title="No events found" description="Try changing your filters." />
+          <EmptyState icon={<Calendar className="h-8 w-8" />} title={settings.empty_title} description={settings.empty_description} />
         ) : (
           <>
             {/* Loading bar */}
@@ -742,14 +760,16 @@ export function EventDetailPage() {
             ← Back to Events
           </button>
           <div className="flex flex-col lg:flex-row gap-8 items-start">
-            <div className="text-7xl flex-shrink-0">{event.banner_emoji ?? '📅'}</div>
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-gold-400">
+              <EventTypeIcon type={event.event_type} className="h-9 w-9" />
+            </div>
             <div className="flex-1">
               <div className="flex flex-wrap gap-2 mb-4">
                 <Badge variant="blue">{EVENT_TYPE_LABELS[event.event_type]}</Badge>
                 <Badge variant={event.status === 'upcoming' ? 'green' : event.status === 'ongoing' ? 'gold' : 'gray'}>
                   {event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Unknown'}
                 </Badge>
-                {event.is_featured && <Badge variant="gold">⭐ Featured</Badge>}
+                {event.is_featured && <Badge variant="gold">Featured</Badge>}
               </div>
               <h1 className="font-display text-3xl lg:text-4xl font-bold text-white mb-4">{event.title}</h1>
               <div className="flex flex-wrap gap-5 text-white/70 text-sm">

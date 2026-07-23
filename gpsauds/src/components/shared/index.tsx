@@ -1,5 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { Building2, Calendar, Clock3, MapPin, ExternalLink, ArrowRight, Star } from 'lucide-react'
+import {
+  ArrowRight, BookOpen, BriefcaseBusiness, Building2, Calendar, Clock3,
+  ExternalLink, GraduationCap, HandHeart, HeartHandshake, Laptop, MapPin,
+  Presentation, Star, UsersRound, Wrench,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { EventSummary, Opportunity, NewsPostSummary } from '@/types'
 import { Badge, Button, Card } from '@/components/ui'
 import {
@@ -42,24 +47,24 @@ function EventUrgencyBadge({ start }: { start: string }) {
   const urgency = eventUrgency(start)
   if (urgency === 'past' || urgency === 'upcoming') return null
   const map = {
-    today:     { label: '🔴 Today',     variant: 'red' as const },
-    tomorrow:  { label: '🟠 Tomorrow',  variant: 'orange' as const },
-    this_week: { label: '🟡 This Week', variant: 'gold' as const },
+    today:     { label: 'Today',     variant: 'red' as const },
+    tomorrow:  { label: 'Tomorrow',  variant: 'orange' as const },
+    this_week: { label: 'This Week', variant: 'gold' as const },
   }
   const { label, variant } = map[urgency]
-  return <Badge variant={variant}>{label}</Badge>
+  return <Badge variant={variant}><Clock3 className="h-3 w-3" aria-hidden="true" />{label}</Badge>
 }
 
 function DeadlineBadge({ deadline }: { deadline: string }) {
   const urgency = deadlineUrgency(deadline)
   const map = {
     expired:       { label: 'Expired',        variant: 'gray' as const },
-    closing_today: { label: '🔴 Closing Today', variant: 'red' as const },
-    closing_soon:  { label: '🟠 Closing Soon',  variant: 'orange' as const },
-    open:          { label: '🟢 Open',          variant: 'green' as const },
+    closing_today: { label: 'Closing Today', variant: 'red' as const },
+    closing_soon:  { label: 'Closing Soon',  variant: 'orange' as const },
+    open:          { label: 'Open',          variant: 'green' as const },
   }
   const { label, variant } = map[urgency]
-  return <Badge variant={variant}>{label}</Badge>
+  return <Badge variant={variant}><Clock3 className="h-3 w-3" aria-hidden="true" />{label}</Badge>
 }
 
 // ── Event card ────────────────────────────────────────────────────────────────
@@ -70,6 +75,14 @@ const EVENT_BG: Record<string, string> = {
   outreach:   'bg-emerald-600',
   social:     'bg-blue-600',
   conference: 'bg-amber-500',
+}
+
+const EVENT_ICON: Record<string, LucideIcon> = {
+  academic: BookOpen,
+  welfare: HeartHandshake,
+  outreach: HandHeart,
+  social: UsersRound,
+  conference: Presentation,
 }
 
 interface EventCardProps {
@@ -83,6 +96,7 @@ export function EventCard({ event, onRegister }: EventCardProps) {
   const startDate = new Date(event.start_datetime)
   const day = startDate.getDate()
   const month = startDate.toLocaleDateString('en-US', { month: 'short' })
+  const EventIcon = EVENT_ICON[event.event_type] ?? Calendar
 
   return (
     <div
@@ -99,11 +113,9 @@ export function EventCard({ event, onRegister }: EventCardProps) {
               <span className="text-[10px] font-800 uppercase text-green-700 leading-none">{month}</span>
               <span className="text-lg font-800 text-deep leading-none">{day}</span>
             </div>
-            {event.banner_emoji && (
-              <div className="h-12 w-12 rounded-2xl bg-green-50 flex items-center justify-center text-3xl leading-none transition-transform duration-300 group-hover:scale-105">
-                {event.banner_emoji}
-              </div>
-            )}
+            <div className="h-12 w-12 rounded-2xl border border-green-100 bg-green-50 flex items-center justify-center text-green-800 transition-transform duration-300 group-hover:scale-105">
+              <EventIcon className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-1.5 justify-end">
@@ -145,11 +157,11 @@ export function EventCard({ event, onRegister }: EventCardProps) {
 
 // ── Opportunity card ──────────────────────────────────────────────────────────
 
-const OPP_TYPE_STYLE: Record<string, { icon: string; bar: string; badge: string }> = {
-  internship:  { icon: '💼', bar: 'bg-blue-500',   badge: 'badge-blue' },
-  scholarship: { icon: '🎓', bar: 'bg-yellow-500', badge: 'badge-gold' },
-  job:         { icon: '💻', bar: 'bg-green-600',  badge: 'badge-green' },
-  training:    { icon: '🛠️', bar: 'bg-purple-500', badge: 'badge-purple' },
+const OPP_TYPE_STYLE: Record<string, { icon: LucideIcon; bar: string; badge: string; iconClass: string }> = {
+  internship:  { icon: BriefcaseBusiness, bar: 'bg-blue-500',   badge: 'badge-blue', iconClass: 'text-blue-700' },
+  scholarship: { icon: GraduationCap,     bar: 'bg-yellow-500', badge: 'badge-gold', iconClass: 'text-amber-700' },
+  job:         { icon: Laptop,            bar: 'bg-green-600',  badge: 'badge-green', iconClass: 'text-green-800' },
+  training:    { icon: Wrench,            bar: 'bg-purple-500', badge: 'badge-purple', iconClass: 'text-violet-700' },
 }
 
 function DaysRemaining({ deadline }: { deadline: string }) {
@@ -176,6 +188,7 @@ interface OpportunityCardProps {
 
 export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) {
   const style = OPP_TYPE_STYLE[opportunity.opp_type] ?? OPP_TYPE_STYLE.internship
+  const OpportunityIcon = style.icon
 
   return (
     <Card padding="none" className="group relative flex flex-col overflow-hidden rounded-[1.35rem] border-white bg-white shadow-[0_18px_45px_rgba(16,24,40,0.08)] hover:shadow-[0_26px_70px_rgba(0,77,0,0.15)] transition-all duration-300 hover:-translate-y-1">
@@ -184,7 +197,9 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
       <div className="relative p-5 sm:p-6 flex flex-col gap-4 flex-1">
         <div className="flex items-start justify-between gap-3 pl-1">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="h-12 w-12 rounded-2xl bg-cream-dark flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">{style.icon}</span>
+            <span className={cn('h-12 w-12 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center flex-shrink-0 shadow-sm', style.iconClass)}>
+              <OpportunityIcon className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+            </span>
             <div className="min-w-0">
               <p className={cn('text-[11px] font-800 uppercase tracking-widest', style.badge.split(' ')[0] === 'badge-blue' ? 'text-blue-700' : style.badge.split(' ')[0] === 'badge-gold' ? 'text-yellow-700' : style.badge.split(' ')[0] === 'badge-purple' ? 'text-purple-700' : 'text-green-700')}>
                 {OPP_TYPE_LABELS[opportunity.opp_type]}

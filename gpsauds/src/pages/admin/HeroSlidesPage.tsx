@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, GripVertical, Eye, EyeOff, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, GripVertical, Eye, EyeOff, ArrowUp, ArrowDown, Upload } from 'lucide-react'
 import { heroApi } from '@/api/services'
 import { Button, EmptyState, Skeleton } from '@/components/ui'
 import { PageHeader } from '@/components/shared'
@@ -147,6 +147,11 @@ export function HeroSlidesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['hero-slides'] }); setDeleting(null) },
   })
 
+  const imageMut = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => heroApi.uploadImage(id, file),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hero-slides'] }),
+  })
+
   const sorted = slides ? [...slides].sort((a, b) => a.sort_order - b.sort_order) : []
 
   const modal = showForm || editing || deleting
@@ -203,6 +208,23 @@ export function HeroSlidesPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1">
+                  <label
+                    className="p-2 rounded-lg text-green-700 hover:bg-green-50 transition-all cursor-pointer"
+                    title="Upload replacement image"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      disabled={imageMut.isPending}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        if (file) imageMut.mutate({ id: slide.id, file })
+                        event.target.value = ''
+                      }}
+                    />
+                  </label>
                   <button
                     onClick={() => {
                       if (i > 0) {

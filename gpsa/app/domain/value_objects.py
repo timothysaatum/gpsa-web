@@ -11,7 +11,6 @@ from dataclasses import dataclass
 
 from .kernel import ValueObject
 
-
 # ── Auth / User ────────────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)

@@ -9,9 +9,10 @@ For a production system, replace the inline HTML with a proper
 template engine (e.g. Jinja2 with mjml-compiled templates).
 """
 
-import structlog
-import resend
 from datetime import UTC, datetime
+
+import resend
+import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings

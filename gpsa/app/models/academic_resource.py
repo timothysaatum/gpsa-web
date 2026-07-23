@@ -1,13 +1,19 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, Enum as SAEnum, ForeignKey, Index, SmallInteger, String
+from sqlalchemy import BigInteger, Boolean, ForeignKey, Index, SmallInteger, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.enums import ContentType, FileType, Trimester
+
+if TYPE_CHECKING:
+    from app.models.course import Course
+    from app.models.user import User
 
 
 class AcademicResource(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):

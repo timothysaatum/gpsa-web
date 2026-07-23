@@ -6,115 +6,22 @@ import {
   ShieldCheck, UserRound, Users, GraduationCap,
   Megaphone, Sprout, FileText
 } from 'lucide-react'
-import { leadershipApi } from '@/api/services'
+import { cmsApi, leadershipApi } from '@/api/services'
 import { Badge, Button, EmptyState } from '@/components/ui'
-import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/utils'
 import type { Leader, LeadershipTerm } from '@/types'
 
-import execJacob from '@/assets/exec_jacob.png'
-import execAbigail from '@/assets/exec_abigail.png'
-import execMichael from '@/assets/exec_michael.png'
-import execEunice from '@/assets/exec_eunice.png'
-import execDaniel from '@/assets/exec_daniel.png'
-import execPriscilla from '@/assets/exec_priscilla.png'
 import udsGateHeroRight from '@/assets/uds_gate_hero_right.png'
 
-// ── Fallback 2025/2026 Executive Leadership Data ──────────────────────────────
-
-const fallbackExecs: Leader[] = [
-  {
-    id: 'exec-jacob',
-    term_id: 'term-2025-2026',
-    full_name: 'Jacob N. Adjei',
-    office: 'President',
-    bio: 'Leads the association and represents members at all levels.',
-    email: 'president@gpsauds.org',
-    phone: '+233 24 123 4567',
-    photo_url: execJacob,
-    sort_order: 1,
-    is_active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'exec-abigail',
-    term_id: 'term-2025-2026',
-    full_name: 'Abigail K. Mensah',
-    office: 'Vice President',
-    bio: 'Assists the President and oversees strategic implementation.',
-    email: 'vp@gpsauds.org',
-    phone: '+233 24 123 4568',
-    photo_url: execAbigail,
-    sort_order: 2,
-    is_active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'exec-michael',
-    term_id: 'term-2025-2026',
-    full_name: 'Michael O. Boateng',
-    office: 'General Secretary',
-    bio: 'Coordinates communication, documentation and member affairs.',
-    email: 'gensec@gpsauds.org',
-    phone: '+233 24 123 4569',
-    photo_url: execMichael,
-    sort_order: 3,
-    is_active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'exec-eunice',
-    term_id: 'term-2025-2026',
-    full_name: 'Eunice A. Addo',
-    office: 'Financial Secretary',
-    bio: 'Manages finances, budgeting and financial reporting.',
-    email: 'finance@gpsauds.org',
-    phone: '+233 24 123 4570',
-    photo_url: execEunice,
-    sort_order: 4,
-    is_active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'exec-daniel',
-    term_id: 'term-2025-2026',
-    full_name: 'Daniel K. Tetteh',
-    office: 'Organising Secretary',
-    bio: 'Coordinates events, programmes and logistics for activities.',
-    email: 'orgsec@gpsauds.org',
-    phone: '+233 24 123 4571',
-    photo_url: execDaniel,
-    sort_order: 5,
-    is_active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'exec-priscilla',
-    term_id: 'term-2025-2026',
-    full_name: 'Priscilla O. Lamptey',
-    office: 'Public Relations Officer',
-    bio: 'Manages publicity, media relations and brand communication.',
-    email: 'pro@gpsauds.org',
-    phone: '+233 24 123 4572',
-    photo_url: execPriscilla,
-    sort_order: 6,
-    is_active: true,
-    created_at: new Date().toISOString(),
-  },
-]
-
-const fallbackTerm: LeadershipTerm = {
-  id: 'term-2025-2026',
-  title: '2025/2026 Executive Leadership',
-  academic_year: '2025/2026',
-  start_date: '2025-09-01',
-  end_date: null,
-  theme: 'Led by Students. Governed for All.',
-  summary: 'GPSA-UDS is democratically governed by students, for students. Our leadership structures ensure accountability, transparency, fair representation and meaningful participation of every member.',
-  is_current: true,
-  sort_order: 1,
-  created_at: new Date().toISOString(),
-  leaders: fallbackExecs,
+export const leadershipPageDefaults = {
+  hero_eyebrow: 'LEADERSHIP & GOVERNANCE',
+  hero_title_primary: 'Led by Students.',
+  hero_title_secondary: 'Governed for All.',
+  hero_description: 'GPSA-UDS is democratically governed by students, for students. Our leadership structures ensure accountability, transparency, fair representation and meaningful participation of every member.',
+  hero_quote: "Good leadership isn't about position. It's about purpose, service and impact.",
+  hero_quote_citation: 'Once Pharmily, Always Pharmily.',
+  cta_title: 'Your voice. Your association.',
+  cta_description: 'Get involved, contribute and help us build a stronger pharmacy future together.',
 }
 
 // Governance Bodies (5 Cards)
@@ -210,52 +117,28 @@ type LeaderForm = {
 
 export function LeadershipPage() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
-  const canManage = user?.role === 'admin' || user?.role === 'exec'
 
-  const { data } = useQuery({
-    queryKey: ['leadership', 'terms'],
-    queryFn: () => leadershipApi.list({ include_inactive: canManage, limit: 100 }),
+  const { data: currentTerm, isLoading, isError, refetch } = useQuery({
+    queryKey: ['leadership', 'current'],
+    queryFn: leadershipApi.current,
     staleTime: 5 * 60 * 1000,
   })
+  const { data: cmsContent } = useQuery({
+    queryKey: ['cms-public', 'leadership'],
+    queryFn: () => cmsApi.getPublicPage<typeof leadershipPageDefaults>('leadership'),
+    retry: false,
+  })
+  const pageContent = { ...leadershipPageDefaults, ...cmsContent }
 
-  const terms = data?.length ? data : [fallbackTerm]
-  const currentTerm = useMemo(() => terms.find((term) => term.is_current) ?? terms[0], [terms])
-
-  // Merge/Ensure the 6 executive officers match the official 2025/2026 team
-  const leaders = useMemo(() => {
-    if (!currentTerm.leaders || currentTerm.leaders.length < 6) {
-      return fallbackExecs
-    }
-    // Map official portraits to executive positions
-    return currentTerm.leaders.map((leader) => {
-      const office = leader.office.toLowerCase()
-      if (office.includes('president') && !office.includes('vice')) {
-        return { ...leader, full_name: 'Jacob N. Adjei', photo_url: execJacob, bio: 'Leads the association and represents members at all levels.' }
-      }
-      if (office.includes('vice')) {
-        return { ...leader, full_name: 'Abigail K. Mensah', photo_url: execAbigail, bio: 'Assists the President and oversees strategic implementation.' }
-      }
-      if (office.includes('general') || (office.includes('secretary') && !office.includes('financial') && !office.includes('organising'))) {
-        return { ...leader, full_name: 'Michael O. Boateng', photo_url: execMichael, bio: 'Coordinates communication, documentation and member affairs.' }
-      }
-      if (office.includes('financial')) {
-        return { ...leader, full_name: 'Eunice A. Addo', photo_url: execEunice, bio: 'Manages finances, budgeting and financial reporting.' }
-      }
-      if (office.includes('organising')) {
-        return { ...leader, full_name: 'Daniel K. Tetteh', photo_url: execDaniel, bio: 'Coordinates events, programmes and logistics for activities.' }
-      }
-      if (office.includes('relations') || office.includes('pro') || office.includes('public')) {
-        return { ...leader, full_name: 'Priscilla O. Lamptey', photo_url: execPriscilla, bio: 'Manages publicity, media relations and brand communication.' }
-      }
-      return leader
-    })
-  }, [currentTerm])
+  if (isLoading) return <div className="section-container py-20"><p className="text-center text-slate-500">Loading leadership…</p></div>
+  if (isError) return <div className="section-container py-20 text-center"><p className="text-slate-700">Leadership information is temporarily unavailable.</p><Button className="mt-4" onClick={() => void refetch()}>Try again</Button></div>
+  if (!currentTerm) return <div className="section-container py-20"><EmptyState title="Leadership information is being prepared" description="Please check back soon." /></div>
+  const leaders = currentTerm.leaders ?? []
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-800 font-body py-6 space-y-6 sm:space-y-8">
       {/* 1. Hero Section */}
-      <LeadershipHero navigate={navigate} />
+      <LeadershipHero navigate={navigate} content={pageContent} />
 
       {/* 2. Governance Structure (At a Glance) */}
       <GovernanceStructureSection />
@@ -270,10 +153,8 @@ export function LeadershipPage() {
       <GovernanceAccountabilitySection />
 
       {/* 6. Final Call to Action ("Your voice. Your association.") */}
-      <LeadershipCtaSection navigate={navigate} />
+      <LeadershipCtaSection navigate={navigate} content={pageContent} />
 
-      {/* 7. Executive Management Panel for Admins */}
-      {canManage && <LeadershipManager terms={terms} />}
     </div>
   )
 }
@@ -283,7 +164,7 @@ export const AboutLeadershipPage = LeadershipPage
 
 // ── 1. Hero Section ────────────────────────────────────────────────────────────
 
-function LeadershipHero({ navigate }: { navigate: (path: string) => void }) {
+function LeadershipHero({ navigate, content }: { navigate: (path: string) => void; content: typeof leadershipPageDefaults }) {
   return (
     <div className="section-container">
       <section className="relative py-14 sm:py-18 lg:py-20 bg-[#002D00] text-white overflow-hidden rounded-2xl sm:rounded-3xl shadow-lg border border-[#002000]">
@@ -301,16 +182,16 @@ function LeadershipHero({ navigate }: { navigate: (path: string) => void }) {
           {/* Left Text */}
           <div className="max-w-xl text-left">
             <p className="text-[#d99b26] font-bold uppercase tracking-[0.18em] text-xs sm:text-sm mb-3">
-              LEADERSHIP & GOVERNANCE
+              {content.hero_eyebrow}
             </p>
 
             <h1 className="font-body text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-4 leading-[1.12]">
-              Led by Students.<br />
-              Governed for All.
+              {content.hero_title_primary}<br />
+              {content.hero_title_secondary}
             </h1>
 
             <p className="text-white/90 text-sm sm:text-base leading-relaxed mb-6 max-w-lg">
-              GPSA-UDS is democratically governed by students, for students. Our leadership structures ensure accountability, transparency, fair representation and meaningful participation of every member.
+              {content.hero_description}
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -336,10 +217,10 @@ function LeadershipHero({ navigate }: { navigate: (path: string) => void }) {
             <div className="bg-[#002200]/80 backdrop-blur-md rounded-2xl p-6 border border-white/15 text-white shadow-xl max-w-md ml-auto">
               <span className="text-amber-400 font-serif text-4xl leading-none block mb-2">“</span>
               <p className="font-display font-semibold text-lg text-white leading-snug mb-4">
-                Good leadership isn't about position. It's about purpose, service and impact.
+                {content.hero_quote}
               </p>
               <p className="text-amber-400 text-xs font-bold uppercase tracking-widest">
-                Once Pharmily, Always Pharmily.
+                {content.hero_quote_citation}
               </p>
             </div>
           </div>
@@ -769,7 +650,7 @@ function GovernanceAccountabilitySection() {
 
 // ── 6. Final Call to Action Section ───────────────────────────────────────────
 
-function LeadershipCtaSection({ navigate }: { navigate: (path: string) => void }) {
+function LeadershipCtaSection({ navigate, content }: { navigate: (path: string) => void; content: typeof leadershipPageDefaults }) {
   return (
     <div className="section-container">
       <section className="bg-amber-500/10 rounded-2xl sm:rounded-3xl border border-amber-500/25 p-6 sm:p-8 text-slate-900 shadow-xs">
@@ -781,10 +662,10 @@ function LeadershipCtaSection({ navigate }: { navigate: (path: string) => void }
             </div>
             <div>
               <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900">
-                Your voice. Your association.
+                {content.cta_title}
               </h2>
               <p className="text-slate-600 text-xs sm:text-sm mt-0.5">
-                Get involved, contribute and help us build a stronger pharmacy future together.
+                {content.cta_description}
               </p>
             </div>
           </div>
@@ -818,7 +699,9 @@ function LeadershipCtaSection({ navigate }: { navigate: (path: string) => void }
 
 // ── 7. Admin Leadership Manager ────────────────────────────────────────────────
 
-function LeadershipManager({ terms }: { terms: LeadershipTerm[] }) {
+// Retained as an exported compatibility component for older admin routes.
+// New management workflows live exclusively under /admin/leadership.
+export function LeadershipManager({ terms }: { terms: LeadershipTerm[] }) {
   const qc = useQueryClient()
   const [termForm, setTermForm] = useState<TermForm>({
     title: '',
