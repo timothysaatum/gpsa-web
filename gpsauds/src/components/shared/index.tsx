@@ -283,7 +283,20 @@ export function NewsCard({ post, onClick }: NewsCardProps) {
   return (
     <Card hover padding="none" onClick={onClick} className="group relative overflow-hidden flex flex-col rounded-[1.35rem] border-white bg-white shadow-[0_18px_45px_rgba(16,24,40,0.08)] hover:shadow-[0_26px_70px_rgba(0,77,0,0.15)]">
       <div className={cn('absolute inset-x-5 top-0 h-1.5 rounded-b-full', style.bar)} />
-      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-cream-dark/80 to-transparent" />
+      {post.image_url ? (
+        <div className="relative aspect-[16/9] overflow-hidden bg-cream-dark">
+          <img
+            src={post.image_url}
+            alt={post.image_alt || ''}
+            loading="lazy"
+            width={720}
+            height={405}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          />
+        </div>
+      ) : (
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-cream-dark/80 to-transparent" />
+      )}
       <div className="relative p-5 sm:p-6 flex flex-col gap-5 flex-1 min-h-[300px]">
         <div className="flex items-center justify-between gap-3">
           <span className={cn('inline-flex items-center gap-2 text-[11px] font-800 uppercase tracking-widest', style.text)}>

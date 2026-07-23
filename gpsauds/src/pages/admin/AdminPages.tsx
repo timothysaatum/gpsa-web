@@ -219,9 +219,24 @@ export function AdminAboutPage() {
 
 export function AdminNewsPage() {
   const qc = useQueryClient()
-  const [form, setForm] = useState({ title: '', category: 'general' as NewsCategory, summary: '', body: '', banner_emoji: '📣', is_featured: false, is_urgent: false, is_strip_announcement: false, publish_immediately: false })
+  const [form, setForm] = useState({ title: '', category: 'general' as NewsCategory, summary: '', body: '', banner_emoji: '📣', image_alt: '', is_featured: false, is_urgent: false, is_strip_announcement: false, publish_immediately: false })
+  const [coverImage, setCoverImage] = useState<File | null>(null)
   const { data, isLoading } = useQuery({ queryKey: ['admin-news'], queryFn: () => newsApi.listAdmin({ limit: 100 }) })
-  const create = useMutation({ mutationFn: () => newsApi.create(form), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-news'] }); setForm((f) => ({ ...f, title: '', summary: '', body: '' })) } })
+  const create = useMutation({
+    mutationFn: async () => {
+      const post = await newsApi.create({ ...form, image_alt: form.image_alt || null })
+      return coverImage ? newsApi.uploadImage(post.id, coverImage) : post
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-news'] })
+      setForm((f) => ({ ...f, title: '', summary: '', body: '', image_alt: '' }))
+      setCoverImage(null)
+    },
+  })
+  const upload = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => newsApi.uploadImage(id, file),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-news'] }),
+  })
   const del = useMutation({ mutationFn: newsApi.delete, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-news'] }) })
   const publish = useMutation({ mutationFn: newsApi.publish, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-news'] }) })
 
@@ -233,6 +248,12 @@ export function AdminNewsPage() {
         <Field label="Title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} required />
         <Select label="Category" value={form.category} onChange={(v) => setForm((f) => ({ ...f, category: v as NewsCategory }))} options={['announcement','academic_update','welfare_update','events_recap','opportunities','general']} />
         <Field label="Emoji" value={form.banner_emoji} onChange={(v) => setForm((f) => ({ ...f, banner_emoji: v }))} />
+        <label>
+          <span className="form-label">Cover image</span>
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="form-input" onChange={(event) => setCoverImage(event.target.files?.[0] ?? null)} />
+          <span className="mt-1 block text-xs text-muted">JPEG, PNG, WebP or GIF. Maximum 10 MB. A wide 16:9 image works best.</span>
+        </label>
+        <Field label="Image description (alt text)" value={form.image_alt} onChange={(v) => setForm((f) => ({ ...f, image_alt: v }))} placeholder="Describe the image for screen-reader users" />
         <Textarea label="Summary" value={form.summary} onChange={(v) => setForm((f) => ({ ...f, summary: v }))} required />
         <Textarea label="Body" value={form.body} onChange={(v) => setForm((f) => ({ ...f, body: v }))} required rows={7} />
         <Check label="Featured" checked={form.is_featured} onChange={(v) => setForm((f) => ({ ...f, is_featured: v }))} />
@@ -242,6 +263,14 @@ export function AdminNewsPage() {
         <Button type="submit" loading={create.isPending} leftIcon={<Plus className="h-4 w-4" />}>Create News</Button>
       </form>
       <AdminList isLoading={isLoading} items={data?.items ?? []} title={(p) => p.title} meta={(p) => `${p.category} · ${p.published_at ? 'Published' : 'Draft'}`} actions={(p) => <>
+        <label className="btn-sm btn-outline cursor-pointer">
+          <Upload className="h-4 w-4" />{p.image_url ? 'Replace image' : 'Add image'}
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) upload.mutate({ id: p.id, file })
+            event.currentTarget.value = ''
+          }} />
+        </label>
         {!p.published_at && <Button size="sm" variant="outline" onClick={() => publish.mutate(p.id)}>Publish</Button>}
         <Button size="sm" variant="destructive" onClick={() => del.mutate(p.id)}>Delete</Button>
       </>} />

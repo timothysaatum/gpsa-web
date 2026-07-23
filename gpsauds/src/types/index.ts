@@ -214,6 +214,8 @@ export interface NewsPost {
   summary: string
   body: string
   banner_emoji: string | null
+  image_url: string | null
+  image_alt: string | null
   is_featured: boolean
   is_urgent: boolean
   is_strip_announcement: boolean
@@ -229,6 +231,8 @@ export interface NewsPostSummary {
   category: NewsCategory
   summary: string
   banner_emoji: string | null
+  image_url: string | null
+  image_alt: string | null
   is_featured: boolean
   is_urgent: boolean
   published_at: string | null

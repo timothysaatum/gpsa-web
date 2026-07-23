@@ -508,6 +508,16 @@ export function NewsPage() {
           >
             <div className="absolute inset-0 bg-hero-pattern opacity-[0.06]" />
             <div className="relative p-8 lg:p-12">
+              {featured.image_url && (
+                <img
+                  src={featured.image_url}
+                  alt={featured.image_alt || ''}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  width={1200}
+                  height={675}
+                />
+              )}
+              {featured.image_url && <div className="absolute inset-0 bg-gradient-to-r from-green-950/95 via-green-900/80 to-green-900/25" />}
               <div className="max-w-2xl">
                 <div className="flex items-center gap-3 mb-4 flex-wrap">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-700 bg-white/20 text-white backdrop-blur-sm">
@@ -595,8 +605,10 @@ export function NewsPage() {
                   className="card card-hover overflow-hidden flex flex-col lg:flex-row"
                   onClick={() => navigate(`/news/${heroPost.id}`)}
                 >
-                  <div className="lg:w-72 h-48 lg:h-auto flex items-center justify-center text-6xl lg:text-7xl flex-shrink-0 bg-cream-dark">
-                    {heroPost.banner_emoji ?? '📰'}
+                  <div className="lg:w-72 h-48 lg:h-auto flex items-center justify-center text-6xl lg:text-7xl flex-shrink-0 bg-cream-dark overflow-hidden">
+                    {heroPost.image_url ? (
+                      <img src={heroPost.image_url} alt={heroPost.image_alt || ''} className="h-full w-full object-cover" width={576} height={432} />
+                    ) : (heroPost.banner_emoji ?? '📰')}
                   </div>
                   <div className="p-6 lg:p-8 flex flex-col justify-center flex-1">
                     <div className="flex items-center gap-3 mb-3">
@@ -795,14 +807,27 @@ export function NewsDetailPage() {
 
         {/* Banner */}
         <div className={cn(
-          'h-48 rounded-3xl flex flex-col items-center justify-center mb-8 relative overflow-hidden',
+          'min-h-48 aspect-[16/7] rounded-3xl flex flex-col items-center justify-center mb-8 relative overflow-hidden bg-cream-dark',
           newsStyle?.bar ?? 'bg-cream-dark'
         )}>
-          <div className="absolute inset-0 bg-hero-pattern opacity-[0.06]" />
-          <span className="text-5xl mb-2 opacity-30 relative">{post.banner_emoji ?? '📰'}</span>
-          <span className="text-xs font-700 uppercase tracking-wider text-white/60 relative">
-            {NEWS_CATEGORY_LABELS[post.category]}
-          </span>
+          {post.image_url ? (
+            <img
+              src={post.image_url}
+              alt={post.image_alt || ''}
+              width={1200}
+              height={525}
+              fetchPriority="high"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-hero-pattern opacity-[0.06]" />
+              <span className="text-5xl mb-2 opacity-30 relative">{post.banner_emoji ?? '📰'}</span>
+              <span className="text-xs font-700 uppercase tracking-wider text-white/60 relative">
+                {NEWS_CATEGORY_LABELS[post.category]}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Meta */}

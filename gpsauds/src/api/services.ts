@@ -432,6 +432,7 @@ export const newsApi = {
     summary: string
     body: string
     banner_emoji?: string | null
+    image_alt?: string | null
     is_featured?: boolean
     is_urgent?: boolean
     is_strip_announcement?: boolean
@@ -446,6 +447,7 @@ export const newsApi = {
     summary?: string
     body?: string
     banner_emoji?: string | null
+    image_alt?: string | null
     is_featured?: boolean
     is_urgent?: boolean
     is_strip_announcement?: boolean
@@ -455,6 +457,14 @@ export const newsApi = {
 
   publish: (id: string) =>
     api.post<NewsPost>(`/news/${id}/publish`).then((r) => r.data),
+
+  uploadImage: (id: string, file: File) => {
+    const data = new FormData()
+    data.append('file', file)
+    return api.post<NewsPost>(`/news/${id}/image`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
 
   delete: (id: string) =>
     api.delete<MessageResponse>(`/news/${id}`).then((r) => r.data),
