@@ -646,7 +646,12 @@ function CmsDocumentEditor({ slug, title, initialContent }: {
   }
   useEffect(() => {
     if (data) {
-      setValue(JSON.stringify(data.content, null, 2))
+      // A newly provisioned page has empty content so the public endpoint is
+      // immediately available. Keep the reviewed defaults in the editor until
+      // an administrator has saved custom content.
+      if (Object.keys(data.content).length > 0) {
+        setValue(JSON.stringify(data.content, null, 2))
+      }
       setPublished(data.is_published)
     }
   }, [data])
