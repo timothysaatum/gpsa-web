@@ -162,7 +162,14 @@ function AuditList({ items, compact = false }: { items: any[]; compact?: boolean
 }
 
 export function AdminHomePage() {
-  return <><CmsDocumentEditor slug="home" title="Home Page Settings" initialContent={homePageDefaults} /><HeroSlidesPage /></>
+  return <AdminTabsPage
+    title="Home Page"
+    description="Manage homepage slides and supporting page content."
+    tabs={[
+      { id: 'slides', label: 'Hero slides', icon: Image, content: <HeroSlidesPage /> },
+      { id: 'settings', label: 'Page settings', icon: Settings2, content: <CmsDocumentEditor slug="home" title="Home Page Settings" initialContent={homePageDefaults} defaultOpen /> },
+    ]}
+  />
 }
 
 function PartnerAdminRow({ partner, onChanged }: { partner: Partner; onChanged: () => void }) {
@@ -359,10 +366,12 @@ export function AdminAboutPage() {
     onError: (err) => setError(err instanceof Error ? err.message : 'Unable to save the page.'),
   })
   return (
-    <>
-      <AdminPageHeader title="About Content" description="Manage public partners and edit the complete History & Legacy page document." />
-      <PartnerManager />
-      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+    <AdminTabsPage
+      title="About Content"
+      description="Manage public partners and edit the complete History & Legacy page document."
+      tabs={[
+        { id: 'partners', label: 'Partners', icon: Users, content: <PartnerManager /> },
+        { id: 'history', label: 'History content', icon: ScrollText, content: <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
         <StructuredContentEditor
           value={JSON.parse(content) as Record<string, unknown>}
           onChange={(nextValue) => setContent(JSON.stringify(nextValue, null, 2))}
@@ -373,8 +382,9 @@ export function AdminAboutPage() {
           {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
           {save.isSuccess && <p role="status" className="text-sm text-green-700">History page saved.</p>}
         </div>
-      </div>
-    </>
+      </div> },
+      ]}
+    />
   )
 }
 
@@ -548,9 +558,8 @@ export function AdminContactPage() {
   })
   const refresh = () => qc.invalidateQueries({ queryKey: ['admin-contact'] })
   return (
-    <>
-      <CmsDocumentEditor slug="contact" title="Contact Page Settings" initialContent={contactPageDefaults} />
-      <AdminPageHeader title="Contact enquiries" description="Review, assign and resolve messages sent through the public Contact page." />
+    <AdminTabsPage title="Contact enquiries" description="Review, assign and resolve messages sent through the public Contact page." tabs={[
+      { id: 'enquiries', label: 'Enquiries', icon: ScrollText, content: <>
       <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Search" value={search} onChange={setSearch} placeholder="Reference, name, email or subject" />
         <Select label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as ContactStatus | '')} options={[
@@ -563,7 +572,9 @@ export function AdminContactPage() {
         ))}
         {!isLoading && !data?.items.length && <EmptyState title="No enquiries found" description="New contact messages will appear here." />}
       </div>
-    </>
+      </> },
+      { id: 'settings', label: 'Page settings', icon: Settings2, content: <CmsDocumentEditor slug="contact" title="Contact Page Settings" initialContent={contactPageDefaults} defaultOpen /> },
+    ]} />
   )
 }
 
@@ -723,11 +734,25 @@ export function AdminLegacyPage() {
     onSuccess: refresh,
   })
   return (
-    <>
-      <AdminPageHeader title="Past Leadership CMS" description="Manage administrations, achievements, milestones, recognition and awards." />
-      <CmsDocumentEditor
+    <AdminTabsPage title="Past Leadership CMS" description="Manage administrations, achievements, milestones, recognition and awards." tabs={[
+      { id: 'content', label: 'Content', icon: ScrollText, content: <>
+        <div className="mb-5 rounded-xl border border-cream-dark bg-white p-5 shadow-card"><Select label="Collection" value={resource} onChange={setResource} options={legacyResources} /></div>
+        <div className="space-y-4">
+          {isLoading ? <Skeleton className="h-60 rounded-xl" /> : data.map((item) => <LegacyItemEditor key={String(item.id)} resource={resource} item={item} onSaved={refresh} onDelete={() => del.mutate(String(item.id))} />)}
+          {!isLoading && !data.length && <EmptyState title="No records" description={`Create the first ${resource} record.`} />}
+        </div>
+        <LegacyReviewQueues />
+      </> },
+      { id: 'create', label: 'Create new', icon: Plus, content:
+      <div className="mx-auto max-w-3xl rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+        <Select label="Collection" value={resource} onChange={setResource} options={legacyResources} />
+        <div className="mt-4"><span className="form-label">New record</span><StructuredContentEditor value={JSON.parse(draft)} onChange={(next) => setDraft(JSON.stringify(next, null, 2))} allowNewFields /></div>
+        <div className="mt-3 flex items-center gap-3"><Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create record</Button>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}</div>
+      </div> },
+      { id: 'settings', label: 'Page settings', icon: Settings2, content: <CmsDocumentEditor
         slug="past-leadership"
         title="Past Leadership Page Settings"
+        defaultOpen
         initialContent={{
           hero_eyebrow: 'PAST LEADERSHIP & RECOGNITION',
           hero_headline_primary: 'Leadership remembered.',
@@ -737,32 +762,8 @@ export function AdminLegacyPage() {
           hero_quote_citation: 'Once Pharmily, Always Pharmily.',
           statistics: [],
         }}
-      />
-      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
-        <Select label="Collection" value={resource} onChange={setResource} options={legacyResources} />
-        <div className="mt-4">
-          <span className="form-label">New record</span>
-          <StructuredContentEditor value={JSON.parse(draft)} onChange={(next) => setDraft(JSON.stringify(next, null, 2))} allowNewFields />
-        </div>
-        <div className="mt-3 flex items-center gap-3">
-          <Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create record</Button>
-          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-        </div>
-      </div>
-      <div className="space-y-4">
-        {isLoading ? <Skeleton className="h-60 rounded-xl" /> : data.map((item) => (
-          <LegacyItemEditor
-            key={String(item.id)}
-            resource={resource}
-            item={item}
-            onSaved={refresh}
-            onDelete={() => del.mutate(String(item.id))}
-          />
-        ))}
-        {!isLoading && !data.length && <EmptyState title="No records" description={`Create the first ${resource} record above.`} />}
-      </div>
-      <LegacyReviewQueues />
-    </>
+      /> },
+    ]} />
   )
 }
 
@@ -950,9 +951,14 @@ export function AdminImpactPage() {
   })
   const del = useMutation({ mutationFn: (id: string) => impactApi.delete(resource, id), onSuccess: refresh })
   return (
-    <>
-      <AdminPageHeader title="Impact & Strategic Priorities" description="Manage verified reporting periods, priorities, metrics, initiatives, SDG evidence and reports." />
-      <CmsDocumentEditor slug="impact" title="Impact Page Settings" initialContent={{
+    <AdminTabsPage title="Impact & Strategic Priorities" description="Manage verified reporting periods, priorities, metrics, initiatives, SDG evidence and reports." tabs={[
+      { id: 'content', label: 'Content', icon: ScrollText, content: <>
+        <div className="mb-5 rounded-xl border border-cream-dark bg-white p-5 shadow-card"><Select label="Impact collection" value={resource} onChange={setResource} options={impactResources} /></div>
+        <div className="space-y-4">{isLoading ? <Skeleton className="h-60 rounded-xl" /> : data.map((item) => <ImpactItemEditor key={String(item.id)} resource={resource} item={item} onSaved={refresh} onDelete={() => del.mutate(String(item.id))} />)}{!isLoading && !data.length && <EmptyState title="No impact records" description={`Create the first ${resource} record when verified information is available.`} />}</div>
+      </> },
+      { id: 'create', label: 'Create new', icon: Plus, content: <div className="mx-auto max-w-3xl rounded-xl bg-white border border-cream-dark p-5 shadow-card"><Select label="Impact collection" value={resource} onChange={setResource} options={impactResources} /><div className="mt-4"><span className="form-label">New record</span><StructuredContentEditor value={JSON.parse(draft)} onChange={(next) => setDraft(JSON.stringify(next, null, 2))} allowNewFields /></div><div className="mt-3 flex items-center gap-3"><Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create record</Button>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}</div></div> },
+      { id: 'media', label: 'Hero media', icon: Image, content: <div className="rounded-xl border border-cream-dark bg-white p-5 shadow-card"><h3 className="font-display text-2xl font-bold text-deep">Hero media</h3><p className="mt-1 text-sm text-muted">Upload a verified institutional image.</p><label className="btn-sm btn-outline mt-3 cursor-pointer"><Upload className="h-4 w-4" />Upload hero image<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) impactApi.uploadHeroImage(file).then(() => qc.invalidateQueries({ queryKey: ['cms-page', 'impact'] })) }} /></label></div> },
+      { id: 'settings', label: 'Page settings', icon: Settings2, content: <CmsDocumentEditor slug="impact" title="Impact Page Settings" defaultOpen initialContent={{
         hero_eyebrow: 'IMPACT & STRATEGIC PRIORITIES',
         hero_title_primary: 'Creating impact.',
         hero_title_secondary: 'Shaping the future.',
@@ -963,22 +969,8 @@ export function AdminImpactPage() {
         vision_signature: 'Once Pharmily, Always Pharmily.',
         cta_title: 'Be part of the change.',
         cta_description: 'Together, we can build a healthier future.',
-      }} />
-      <div className="mb-5 rounded-xl border border-cream-dark bg-white p-5 shadow-card">
-        <h3 className="font-display text-2xl font-bold text-deep">Hero media</h3>
-        <p className="mt-1 text-sm text-muted">Save page settings first, then upload a verified institutional image.</p>
-        <label className="btn-sm btn-outline mt-3 cursor-pointer"><Upload className="h-4 w-4" />Upload hero image<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) impactApi.uploadHeroImage(file).then(() => qc.invalidateQueries({ queryKey: ['cms-page', 'impact'] })) }} /></label>
-      </div>
-      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
-        <Select label="Impact collection" value={resource} onChange={setResource} options={impactResources} />
-        <div className="mt-4"><span className="form-label">New record</span><StructuredContentEditor value={JSON.parse(draft)} onChange={(next) => setDraft(JSON.stringify(next, null, 2))} allowNewFields /></div>
-        <div className="mt-3 flex items-center gap-3"><Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create record</Button>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}</div>
-      </div>
-      <div className="space-y-4">
-        {isLoading ? <Skeleton className="h-60 rounded-xl" /> : data.map((item) => <ImpactItemEditor key={String(item.id)} resource={resource} item={item} onSaved={refresh} onDelete={() => del.mutate(String(item.id))} />)}
-        {!isLoading && !data.length && <EmptyState title="No impact records" description={`Create the first ${resource} record when verified information is available.`} />}
-      </div>
-    </>
+      }} /> },
+    ]} />
   )
 }
 
@@ -1018,9 +1010,10 @@ export function AdminGovernancePage() {
     onError: (err) => setError(err instanceof Error ? err.message : 'Unable to create governance content.'),
   })
   const del = useMutation({ mutationFn: (id: string) => governanceApi.delete(resource, id), onSuccess: refresh })
-  return <>
-    <AdminPageHeader title="Documents & FAQs" description="Manage page copy, dynamic categories, secure document records and versions, publishing controls, and verified FAQ answers." />
-    <CmsDocumentEditor slug="governance" title="Documents & FAQs Page Settings" initialContent={{
+  return <AdminTabsPage title="Documents & FAQs" description="Manage page copy, dynamic categories, secure document records and versions, publishing controls, and verified FAQ answers." tabs={[
+    { id: 'content', label: 'Content', icon: ScrollText, content: <><div className="mb-5 rounded-xl border border-cream-dark bg-white p-5 shadow-card"><Select label="Content collection" value={resource} onChange={setResource} options={governanceResources} /></div><div className="space-y-4">{isLoading ? <Skeleton className="h-60 rounded-xl" /> : data.map((item) => <GovernanceItemEditor key={String(item.id)} resource={resource} item={item} onSaved={refresh} onDelete={() => del.mutate(String(item.id))} />)}{!isLoading && !data.length && <EmptyState title="No records yet" description="Create verified content when official information is available." />}</div></> },
+    { id: 'create', label: 'Create new', icon: Plus, content: <div className="mx-auto max-w-3xl rounded-xl bg-white border border-cream-dark p-5 shadow-card"><Select label="Content collection" value={resource} onChange={setResource} options={governanceResources} />{resource !== 'versions' && <><div className="mt-4"><span className="form-label">New record</span><StructuredContentEditor value={JSON.parse(draft)} onChange={(next) => setDraft(JSON.stringify(next, null, 2))} allowNewFields /></div><div className="mt-3 flex items-center gap-3"><Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create draft</Button>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}</div></>}{resource === 'versions' && <p className="mt-4 text-sm text-muted">Versions are created from a document record using its secure upload control.</p>}</div> },
+    { id: 'settings', label: 'Page settings', icon: Settings2, content: <CmsDocumentEditor slug="governance" title="Documents & FAQs Page Settings" defaultOpen initialContent={{
       hero_eyebrow: 'DOCUMENTS & FAQS',
       hero_title_primary: 'Knowledge today.',
       hero_title_secondary: 'Stronger legacy tomorrow.',
@@ -1031,18 +1024,8 @@ export function AdminGovernancePage() {
       faq_quote: 'Information empowers. Guidelines guide. Legacy endures.',
       cta_title: 'Be part of the legacy.',
       cta_description: 'Access resources. Stay informed. Make an impact.',
-    }} />
-    <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
-      <Select label="Content collection" value={resource} onChange={setResource} options={governanceResources} />
-      {resource !== 'versions' && <><div className="mt-4"><span className="form-label">New record</span><StructuredContentEditor value={JSON.parse(draft)} onChange={(next) => setDraft(JSON.stringify(next, null, 2))} allowNewFields /></div>
-      <div className="mt-3 flex items-center gap-3"><Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create draft</Button>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}</div></>}
-      {resource === 'versions' && <p className="mt-4 text-sm text-muted">Versions are created from a document record using its secure upload control.</p>}
-    </div>
-    <div className="space-y-4">
-      {isLoading ? <Skeleton className="h-60 rounded-xl" /> : data.map((item) => <GovernanceItemEditor key={String(item.id)} resource={resource} item={item} onSaved={refresh} onDelete={() => del.mutate(String(item.id))} />)}
-      {!isLoading && !data.length && <EmptyState title="No records yet" description="Create verified content when official information is available." />}
-    </div>
-  </>
+    }} /> },
+  ]} />
 }
 
 function GovernanceItemEditor({ resource, item, onSaved, onDelete }: { resource: string; item: Record<string, unknown>; onSaved: () => void; onDelete: () => void }) {
@@ -1067,14 +1050,20 @@ export function AdminAcademicsPage() {
   const qc = useQueryClient()
   const { data: courses = [] } = useQuery({ queryKey: ['admin-courses'], queryFn: () => academicsApi.listCourses() })
   const { data, isLoading } = useQuery({ queryKey: ['admin-resources'], queryFn: () => academicsApi.listAllResources({ limit: 100 }) })
-  return <><CmsDocumentEditor slug="academics" title="Academics Page Settings" initialContent={academicsPageDefaults} /><CrudPage title="Academics" description="Review resources and use the public upload flow for new resources."><InfoPanel title="Resource workflow" items={['Exec/admin uploads are supported', 'Admin can publish reviewed resources', 'Course management exists through API']} /><AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.title} meta={(r) => `${r.content_type} · Level ${r.level} · ${r.is_published ? 'Published' : 'Pending'}`} actions={(r) => !r.is_published ? <Button size="sm" variant="outline" onClick={() => academicsApi.publishResource(r.id).then(() => qc.invalidateQueries({ queryKey: ['admin-resources'] }))}>Publish</Button> : <CheckCircle2 className="h-5 w-5 text-green-700" />} /><p className="text-sm text-muted mt-4">{courses.length} courses configured.</p></CrudPage></>
+  return <AdminTabsPage title="Academics" description="Review resources and use the public upload flow for new resources." tabs={[
+    { id: 'resources', label: 'Resources', icon: BookOpen, content: <><div className="mb-5"><InfoPanel title="Resource workflow" items={['Exec/admin uploads are supported', 'Admin can publish reviewed resources', 'Course management exists through API']} /></div><AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.title} meta={(r) => `${r.content_type} · Level ${r.level} · ${r.is_published ? 'Published' : 'Pending'}`} actions={(r) => !r.is_published ? <Button size="sm" variant="outline" onClick={() => academicsApi.publishResource(r.id).then(() => qc.invalidateQueries({ queryKey: ['admin-resources'] }))}>Publish</Button> : <CheckCircle2 className="h-5 w-5 text-green-700" />} /><p className="text-sm text-muted mt-4">{courses.length} courses configured.</p></> },
+    { id: 'settings', label: 'Page settings', icon: Settings2, content: <CmsDocumentEditor slug="academics" title="Academics Page Settings" initialContent={academicsPageDefaults} defaultOpen /> },
+  ]} />
 }
 
 export function AdminWelfarePage() {
   const qc = useQueryClient()
   const { data, isLoading } = useQuery({ queryKey: ['admin-welfare'], queryFn: () => welfareApi.listReports({ limit: 100 }) })
   const resolve = useMutation({ mutationFn: ({ id, status }: { id: string; status: ReportStatus }) => welfareApi.resolveReport(id, { status, admin_notes: 'Updated from admin dashboard.' }), onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-welfare'] }) })
-  return <><CmsDocumentEditor slug="welfare" title="Welfare Page Settings" initialContent={welfarePageDefaults} /><CrudPage title="Welfare" description="Review welfare reports and move them through the resolution workflow."><AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.is_anonymous ? 'Anonymous report' : r.name ?? 'Student report'} meta={(r) => `${r.category} · ${r.report_type} · ${r.status}`} actions={(r) => <><Button size="sm" variant="outline" onClick={() => resolve.mutate({ id: r.id, status: 'in_review' })}>Review</Button><Button size="sm" onClick={() => resolve.mutate({ id: r.id, status: 'resolved' })}>Resolve</Button></>} /></CrudPage></>
+  return <AdminTabsPage title="Welfare" description="Review welfare reports and move them through the resolution workflow." tabs={[
+    { id: 'reports', label: 'Reports', icon: Shield, content: <AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.is_anonymous ? 'Anonymous report' : r.name ?? 'Student report'} meta={(r) => `${r.category} · ${r.report_type} · ${r.status}`} actions={(r) => <><Button size="sm" variant="outline" onClick={() => resolve.mutate({ id: r.id, status: 'in_review' })}>Review</Button><Button size="sm" onClick={() => resolve.mutate({ id: r.id, status: 'resolved' })}>Resolve</Button></>} /> },
+    { id: 'settings', label: 'Page settings', icon: Settings2, content: <CmsDocumentEditor slug="welfare" title="Welfare Page Settings" initialContent={welfarePageDefaults} defaultOpen /> },
+  ]} />
 }
 
 export function AdminUsersPage() {
@@ -1211,45 +1200,38 @@ function StructuredField({
   )
 }
 
-function TabbedCrudPage({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
-  const panels = Array.isArray(children) ? children : [children]
-  const [activeTab, setActiveTab] = useState<'content' | 'create' | 'settings'>('content')
-  const tabs = [
-    { id: 'content' as const, label: 'Content', icon: ScrollText, panel: panels[2] },
-    { id: 'create' as const, label: 'Create new', icon: Plus, panel: panels[1] },
-    { id: 'settings' as const, label: 'Page settings', icon: Settings2, panel: panels[0] },
-  ]
-  const activePanel = tabs.find((tab) => tab.id === activeTab)?.panel
+type AdminTab = { id: string; label: string; icon: typeof ScrollText; content: React.ReactNode }
+
+function AdminTabsPage({ title, description, tabs }: { title: string; description: string; tabs: AdminTab[] }) {
+  const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? '')
+  const active = tabs.find((tab) => tab.id === activeTab) ?? tabs[0]
   return (
     <>
       <AdminPageHeader title={title} description={description} />
       <div className="mb-6 border-b border-cream-dark">
         <div className="-mb-px flex gap-1 overflow-x-auto" role="tablist" aria-label={`${title} management`}>
           {tabs.map(({ id, label: tabLabel, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === id}
-              aria-controls={`${title}-${id}-panel`}
-              className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-800 transition-colors ${
-                activeTab === id
-                  ? 'border-green-700 text-green-800'
-                  : 'border-transparent text-muted hover:border-green-200 hover:text-deep'
-              }`}
-              onClick={() => setActiveTab(id)}
-            >
-              <Icon className="h-4 w-4" />
-              {tabLabel}
+            <button key={id} type="button" role="tab" aria-selected={activeTab === id} aria-controls={`${id}-panel`}
+              className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-800 transition-colors ${activeTab === id ? 'border-green-700 text-green-800' : 'border-transparent text-muted hover:border-green-200 hover:text-deep'}`}
+              onClick={() => setActiveTab(id)}>
+              <Icon className="h-4 w-4" />{tabLabel}
             </button>
           ))}
         </div>
       </div>
-      <section id={`${title}-${activeTab}-panel`} role="tabpanel" className={activeTab === 'create' ? 'mx-auto max-w-3xl' : ''}>
-        {activePanel}
-      </section>
+      <section id={`${active?.id}-panel`} role="tabpanel">{active?.content}</section>
     </>
   )
+}
+
+function TabbedCrudPage({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  const panels = Array.isArray(children) ? children : [children]
+  const tabs: AdminTab[] = [
+    { id: 'content' as const, label: 'Content', icon: ScrollText, panel: panels[2] },
+    { id: 'create' as const, label: 'Create new', icon: Plus, panel: panels[1] },
+    { id: 'settings' as const, label: 'Page settings', icon: Settings2, panel: panels[0] },
+  ].map(({ panel, ...tab }: { id: string; label: string; icon: typeof ScrollText; panel: React.ReactNode }) => ({ ...tab, content: <div className={tab.id === 'create' ? 'mx-auto max-w-3xl' : ''}>{panel}</div> }))
+  return <AdminTabsPage title={title} description={description} tabs={tabs} />
 }
 
 function CrudPage({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
