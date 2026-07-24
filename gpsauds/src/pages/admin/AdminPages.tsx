@@ -339,7 +339,9 @@ export function AdminAboutPage() {
   const [error, setError] = useState('')
   useEffect(() => {
     if (data) {
-      setContent(JSON.stringify(data.content, null, 2))
+      if (Object.keys(data.content).length > 0) {
+        setContent(JSON.stringify(data.content, null, 2))
+      }
       setPublished(data.is_published)
     }
   }, [data])
@@ -375,6 +377,7 @@ export function AdminAboutPage() {
         <StructuredContentEditor
           value={JSON.parse(content) as Record<string, unknown>}
           onChange={(nextValue) => setContent(JSON.stringify(nextValue, null, 2))}
+          allowNewFields
         />
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <Check label="Published" checked={published} onChange={setPublished} />
