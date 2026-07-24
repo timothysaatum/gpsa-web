@@ -390,16 +390,19 @@ export function Navbar() {
               <div className="relative hidden sm:block" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => setAuthDropdownOpen((o) => !o)}
+                  aria-label="Account menu"
+                  title="Account menu"
                   className={cn(
-                    'flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-600 transition-all duration-150',
+                    'flex items-center gap-1.5 p-1.5 pl-2.5 rounded-full transition-all duration-200 border shadow-sm',
                     authDropdownOpen
-                      ? 'bg-green-gradient text-white shadow-sm'
-                      : 'bg-green-50 text-green-800 hover:bg-green-100 hover:text-green-900 border border-green-200/60'
+                      ? 'bg-green-50 border-green-600 ring-2 ring-green-100'
+                      : 'bg-white hover:bg-cream-dark border-cream-dark hover:border-green-300'
                   )}
                 >
-                  <User className="h-4 w-4 text-green-700" />
-                  <span>Join / Sign In</span>
-                  <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', authDropdownOpen && 'rotate-180')} />
+                  <div className="w-8 h-8 rounded-full bg-green-700 text-white flex items-center justify-center shadow-sm">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <ChevronDown className={cn('h-3.5 w-3.5 text-green-700 transition-transform duration-200 mr-1', authDropdownOpen && 'rotate-180')} />
                 </button>
 
                 {authDropdownOpen && (
