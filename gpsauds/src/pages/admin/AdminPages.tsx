@@ -10,6 +10,7 @@ import {
   opportunitiesApi, usersApi, welfareApi,
 } from '@/api/services'
 import { Badge, Button, EmptyState, Skeleton } from '@/components/ui'
+import { RichTextEditor } from '@/components/shared/RichText'
 import { formatDate, formatDateTime } from '@/utils'
 import type {
   ContactStatus, ContactSubmission, EventType, GalleryCategory, GalleryItem, Leader, LeadershipTerm, NewsCategory, Partner,
@@ -1184,12 +1185,13 @@ function StructuredField({
     return <label>{heading}<input className="form-input" type="number" value={value} onChange={(event) => onChange(event.target.value === '' ? 0 : Number(event.target.value))} /></label>
   }
   const isLong = longTextKey.test(fieldKey) || String(value ?? '').length > 100
+  if (isLong) {
+    return <RichTextEditor label={humanizeField(fieldKey)} value={String(value ?? '')} onChange={onChange} />
+  }
   return (
-    <label className={isLong ? 'md:col-span-2' : ''}>
+    <label>
       {heading}
-      {isLong
-        ? <textarea className="form-input min-h-28" value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />
-        : <input className="form-input" value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />}
+      <input className="form-input" value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />
     </label>
   )
 }
@@ -1227,7 +1229,7 @@ function Field({ label: text, value, onChange, type = 'text', required, placehol
 }
 
 function Textarea({ label: text, value, onChange, required, rows = 4 }: { label: string; value: string; onChange: (value: string) => void; required?: boolean; rows?: number }) {
-  return <label><span className={label}>{text}</span><textarea className={input} rows={rows} value={value} onChange={(e) => onChange(e.target.value)} required={required} /></label>
+  return <RichTextEditor label={text} value={value} onChange={onChange} required={required} minHeight={`${Math.max(rows, 4) * 1.5}rem`} />
 }
 
 function Select({ label: text, value, onChange, options, compact = false }: { label: string; value: string; onChange: (value: string) => void; options: (string | { label: string; value: string })[]; compact?: boolean }) {

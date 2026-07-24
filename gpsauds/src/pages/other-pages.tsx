@@ -15,6 +15,7 @@ export { WelfarePage } from './WelfarePage'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Badge, CardSkeleton, EmptyState, Skeleton } from '@/components/ui'
 import { FilterBar, PageHeader, NewsCard, OpportunityCard, CATEGORY_STYLE } from '@/components/shared'
+import { RichTextContent } from '@/components/shared/RichText'
 import {
   cn, formatDate, deadlineUrgency,
   NEWS_CATEGORY_LABELS, relativeTime,
@@ -368,7 +369,7 @@ export function OpportunityDetailPage() {
               </Badge>
             </div>
             <h2 className="font-display text-2xl font-bold text-green-700 mb-4">About this opportunity</h2>
-            <p className="text-muted leading-relaxed whitespace-pre-wrap">{opportunity.description}</p>
+            <RichTextContent value={opportunity.description} className="text-muted" />
           </article>
 
           <aside className="card p-6 h-fit space-y-5">
@@ -850,16 +851,12 @@ export function NewsDetailPage() {
         {post.summary && (
           <div className="relative rounded-2xl border border-green-100 bg-green-50/80 p-5 md:p-6 mb-8 overflow-hidden">
             <div className="absolute inset-y-0 left-0 w-1.5 bg-green-700" />
-            <p className="pl-3 text-base md:text-lg leading-relaxed font-600 text-green-950">
-              {post.summary}
-            </p>
+            <RichTextContent value={post.summary} className="pl-3 text-base md:text-lg font-600 text-green-950" />
           </div>
         )}
 
         {/* Body */}
-        <div className="text-secondary leading-8 whitespace-pre-wrap font-body text-base md:text-lg">
-          {post.body}
-        </div>
+        <RichTextContent value={post.body} className="font-body text-base leading-8 md:text-lg" />
 
         {/* Share / action row */}
         <div className="mt-12 pt-8 border-t border-cream-dark flex items-center justify-between flex-wrap gap-4">
