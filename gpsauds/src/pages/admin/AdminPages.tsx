@@ -362,10 +362,10 @@ export function AdminAboutPage() {
       <AdminPageHeader title="About Content" description="Manage public partners and edit the complete History & Legacy page document." />
       <PartnerManager />
       <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
-        <label className="block">
-          <span className="form-label">Structured page content</span>
-          <textarea className="form-input min-h-[560px] font-mono text-xs" value={content} onChange={(event) => setContent(event.target.value)} spellCheck={false} />
-        </label>
+        <StructuredContentEditor
+          value={JSON.parse(content) as Record<string, unknown>}
+          onChange={(nextValue) => setContent(JSON.stringify(nextValue, null, 2))}
+        />
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <Check label="Published" checked={published} onChange={setPublished} />
           <Button loading={save.isPending} onClick={() => save.mutate()}>Save History Page</Button>
@@ -745,10 +745,10 @@ export function AdminLegacyPage() {
       />
       <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
         <Select label="Collection" value={resource} onChange={setResource} options={legacyResources} />
-        <label className="block mt-4">
-          <span className="form-label">New record (JSON)</span>
-          <textarea className="form-input min-h-40 font-mono text-xs" value={draft} onChange={(e) => setDraft(e.target.value)} />
-        </label>
+        <div className="mt-4">
+          <span className="form-label">New record</span>
+          <StructuredContentEditor value={JSON.parse(draft)} onChange={(next) => setDraft(JSON.stringify(next, null, 2))} allowNewFields />
+        </div>
         <div className="mt-3 flex items-center gap-3">
           <Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create record</Button>
           {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
@@ -823,16 +823,10 @@ function CmsDocumentEditor({ slug, title, initialContent }: {
   const [value, setValue] = useState(JSON.stringify(initialContent, null, 2))
   const [published, setPublished] = useState(true)
   const [error, setError] = useState('')
-  const isSimpleSettings = Object.values(initialContent).every((item) =>
-    ['string', 'number', 'boolean'].includes(typeof item)
-  )
   const parsedSettings = (() => {
     try { return JSON.parse(value) as Record<string, unknown> }
     catch { return initialContent }
   })()
-  const updateSetting = (key: string, nextValue: string) => {
-    setValue(JSON.stringify({ ...parsedSettings, [key]: nextValue }, null, 2))
-  }
   useEffect(() => {
     if (data) {
       // A newly provisioned page has empty content so the public endpoint is
@@ -871,35 +865,10 @@ function CmsDocumentEditor({ slug, title, initialContent }: {
   return (
     <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
       <h3 className="font-display text-2xl font-bold text-deep mb-3">{title}</h3>
-      {isSimpleSettings ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.keys(initialContent).map((key) => {
-            const fieldLabel = key.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
-            const fieldValue = String(parsedSettings[key] ?? '')
-            const isLongText = key.includes('description') || key.includes('subtitle')
-            return (
-              <label key={key} className={isLongText ? 'md:col-span-2' : ''}>
-                <span className="form-label">{fieldLabel}</span>
-                {isLongText ? (
-                  <textarea
-                    className="form-input min-h-24"
-                    value={fieldValue}
-                    onChange={(event) => updateSetting(key, event.target.value)}
-                  />
-                ) : (
-                  <input
-                    className="form-input"
-                    value={fieldValue}
-                    onChange={(event) => updateSetting(key, event.target.value)}
-                  />
-                )}
-              </label>
-            )
-          })}
-        </div>
-      ) : (
-        <textarea className="form-input min-h-64 font-mono text-xs" value={value} onChange={(e) => setValue(e.target.value)} />
-      )}
+      <StructuredContentEditor
+        value={parsedSettings}
+        onChange={(nextValue) => setValue(JSON.stringify(nextValue, null, 2))}
+      />
       <div className="mt-3 flex flex-wrap items-center gap-4">
         <Check label="Published" checked={published} onChange={setPublished} />
         <Button size="sm" loading={save.isPending} onClick={() => { try { JSON.parse(value); save.mutate() } catch { setError('Settings must be valid JSON.') } }}>Save settings</Button>
@@ -939,7 +908,7 @@ function LegacyItemEditor({ resource, item, onSaved, onDelete }: {
   })
   return (
     <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
-      <textarea className="form-input min-h-52 font-mono text-xs" value={value} onChange={(e) => setValue(e.target.value)} />
+      <StructuredContentEditor value={JSON.parse(value)} onChange={(next) => setValue(JSON.stringify(next, null, 2))} />
       <div className="mt-3 flex items-center gap-3">
         <Button size="sm" loading={update.isPending} onClick={() => { try { JSON.parse(value); update.mutate() } catch { setError('Record must be valid JSON.') } }}>Save</Button>
         <Button size="sm" variant="destructive" onClick={onDelete}>Delete</Button>
@@ -986,7 +955,7 @@ export function AdminImpactPage() {
       </div>
       <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
         <Select label="Impact collection" value={resource} onChange={setResource} options={impactResources} />
-        <label className="block mt-4"><span className="form-label">New record (JSON)</span><textarea className="form-input min-h-44 font-mono text-xs" value={draft} onChange={(e) => setDraft(e.target.value)} /></label>
+        <div className="mt-4"><span className="form-label">New record</span><StructuredContentEditor value={JSON.parse(draft)} onChange={(next) => setDraft(JSON.stringify(next, null, 2))} allowNewFields /></div>
         <div className="mt-3 flex items-center gap-3"><Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create record</Button>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}</div>
       </div>
       <div className="space-y-4">
@@ -1003,7 +972,7 @@ function ImpactItemEditor({ resource, item, onSaved, onDelete }: { resource: str
   const [error, setError] = useState('')
   const update = useMutation({ mutationFn: () => impactApi.update(resource, String(item.id), JSON.parse(value)), onSuccess: () => { setError(''); onSaved() }, onError: (err) => setError(err instanceof Error ? err.message : 'Unable to save record.') })
   return <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
-    <textarea className="form-input min-h-52 font-mono text-xs" value={value} onChange={(e) => setValue(e.target.value)} />
+    <StructuredContentEditor value={JSON.parse(value)} onChange={(next) => setValue(JSON.stringify(next, null, 2))} />
     <div className="mt-3 flex flex-wrap items-center gap-3">
       <Button size="sm" loading={update.isPending} onClick={() => { try { JSON.parse(value); update.mutate() } catch { setError('Record must be valid JSON.') } }}>Save</Button>
       {resource === 'focus-areas' && <label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />Image<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) impactApi.uploadFocusImage(String(item.id), file).then(onSaved) }} /></label>}
@@ -1049,7 +1018,7 @@ export function AdminGovernancePage() {
     }} />
     <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
       <Select label="Content collection" value={resource} onChange={setResource} options={governanceResources} />
-      {resource !== 'versions' && <><label className="block mt-4"><span className="form-label">New record (JSON)</span><textarea className="form-input min-h-44 font-mono text-xs" value={draft} onChange={(e) => setDraft(e.target.value)} /></label>
+      {resource !== 'versions' && <><div className="mt-4"><span className="form-label">New record</span><StructuredContentEditor value={JSON.parse(draft)} onChange={(next) => setDraft(JSON.stringify(next, null, 2))} allowNewFields /></div>
       <div className="mt-3 flex items-center gap-3"><Button loading={create.isPending} onClick={() => { try { JSON.parse(draft); create.mutate() } catch { setError('Record must be valid JSON.') } }}>Create draft</Button>{error && <p role="alert" className="text-sm text-red-700">{error}</p>}</div></>}
       {resource === 'versions' && <p className="mt-4 text-sm text-muted">Versions are created from a document record using its secure upload control.</p>}
     </div>
@@ -1068,7 +1037,7 @@ function GovernanceItemEditor({ resource, item, onSaved, onDelete }: { resource:
   const update = useMutation({ mutationFn: () => governanceApi.update(resource, String(item.id), JSON.parse(value)), onSuccess: () => { setError(''); onSaved() }, onError: (err) => setError(err instanceof Error ? err.message : 'Unable to save record.') })
   if (resource === 'versions') return <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card"><p className="font-bold text-deep">{String(item.file_name)}</p><p className="text-sm text-muted">Version {String(item.version)} · {String(item.status)} {item.is_current ? '· Current' : ''}</p></div>
   return <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
-    <textarea aria-label={`Edit ${resource} record`} className="form-input min-h-52 font-mono text-xs" value={value} onChange={(e) => setValue(e.target.value)} />
+    <StructuredContentEditor value={JSON.parse(value)} onChange={(next) => setValue(JSON.stringify(next, null, 2))} />
     <div className="mt-3 flex flex-wrap items-end gap-3">
       <Button size="sm" loading={update.isPending} onClick={() => { try { JSON.parse(value); update.mutate() } catch { setError('Record must be valid JSON.') } }}>Save</Button>
       {resource === 'documents' && <><label><span className="form-label">Upload version</span><input className="form-input w-28" value={version} onChange={(e) => setVersion(e.target.value)} /></label><label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />Upload file<input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file && version.trim()) governanceApi.uploadDocument(String(item.id), version.trim(), file).then(onSaved).catch((err) => setError(err instanceof Error ? err.message : 'Upload failed.')) }} /></label></>}
@@ -1101,6 +1070,128 @@ export function AdminUsersPage() {
 
 export function AdminSettingsPage() {
   return <><AdminPageHeader title="Settings" description="Site-wide settings and editable page content will be implemented here after the settings tables are added." /><InfoPanel title="Planned settings" items={['Site contact details', 'Welfare emergency contact', 'Social links', 'Homepage curation defaults', 'About page content blocks']} /></>
+}
+
+const longTextKey = /(body|bio|content|description|detail|intro|message|notes|quote|summary|text|answer)/i
+
+function humanizeField(key: string) {
+  return key.replaceAll('_', ' ').replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function StructuredContentEditor({
+  value,
+  onChange,
+  allowNewFields = false,
+}: {
+  value: Record<string, unknown>
+  onChange: (value: Record<string, unknown>) => void
+  allowNewFields?: boolean
+}) {
+  const [newField, setNewField] = useState('')
+  const entries = Object.entries(value)
+  return (
+    <div className="rounded-xl border border-cream-dark bg-cream/30 p-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {entries.map(([key, fieldValue]) => (
+          <StructuredField
+            key={key}
+            fieldKey={key}
+            value={fieldValue}
+            onChange={(next) => onChange({ ...value, [key]: next })}
+            onRemove={allowNewFields ? () => {
+              const next = { ...value }
+              delete next[key]
+              onChange(next)
+            } : undefined}
+          />
+        ))}
+      </div>
+      {!entries.length && <p className="text-sm text-muted">Add the first field to build this record.</p>}
+      {allowNewFields && (
+        <div className="mt-4 flex flex-col gap-2 border-t border-cream-dark pt-4 sm:flex-row">
+          <input
+            className="form-input"
+            aria-label="New field name"
+            placeholder="Field name, for example title"
+            value={newField}
+            onChange={(event) => setNewField(event.target.value)}
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!newField.trim()}
+            leftIcon={<Plus className="h-4 w-4" />}
+            onClick={() => {
+              const key = newField.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+              if (key && !(key in value)) onChange({ ...value, [key]: '' })
+              setNewField('')
+            }}
+          >
+            Add field
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StructuredField({
+  fieldKey,
+  value,
+  onChange,
+  onRemove,
+}: {
+  fieldKey: string
+  value: unknown
+  onChange: (value: unknown) => void
+  onRemove?: () => void
+}) {
+  const heading = (
+    <span className="flex items-center justify-between gap-2">
+      <span className="form-label mb-0">{humanizeField(fieldKey)}</span>
+      {onRemove && <button type="button" className="text-xs font-700 text-red-700 hover:underline" onClick={onRemove}>Remove</button>}
+    </span>
+  )
+  if (Array.isArray(value)) {
+    return (
+      <div className="md:col-span-2 rounded-xl border border-cream-dark bg-white p-4">
+        {heading}
+        <div className="mt-3 space-y-3">
+          {value.map((item, index) => (
+            <div key={index} className="rounded-lg border border-cream-dark bg-cream/20 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-700 text-muted">Item {index + 1}</span>
+                <button type="button" className="text-xs font-700 text-red-700 hover:underline" onClick={() => onChange(value.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>
+              </div>
+              {item !== null && typeof item === 'object' && !Array.isArray(item)
+                ? <StructuredContentEditor value={item as Record<string, unknown>} onChange={(next) => onChange(value.map((old, itemIndex) => itemIndex === index ? next : old))} allowNewFields />
+                : <input className="form-input" value={String(item ?? '')} onChange={(event) => onChange(value.map((old, itemIndex) => itemIndex === index ? event.target.value : old))} />}
+            </div>
+          ))}
+          <Button type="button" size="sm" variant="outline" leftIcon={<Plus className="h-4 w-4" />} onClick={() => onChange([...value, value[0] && typeof value[0] === 'object' ? {} : ''])}>Add item</Button>
+        </div>
+      </div>
+    )
+  }
+  if (value !== null && typeof value === 'object') {
+    return <div className="md:col-span-2">{heading}<StructuredContentEditor value={value as Record<string, unknown>} onChange={onChange} allowNewFields /></div>
+  }
+  if (typeof value === 'boolean') {
+    return <div>{heading}<label className="mt-2 flex items-center gap-3 text-sm text-deep"><input type="checkbox" checked={value} onChange={(event) => onChange(event.target.checked)} /> Enabled</label></div>
+  }
+  if (typeof value === 'number') {
+    return <label>{heading}<input className="form-input" type="number" value={value} onChange={(event) => onChange(event.target.value === '' ? 0 : Number(event.target.value))} /></label>
+  }
+  const isLong = longTextKey.test(fieldKey) || String(value ?? '').length > 100
+  return (
+    <label className={isLong ? 'md:col-span-2' : ''}>
+      {heading}
+      {isLong
+        ? <textarea className="form-input min-h-28" value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />
+        : <input className="form-input" value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />}
+    </label>
+  )
 }
 
 function CrudPage({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
