@@ -4,7 +4,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/utils'
 
-const allowedTags = new Set(['A', 'BLOCKQUOTE', 'BR', 'EM', 'H2', 'H3', 'LI', 'OL', 'P', 'STRONG', 'U', 'UL'])
+const allowedTags = new Set(['A', 'BLOCKQUOTE', 'BR', 'EM', 'H2', 'H3', 'LI', 'OL', 'P', 'STRONG', 'U', 'UL', 'IMG'])
 
 export function sanitizeRichText(value: string) {
   if (typeof window === 'undefined' || !value.includes('<')) return value
@@ -15,27 +15,32 @@ export function sanitizeRichText(value: string) {
       return
     }
     Array.from(element.attributes).forEach((attribute) => {
-      if (element.tagName !== 'A' || !['href', 'target', 'rel'].includes(attribute.name)) {
-        element.removeAttribute(attribute.name)
-      }
+      if (element.tagName === 'A' && ['href', 'target', 'rel'].includes(attribute.name)) return
+      if (element.tagName === 'IMG' && ['src', 'alt', 'title', 'width', 'height'].includes(attribute.name)) return
+      element.removeAttribute(attribute.name)
     })
     if (element.tagName === 'A') {
       const href = element.getAttribute('href') ?? ''
       if (!/^(https?:|mailto:|tel:|\/|#)/i.test(href)) element.removeAttribute('href')
       element.setAttribute('rel', 'noopener noreferrer')
     }
+    if (element.tagName === 'IMG') {
+      const src = element.getAttribute('src') ?? ''
+      if (!/^(https?:|data:|\/)/i.test(src)) element.removeAttribute('src')
+    }
   })
   return documentNode.body.innerHTML
 }
 
 const richTextStyles = [
-  'text-secondary leading-7',
+  'text-secondary leading-7 max-w-full overflow-hidden',
   '[&_p]:mb-3 [&_p:last-child]:mb-0',
   '[&_h2]:font-display [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-deep [&_h2]:mb-3',
   '[&_h3]:font-display [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-deep [&_h3]:mb-2',
   '[&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-6 [&_ol]:pl-6 [&_li]:mb-1',
   '[&_blockquote]:border-l-4 [&_blockquote]:border-gold-400 [&_blockquote]:pl-4 [&_blockquote]:italic',
   '[&_a]:font-700 [&_a]:text-green-700 [&_a]:underline',
+  '[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-2xl [&_img]:my-6 [&_img]:mx-auto [&_img]:object-contain',
 ].join(' ')
 
 export function RichTextContent({ value, className }: { value: string; className?: string }) {
