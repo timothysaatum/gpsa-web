@@ -10,7 +10,7 @@ It enforces:
 
 import uuid
 from datetime import UTC, datetime
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,10 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin
 
-ModelT = TypeVar("ModelT", bound=Base)
-
-
-class BaseRepository(Generic[ModelT]):
+class BaseRepository[ModelT: Base]:
     def __init__(self, model: type[ModelT], db: AsyncSession) -> None:
         self.model = model
         self.db = db
