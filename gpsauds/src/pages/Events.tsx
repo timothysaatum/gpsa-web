@@ -15,6 +15,7 @@ import { useAuthStore } from '@/store/authStore'
 import { extractError } from '@/api/client'
 import { Button, Badge, EmptyState, Skeleton } from '@/components/ui'
 import { EventCard, PageHeader } from '@/components/shared'
+import { RichTextContent } from '@/components/shared/RichText'
 import { cn, formatDateTime, EVENT_TYPE_LABELS } from '@/utils'
 import type { EventStatus, EventType } from '@/types'
 import { useCmsPageSettings } from '@/hooks/useCmsPageSettings'
@@ -810,7 +811,7 @@ export function EventDetailPage() {
             {/* Description */}
             <div className="card p-8">
               <h2 className="font-display text-2xl font-bold text-green-700 mb-4">About this Event</h2>
-              <p className="text-muted leading-relaxed whitespace-pre-wrap">{event.description}</p>
+              <RichTextContent value={event.description} className="text-muted" />
             </div>
 
             {/* Agenda */}

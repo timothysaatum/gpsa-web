@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   Bell, BellOff, BriefcaseBusiness, Calendar, ChevronRight,
   ExternalLink, FileText, Flame, Link2, MapPin, Search, ArrowRight,
+  Maximize2, X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { opportunitiesApi, newsApi, notificationsApi } from '@/api/services'
@@ -15,6 +16,7 @@ export { WelfarePage } from './WelfarePage'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Badge, CardSkeleton, EmptyState, Skeleton } from '@/components/ui'
 import { FilterBar, PageHeader, NewsCard, OpportunityCard, CATEGORY_STYLE } from '@/components/shared'
+import { RichTextContent } from '@/components/shared/RichText'
 import {
   cn, formatDate, deadlineUrgency,
   NEWS_CATEGORY_LABELS, relativeTime,
@@ -368,7 +370,7 @@ export function OpportunityDetailPage() {
               </Badge>
             </div>
             <h2 className="font-display text-2xl font-bold text-green-700 mb-4">About this opportunity</h2>
-            <p className="text-muted leading-relaxed whitespace-pre-wrap">{opportunity.description}</p>
+            <RichTextContent value={opportunity.description} className="text-muted" />
           </article>
 
           <aside className="card p-6 h-fit space-y-5">
@@ -750,6 +752,7 @@ export function NewsPage() {
 export function NewsDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [isLightBoxOpen, setIsLightBoxOpen] = useState(false)
 
   const { data: post, isLoading, isError, refetch } = useQuery({
     queryKey: ['news', id],
@@ -794,8 +797,8 @@ export function NewsDetailPage() {
   )
 
   return (
-    <div className="section-container py-10 md:py-14">
-      <article className="max-w-3xl mx-auto">
+    <div className="section-container py-10 md:py-14 w-full min-w-0 max-w-full">
+      <article className="max-w-3xl mx-auto w-full min-w-0">
 
         {/* Back */}
         <button
@@ -806,19 +809,30 @@ export function NewsDetailPage() {
         </button>
 
         {/* Banner */}
-        <div className={cn(
-          'min-h-48 aspect-[16/7] rounded-3xl flex flex-col items-center justify-center mb-8 relative overflow-hidden bg-cream-dark',
-          newsStyle?.bar ?? 'bg-cream-dark'
-        )}>
+        <div
+          onClick={() => post.image_url && setIsLightBoxOpen(true)}
+          className={cn(
+            'w-full max-w-full aspect-[16/9] sm:aspect-[16/7] rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center mb-8 relative overflow-hidden bg-cream-dark shadow-sm group',
+            post.image_url ? 'cursor-pointer' : '',
+            newsStyle?.bar ?? 'bg-cream-dark'
+          )}
+        >
           {post.image_url ? (
-            <img
-              src={post.image_url}
-              alt={post.image_alt || ''}
-              width={1200}
-              height={525}
-              fetchPriority="high"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
+            <>
+              <img
+                src={post.image_url}
+                alt={post.image_alt || ''}
+                width={1200}
+                height={525}
+                fetchPriority="high"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end justify-end p-3 sm:p-4">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-600 bg-black/60 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Maximize2 className="h-3.5 w-3.5" /> View full photo
+                </span>
+              </div>
+            </>
           ) : (
             <>
               <div className="absolute inset-0 bg-hero-pattern opacity-[0.06]" />
@@ -850,16 +864,12 @@ export function NewsDetailPage() {
         {post.summary && (
           <div className="relative rounded-2xl border border-green-100 bg-green-50/80 p-5 md:p-6 mb-8 overflow-hidden">
             <div className="absolute inset-y-0 left-0 w-1.5 bg-green-700" />
-            <p className="pl-3 text-base md:text-lg leading-relaxed font-600 text-green-950">
-              {post.summary}
-            </p>
+            <RichTextContent value={post.summary} className="pl-3 text-base md:text-lg font-600 text-green-950" />
           </div>
         )}
 
         {/* Body */}
-        <div className="text-secondary leading-8 whitespace-pre-wrap font-body text-base md:text-lg">
-          {post.body}
-        </div>
+        <RichTextContent value={post.body} className="font-body text-base leading-8 md:text-lg" />
 
         {/* Share / action row */}
         <div className="mt-12 pt-8 border-t border-cream-dark flex items-center justify-between flex-wrap gap-4">
@@ -888,6 +898,32 @@ export function NewsDetailPage() {
             {relatedPosts.map((p) => (
               <NewsCard key={p.id} post={p} onClick={() => navigate(`/news/${p.id}`)} />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox modal for uncropped image viewing */}
+      {isLightBoxOpen && post?.image_url && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
+          onClick={() => setIsLightBoxOpen(false)}
+        >
+          <div className="relative max-w-5xl max-h-[90vh] w-full flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setIsLightBoxOpen(false)}
+              className="absolute -top-12 right-0 p-2 text-white/80 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              aria-label="Close full view"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <img
+              src={post.image_url}
+              alt={post.image_alt || post.title}
+              className="max-h-[85vh] max-w-full object-contain rounded-xl shadow-2xl"
+            />
+            {post.image_alt && (
+              <p className="mt-3 text-sm text-white/80 text-center font-medium">{post.image_alt}</p>
+            )}
           </div>
         </div>
       )}

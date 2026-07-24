@@ -178,6 +178,7 @@ class AcademicResourceService:
         download_url = await storage.presign(r.file_key) if r.is_published else None
         resp = AcademicResourceResponse.model_validate(r)
         resp.download_url = download_url
+        resp.thumbnail_url = storage.cdn_url(r.thumbnail_key) if r.thumbnail_key else None
         if r.course:
             resp.course = CourseResponse.model_validate(r.course)
         return resp

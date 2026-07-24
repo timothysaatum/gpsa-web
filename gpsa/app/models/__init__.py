@@ -56,7 +56,7 @@ from app.models.impact import (
     SdgGoal,
     StrategicPriority,
 )
-from app.models.leadership import Leader, LeadershipTerm
+from app.models.leadership import Leader, LeadershipOffice, LeadershipTerm
 from app.models.legacy import (
     AdministrationAchievement,
     HistoricalRecordSubmission,
@@ -114,6 +114,7 @@ __all__ = [
     "HeroSlide",
     # Leadership & Legacy
     "LeadershipTerm",
+    "LeadershipOffice",
     "CmsPage",
     "ImpactReportingPeriod",
     "StrategicPriority",

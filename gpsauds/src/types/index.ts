@@ -108,6 +108,7 @@ export interface AcademicResource {
   is_featured: boolean
   is_published: boolean
   download_url: string | null
+  thumbnail_url: string | null
   created_at: string
 }
 
@@ -203,6 +204,7 @@ export interface Opportunity {
   is_active: boolean
   is_published: boolean
   created_at: string
+  thumbnail_url: string | null
 }
 
 // ── News ──────────────────────────────────────────────────────────────────────
@@ -333,6 +335,13 @@ export interface LeadershipTerm {
   sort_order: number
   created_at: string
   leaders: Leader[]
+}
+
+export interface LeadershipOffice {
+  id: string
+  name: string
+  sort_order: number
+  is_active: boolean
 }
 
 // ── Hero Slides ──────────────────────────────────────────────────────────────

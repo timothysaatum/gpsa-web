@@ -26,6 +26,7 @@ import type {
   HeroSlideUpdateRequest,
   Leader,
   LeadershipTerm,
+  LeadershipOffice,
   LegacyPageContent,
   LegacyAwardItem,
   HistoricalRecordSubmissionInput,
@@ -258,6 +259,12 @@ export const academicsApi = {
   publishResource: (id: string) =>
     api.post<AcademicResource>(`/academic-resources/${id}/publish`).then((r) => r.data),
 
+  uploadThumbnail: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post<AcademicResource>(`/academic-resources/${id}/thumbnail`, form, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
+
   deleteResource: (id: string) =>
     api.delete<MessageResponse>(`/academic-resources/${id}`).then((r) => r.data),
 }
@@ -413,6 +420,12 @@ export const opportunitiesApi = {
 
   delete: (id: string) =>
     api.delete<MessageResponse>(`/opportunities/${id}`).then((r) => r.data),
+
+  uploadThumbnail: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post<Opportunity>(`/opportunities/${id}/thumbnail`, form, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
 }
 
 // ── News ──────────────────────────────────────────────────────────────────────
@@ -610,6 +623,15 @@ export const leadershipApi = {
 
   listAdmin: () =>
     api.get<LeadershipTerm[]>('/leadership/admin').then((r) => r.data),
+
+  listOffices: () =>
+    api.get<LeadershipOffice[]>('/leadership/offices').then((r) => r.data),
+
+  createOffice: (data: { name: string; sort_order?: number }) =>
+    api.post<LeadershipOffice>('/leadership/offices', data).then((r) => r.data),
+
+  deleteOffice: (id: string) =>
+    api.delete<MessageResponse>(`/leadership/offices/${id}`).then((r) => r.data),
 
   createTerm: (data: {
     title: string

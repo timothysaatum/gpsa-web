@@ -193,7 +193,12 @@ export function OpportunityCard({ opportunity, onApply }: OpportunityCardProps) 
   return (
     <Card padding="none" className="group relative flex flex-col overflow-hidden rounded-[1.35rem] border-white bg-white shadow-[0_18px_45px_rgba(16,24,40,0.08)] hover:shadow-[0_26px_70px_rgba(0,77,0,0.15)] transition-all duration-300 hover:-translate-y-1">
       <div className={cn('absolute left-0 top-0 h-full w-1.5', style.bar)} />
-      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white to-cream-dark/50" />
+      {opportunity.thumbnail_url ? (
+        <div className="relative h-40 overflow-hidden">
+          <img src={opportunity.thumbnail_url} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+        </div>
+      ) : <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white to-cream-dark/50" />}
       <div className="relative p-5 sm:p-6 flex flex-col gap-4 flex-1">
         <div className="flex items-start justify-between gap-3 pl-1">
           <div className="flex items-center gap-3 min-w-0">

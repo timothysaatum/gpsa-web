@@ -57,6 +57,7 @@ class AcademicResource(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Bas
     mime_type: Mapped[str] = mapped_column(String(127), nullable=False)
     file_size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
     duration_mins: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)  # videos only
+    thumbnail_key: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     # Visibility
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # "Best Sample"

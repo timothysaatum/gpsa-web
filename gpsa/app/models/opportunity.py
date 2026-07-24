@@ -33,6 +33,7 @@ class Opportunity(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     deadline: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     external_link: Mapped[str] = mapped_column(String(2048), nullable=False)
+    thumbnail_key: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     # Visibility
     is_published: Mapped[bool] = mapped_column(
