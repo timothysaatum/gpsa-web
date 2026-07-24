@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ArrowRight, BookOpen, Heart, Newspaper, Users, ChevronLeft, ChevronRight,
   GraduationCap, CalendarRange, Library, Award, Mail, Briefcase, Image as ImageIcon,
+  Sparkles, ShieldCheck,
 } from 'lucide-react'
 import { eventsApi, galleryApi, heroApi, newsApi, opportunitiesApi, statsApi, welfareApi } from '@/api/services'
 import { Button, Badge, CardSkeleton, EmptyState, SectionHeader, Skeleton } from '@/components/ui'
@@ -11,9 +12,6 @@ import { Button, Badge, CardSkeleton, EmptyState, SectionHeader, Skeleton } from
 import { EventCard, CountdownBlock, NewsCard, OpportunityCard } from '@/components/shared'
 
 import { cn, formatDate, formatDateTime, relativeTime } from '@/utils'
-import slide1 from '@/assets/KCP_4243.jpg'
-import slide2 from '@/assets/KCP_4248.jpg'
-import slide3 from '@/assets/KCP_4495.jpg'
 import type { GalleryItem, HeroSlide } from '@/types'
 import { useCmsPageSettings } from '@/hooks/useCmsPageSettings'
 import { homePageDefaults } from '@/config/cmsPageDefaults'
@@ -22,7 +20,7 @@ import { homePageDefaults } from '@/config/cmsPageDefaults'
 
 const FALLBACK_SLIDES = [
   {
-    image_url: slide1,
+    image_url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80',
     tag: 'Health Week 2025',
     heading: 'Welcome to',
     highlight: 'GPSA-UDS',
@@ -33,7 +31,7 @@ const FALLBACK_SLIDES = [
     secondary_button_path: '/events',
   },
   {
-    image_url: slide2,
+    image_url: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1600&q=80',
     tag: 'Community & Events',
     heading: 'One Family,',
     highlight: 'One Vision',
@@ -44,7 +42,7 @@ const FALLBACK_SLIDES = [
     secondary_button_path: '/academics',
   },
   {
-    image_url: slide3,
+    image_url: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=1600&q=80',
     tag: 'GPSA-UDS Welfare',
     heading: 'Your Wellbeing,',
     highlight: 'Our Priority',
@@ -900,51 +898,90 @@ function OpportunitiesPreview() {
   })
 
   return (
-    <section className="section-padding bg-cream-dark">
+    <section className="section-padding relative overflow-hidden bg-cream">
+      <div className="pointer-events-none absolute -left-32 top-24 h-80 w-80 rounded-full bg-green-100/60 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-gold-100/50 blur-3xl" aria-hidden="true" />
+
       <div className="section-container">
-        <SectionHeader
-          title={settings.opportunities_title}
-          subtitle={settings.opportunities_subtitle}
-          action={
-            <Button variant="ghost" size="sm" onClick={() => navigate('/opportunities')} rightIcon={<ArrowRight className="h-4 w-4" />}>
-              View All
+        <div className="relative overflow-hidden rounded-[2rem] bg-brand px-5 py-7 shadow-[0_28px_80px_rgba(0,45,0,0.18)] sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+          <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full border-[44px] border-white/5" aria-hidden="true" />
+          <div className="pointer-events-none absolute bottom-0 left-[42%] h-40 w-40 translate-y-1/2 rounded-full bg-gold-500/10 blur-2xl" aria-hidden="true" />
+
+          <div className="relative mb-8 grid gap-7 lg:grid-cols-[1.2fr_0.8fr] lg:items-end lg:gap-12">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-[11px] font-800 uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+                <Sparkles className="h-3.5 w-3.5 text-gold-300" aria-hidden="true" />
+                Your next chapter
+              </div>
+              <h2 className="max-w-2xl font-display text-4xl font-bold leading-[0.98] text-white sm:text-5xl lg:text-[3.5rem]">
+                {settings.opportunities_title}
+                <span className="text-gold-300">, curated for you.</span>
+              </h2>
+            </div>
+
+            <div className="lg:pb-1">
+              <p className="max-w-xl text-sm leading-7 text-white/70 sm:text-base">
+                {settings.opportunities_subtitle}. Explore handpicked pathways to learn, earn, and make your mark in pharmacy.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-xs font-700 text-white/80">
+                <span className="inline-flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-gold-300" aria-hidden="true" />
+                  Student-focused
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-green-300" aria-hidden="true" />
+                  Updated regularly
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative">
+            {isLoading ? (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
+              </div>
+            ) : !data?.items?.length ? (
+              <div className="rounded-[1.5rem] bg-white p-2">
+                <EmptyState
+                  icon="💼"
+                  title="No open opportunities"
+                  description="New scholarships, internships, and training notices will appear here."
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3">
+                {data.items.map((opportunity) => (
+                  <OpportunityCard
+                    key={opportunity.id}
+                    opportunity={opportunity}
+                    onApply={() => window.open(opportunity.external_link, '_blank', 'noopener,noreferrer')}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="relative mt-7 flex flex-col gap-5 border-t border-white/15 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-gold-300">
+                <Briefcase className="h-4.5 w-4.5" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-sm font-700 text-white">Built for ambitious pharmacy students</p>
+                <p className="mt-0.5 text-xs text-white/55">Internships, scholarships, jobs and training—all in one place.</p>
+              </div>
+            </div>
+            <Button
+              variant="outline-white"
+              size="sm"
+              className="w-full rounded-xl sm:w-auto"
+              onClick={() => navigate('/opportunities')}
+              rightIcon={<ArrowRight className="h-4 w-4" />}
+            >
+              Explore all opportunities
             </Button>
-          }
-        />
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
           </div>
-        ) : !data?.items?.length ? (
-          <EmptyState
-            icon="💼"
-            title="No open opportunities"
-            description="New scholarships, internships, and training notices will appear here."
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {data.items.map((opportunity) => (
-              <OpportunityCard
-                key={opportunity.id}
-                opportunity={opportunity}
-                onApply={() => window.open(opportunity.external_link, '_blank', 'noopener,noreferrer')}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="mt-8 rounded-[1.35rem] bg-white border border-white p-5 flex flex-col sm:flex-row sm:items-center gap-4 shadow-[0_18px_45px_rgba(16,24,40,0.08)]">
-          <div className="w-11 h-11 rounded-xl bg-brand flex items-center justify-center flex-shrink-0">
-            <Briefcase className="h-5 w-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-display font-bold text-deep">Have an opportunity for GPSA-UDS students?</p>
-            <p className="text-sm text-muted leading-relaxed">Executive and admin teams can publish vetted opportunities from the dashboard.</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => navigate('/opportunities')}>
-            Browse
-          </Button>
         </div>
       </div>
     </section>
@@ -954,9 +991,9 @@ function OpportunitiesPreview() {
 // ── Gallery Teaser ────────────────────────────────────────────────────────────
 
 const FALLBACK_GALLERY_ITEMS: Pick<GalleryItem, 'id' | 'image_url' | 'thumbnail_url' | 'title' | 'category' | 'event_date'>[] = [
-  { id: 'fallback-1', image_url: slide1, thumbnail_url: null, title: 'GPSA-UDS Campus Life', category: 'events', event_date: null },
-  { id: 'fallback-2', image_url: slide2, thumbnail_url: null, title: 'Community and Leadership', category: 'outreach', event_date: null },
-  { id: 'fallback-3', image_url: slide3, thumbnail_url: null, title: 'Student Activities', category: 'social', event_date: null },
+  { id: 'fallback-1', image_url: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1400&q=80', thumbnail_url: null, title: 'GPSA-UDS Campus Life', category: 'events', event_date: null },
+  { id: 'fallback-2', image_url: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=1400&q=80', thumbnail_url: null, title: 'Community and Leadership', category: 'outreach', event_date: null },
+  { id: 'fallback-3', image_url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1400&q=80', thumbnail_url: null, title: 'Student Activities', category: 'social', event_date: null },
 ]
 
 function GalleryPreviewCard({ item }: { item: Pick<GalleryItem, 'image_url' | 'thumbnail_url' | 'title' | 'category' | 'event_date'> }) {

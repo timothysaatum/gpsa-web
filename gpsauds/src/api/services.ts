@@ -40,6 +40,7 @@ import type {
   Notification,
   Opportunity,
   OpportunityType,
+  Partner,
   PaginatedResponse,
   RegisterRequest,
   ReportStatus,
@@ -59,6 +60,17 @@ import type {
 
 export const aboutApi = {
   get: () => api.get<AboutContent>('/about/').then((r) => r.data),
+  listPartnersAdmin: () => api.get<Partner[]>('/about/partners/admin').then((r) => r.data),
+  createPartner: (data: { name: string; website_url?: string | null; sort_order: number; is_published: boolean }) =>
+    api.post<Partner>('/about/partners', data).then((r) => r.data),
+  updatePartner: (id: string, data: Partial<Pick<Partner, 'name' | 'website_url' | 'sort_order' | 'is_published'>>) =>
+    api.patch<Partner>(`/about/partners/${id}`, data).then((r) => r.data),
+  uploadPartnerLogo: (id: string, file: File) => {
+    const data = new FormData()
+    data.append('file', file)
+    return api.post<Partner>(`/about/partners/${id}/logo`, data, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
+  deletePartner: (id: string) => api.delete<MessageResponse>(`/about/partners/${id}`).then((r) => r.data),
 }
 
 export const historyApi = {
@@ -432,6 +444,7 @@ export const newsApi = {
     summary: string
     body: string
     banner_emoji?: string | null
+    image_alt?: string | null
     is_featured?: boolean
     is_urgent?: boolean
     is_strip_announcement?: boolean
@@ -446,6 +459,7 @@ export const newsApi = {
     summary?: string
     body?: string
     banner_emoji?: string | null
+    image_alt?: string | null
     is_featured?: boolean
     is_urgent?: boolean
     is_strip_announcement?: boolean
@@ -455,6 +469,14 @@ export const newsApi = {
 
   publish: (id: string) =>
     api.post<NewsPost>(`/news/${id}/publish`).then((r) => r.data),
+
+  uploadImage: (id: string, file: File) => {
+    const data = new FormData()
+    data.append('file', file)
+    return api.post<NewsPost>(`/news/${id}/image`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
 
   delete: (id: string) =>
     api.delete<MessageResponse>(`/news/${id}`).then((r) => r.data),

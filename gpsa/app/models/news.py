@@ -42,6 +42,7 @@ class NewsPost(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     # Presentation
     banner_emoji: Mapped[str | None] = mapped_column(String(10), nullable=True)
     image_key: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    image_alt: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Flags
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
