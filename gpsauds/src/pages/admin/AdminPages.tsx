@@ -479,8 +479,9 @@ export function AdminEventsPage() {
 export function AdminOpportunitiesPage() {
   const qc = useQueryClient()
   const [form, setForm] = useState({ title: '', organization: '', opp_type: 'internship' as OpportunityType, description: '', location: '', deadline: '', external_link: '' })
+  const [thumbnail, setThumbnail] = useState<File | null>(null)
   const { data, isLoading } = useQuery({ queryKey: ['admin-opportunities'], queryFn: () => opportunitiesApi.listAdmin({ limit: 100 }) })
-  const create = useMutation({ mutationFn: () => opportunitiesApi.create({ ...form, location: form.location || null }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-opportunities'] }); setForm((f) => ({ ...f, title: '', organization: '', description: '', location: '', deadline: '', external_link: '' })) } })
+  const create = useMutation({ mutationFn: async () => { const opportunity = await opportunitiesApi.create({ ...form, location: form.location || null }); return thumbnail ? opportunitiesApi.uploadThumbnail(opportunity.id, thumbnail) : opportunity }, onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-opportunities'] }); setThumbnail(null); setForm((f) => ({ ...f, title: '', organization: '', description: '', location: '', deadline: '', external_link: '' })) } })
   const del = useMutation({ mutationFn: opportunitiesApi.delete, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-opportunities'] }) })
   return (
     <TabbedCrudPage title="Opportunities" description="Publish internships, scholarships, jobs, and training opportunities.">
@@ -492,10 +493,11 @@ export function AdminOpportunitiesPage() {
         <Field label="Location" value={form.location} onChange={(v) => setForm((f) => ({ ...f, location: v }))} />
         <Field label="Deadline" type="date" value={form.deadline} onChange={(v) => setForm((f) => ({ ...f, deadline: v }))} required />
         <Field label="External link" type="url" value={form.external_link} onChange={(v) => setForm((f) => ({ ...f, external_link: v }))} required />
+        <label><span className={label}>Card thumbnail</span><input className={input} type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setThumbnail(e.target.files?.[0] ?? null)} /><span className="mt-1 block text-xs text-muted">Use a clean 16:9 image; it will be cropped responsively.</span></label>
         <Textarea label="Description" value={form.description} onChange={(v) => setForm((f) => ({ ...f, description: v }))} required />
         <Button type="submit" loading={create.isPending} leftIcon={<Plus className="h-4 w-4" />}>Create Opportunity</Button>
       </form>
-      <AdminList isLoading={isLoading} items={data?.items ?? []} title={(o) => o.title} meta={(o) => `${o.organization} · ${o.opp_type} · deadline ${formatDate(o.deadline)}`} actions={(o) => <Button size="sm" variant="destructive" onClick={() => del.mutate(o.id)}>Delete</Button>} />
+      <AdminList isLoading={isLoading} items={data?.items ?? []} title={(o) => o.title} meta={(o) => `${o.organization} · ${o.opp_type} · deadline ${formatDate(o.deadline)}`} actions={(o) => <><label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />{o.thumbnail_url ? 'Replace thumbnail' : 'Add thumbnail'}<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) opportunitiesApi.uploadThumbnail(o.id, file).then(() => qc.invalidateQueries({ queryKey: ['admin-opportunities'] })) }} /></label><Button size="sm" variant="destructive" onClick={() => del.mutate(o.id)}>Delete</Button></>} />
     </TabbedCrudPage>
   )
 }
@@ -1067,7 +1069,7 @@ export function AdminAcademicsPage() {
   const { data: courses = [] } = useQuery({ queryKey: ['admin-courses'], queryFn: () => academicsApi.listCourses() })
   const { data, isLoading } = useQuery({ queryKey: ['admin-resources'], queryFn: () => academicsApi.listAllResources({ limit: 100 }) })
   return <AdminTabsPage title="Academics" description="Review resources and use the public upload flow for new resources." tabs={[
-    { id: 'resources', label: 'Resources', icon: BookOpen, content: <><div className="mb-5"><InfoPanel title="Resource workflow" items={['Exec/admin uploads are supported', 'Admin can publish reviewed resources', 'Course management exists through API']} /></div><AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.title} meta={(r) => `${r.content_type} · Level ${r.level} · ${r.is_published ? 'Published' : 'Pending'}`} actions={(r) => !r.is_published ? <Button size="sm" variant="outline" onClick={() => academicsApi.publishResource(r.id).then(() => qc.invalidateQueries({ queryKey: ['admin-resources'] }))}>Publish</Button> : <CheckCircle2 className="h-5 w-5 text-green-700" />} /><p className="text-sm text-muted mt-4">{courses.length} courses configured.</p></> },
+    { id: 'resources', label: 'Resources', icon: BookOpen, content: <><div className="mb-5"><InfoPanel title="Resource workflow" items={['Exec/admin uploads are supported', 'Admin can publish reviewed resources', 'Course management exists through API']} /></div><AdminList isLoading={isLoading} items={data?.items ?? []} title={(r) => r.title} meta={(r) => `${r.content_type} · Level ${r.level} · ${r.is_published ? 'Published' : 'Pending'}`} actions={(r) => <><label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />{r.thumbnail_url ? 'Replace thumbnail' : 'Add thumbnail'}<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; if (file) academicsApi.uploadThumbnail(r.id, file).then(() => qc.invalidateQueries({ queryKey: ['admin-resources'] })) }} /></label>{!r.is_published ? <Button size="sm" variant="outline" onClick={() => academicsApi.publishResource(r.id).then(() => qc.invalidateQueries({ queryKey: ['admin-resources'] }))}>Publish</Button> : <CheckCircle2 className="h-5 w-5 text-green-700" />}</>} /><p className="text-sm text-muted mt-4">{courses.length} courses configured.</p></> },
     { id: 'settings', label: 'Page settings', icon: Settings2, content: <CmsDocumentEditor slug="academics" title="Academics Page Settings" initialContent={academicsPageDefaults} defaultOpen /> },
   ]} />
 }

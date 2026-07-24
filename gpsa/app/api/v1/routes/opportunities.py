@@ -7,7 +7,7 @@ import uuid
 from datetime import date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, File, Request, UploadFile, status
 from pydantic import Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +16,8 @@ from app.db.session import get_db
 from app.models.enums import OpportunityType, UserRole
 from app.schemas.common import AppModel, MessageResponse, PaginatedResponse
 from app.services.opportunity import OpportunityService
+from app.services.storage import storage
+from app.utils.file_validation import validate_image_file
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
@@ -66,6 +68,13 @@ class OpportunityResponse(AppModel):
     is_active: bool
     is_published: bool
     created_at: datetime
+    thumbnail_url: str | None = None
+
+
+def _opportunity_response(opportunity) -> OpportunityResponse:
+    response = OpportunityResponse.model_validate(opportunity)
+    response.thumbnail_url = storage.cdn_url(opportunity.thumbnail_key) if opportunity.thumbnail_key else None
+    return response
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -99,7 +108,7 @@ async def list_opportunities(
         limit=limit,
     )
     return PaginatedResponse(
-        items=[OpportunityResponse.model_validate(o) for o in opps],
+        items=[_opportunity_response(o) for o in opps],
         total=total,
         offset=offset,
         limit=limit,
@@ -119,7 +128,7 @@ async def list_all_opportunities(
     service = OpportunityService(db)
     opportunities = await service.repo.list(offset=offset, limit=limit)
     return PaginatedResponse(
-        items=[OpportunityResponse.model_validate(item) for item in opportunities],
+        items=[_opportunity_response(item) for item in opportunities],
         total=await service.repo.count(),
         offset=offset,
         limit=limit,
@@ -132,7 +141,7 @@ async def get_opportunity(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OpportunityResponse:
     opp = await OpportunityService(db).get_by_id(opp_id)
-    return OpportunityResponse.model_validate(opp)
+    return _opportunity_response(opp)
 
 
 @router.post(
@@ -152,7 +161,7 @@ async def create_opportunity(
         actor=current_user,
         request=request,
     )
-    return OpportunityResponse.model_validate(opp)
+    return _opportunity_response(opp)
 
 
 @router.patch("/{opp_id}", response_model=OpportunityResponse)
@@ -165,7 +174,23 @@ async def update_opportunity(
 ) -> OpportunityResponse:
     updates = payload.model_dump(exclude_none=True)
     opp = await OpportunityService(db).update(opp_id, updates, current_user, request)
-    return OpportunityResponse.model_validate(opp)
+    return _opportunity_response(opp)
+
+
+@router.post("/{opp_id}/thumbnail", response_model=OpportunityResponse)
+async def upload_opportunity_thumbnail(
+    opp_id: uuid.UUID,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> OpportunityResponse:
+    service = OpportunityService(db)
+    opportunity = await service.get_by_id(opp_id)
+    validated = validate_image_file(await file.read(), file.filename or "thumbnail.jpg")
+    key = await storage.upload(validated.content, f"opportunities/{opp_id}", file.filename or "thumbnail.jpg", validated.mime_type, public=True)
+    opportunity = await service.update(opp_id, {"thumbnail_key": key}, current_user, request)
+    return _opportunity_response(opportunity)
 
 
 @router.delete(

@@ -20,6 +20,7 @@ from app.schemas.common import MessageResponse, PaginatedResponse
 from app.services.academic_resource import AcademicResourceService
 from app.services.audit import AuditService
 from app.services.storage import storage
+from app.utils.file_validation import validate_image_file
 
 router = APIRouter(tags=["Academic Resources"])
 
@@ -95,6 +96,7 @@ async def list_resources(
         url = await storage.presign(r.file_key)
         resp = AcademicResourceResponse.model_validate(r)
         resp.download_url = url
+        resp.thumbnail_url = storage.cdn_url(r.thumbnail_key) if r.thumbnail_key else None
         items.append(resp)
     return PaginatedResponse(items=items, total=total, offset=offset, limit=limit)
 
@@ -192,6 +194,25 @@ async def update_resource(
         entity_id=resource.id, old_values=old_values,
         new_values={k: str(v) for k, v in updates.items()}, request=request,
     )
+    await db.commit()
+    return await AcademicResourceService(db)._to_response(resource)
+
+
+@router.post("/{resource_id}/thumbnail", response_model=AcademicResourceResponse)
+async def upload_resource_thumbnail(
+    resource_id: uuid.UUID,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> AcademicResourceResponse:
+    assert_permission(can_upload_resource(current_user))
+    repo = AcademicResourceRepository(db)
+    resource = await repo.get_by_id_or_404(resource_id)
+    validated = validate_image_file(await file.read(), file.filename or "thumbnail.jpg")
+    key = await storage.upload(validated.content, f"academic-thumbnails/{resource_id}", file.filename or "thumbnail.jpg", validated.mime_type, public=True)
+    resource = await repo.update(resource, {"thumbnail_key": key})
+    await AuditService(db).log(action="UPDATE", entity_type="academic_resource", entity_id=resource.id, new_values={"thumbnail_key": key}, request=request)
     await db.commit()
     return await AcademicResourceService(db)._to_response(resource)
 

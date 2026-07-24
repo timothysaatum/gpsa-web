@@ -400,7 +400,11 @@ export function AcademicsPage() {
                   className="card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 hover:shadow-card-md hover:-translate-y-0.5 transition-all cursor-pointer"
                   onClick={() => navigate(`/academics/${resource.id}`)}
                 >
-                  <ResourceIcon content_type={resource.content_type} />
+                  {resource.thumbnail_url ? (
+                    <div className="h-20 w-full shrink-0 overflow-hidden rounded-xl bg-cream-dark sm:w-28">
+                      <img src={resource.thumbnail_url} alt="" className="h-full w-full object-cover transition-transform duration-300 hover:scale-105" />
+                    </div>
+                  ) : <ResourceIcon content_type={resource.content_type} />}
 
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap gap-1.5 mb-1.5">

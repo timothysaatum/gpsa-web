@@ -36,6 +36,7 @@ class AcademicResourceResponse(AppModel):
     is_published: bool
     # download_url resolved at the API layer from file_key — never stored
     download_url: str | None = None
+    thumbnail_url: str | None = None
     created_at: datetime
 
 

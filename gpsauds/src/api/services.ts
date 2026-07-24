@@ -259,6 +259,12 @@ export const academicsApi = {
   publishResource: (id: string) =>
     api.post<AcademicResource>(`/academic-resources/${id}/publish`).then((r) => r.data),
 
+  uploadThumbnail: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post<AcademicResource>(`/academic-resources/${id}/thumbnail`, form, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
+
   deleteResource: (id: string) =>
     api.delete<MessageResponse>(`/academic-resources/${id}`).then((r) => r.data),
 }
@@ -414,6 +420,12 @@ export const opportunitiesApi = {
 
   delete: (id: string) =>
     api.delete<MessageResponse>(`/opportunities/${id}`).then((r) => r.data),
+
+  uploadThumbnail: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post<Opportunity>(`/opportunities/${id}/thumbnail`, form, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
 }
 
 // ── News ──────────────────────────────────────────────────────────────────────
