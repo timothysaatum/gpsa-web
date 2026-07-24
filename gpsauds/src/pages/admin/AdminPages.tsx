@@ -668,14 +668,18 @@ function GalleryAdminEditor({ item, onSaved }: { item: GalleryItem; onSaved: () 
 export function AdminLeadershipPage() {
   const qc = useQueryClient()
   const { data: terms = [], isLoading } = useQuery({ queryKey: ['admin-leadership'], queryFn: leadershipApi.listAdmin })
+  const { data: offices = [] } = useQuery({ queryKey: ['leadership-offices'], queryFn: leadershipApi.listOffices })
   const [term, setTerm] = useState({ title: '', academic_year: '', theme: '', summary: '', is_current: false })
   const [leader, setLeader] = useState({ term_id: '', full_name: '', office: '', bio: '', email: '', phone: '', sort_order: 0 })
+  const [officeName, setOfficeName] = useState('')
   const createTerm = useMutation({ mutationFn: () => leadershipApi.createTerm({ ...term, theme: term.theme || null, summary: term.summary || null }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-leadership'] }); setTerm({ title: '', academic_year: '', theme: '', summary: '', is_current: false }) } })
   const createLeader = useMutation({ mutationFn: () => leadershipApi.createLeader({ ...leader, term_id: leader.term_id || terms[0]?.id, bio: leader.bio || null, email: leader.email || null, phone: leader.phone || null }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-leadership'] }); setLeader((l) => ({ ...l, full_name: '', office: '', bio: '', email: '', phone: '' })) } })
   const uploadPhoto = useMutation({ mutationFn: ({ id, file }: { id: string; file: File }) => { const fd = new FormData(); fd.append('file', file); return leadershipApi.uploadLeaderPhoto(id, fd) }, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-leadership'] }) })
   const deleteLeader = useMutation({ mutationFn: leadershipApi.deleteLeader, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-leadership'] }) })
   const updateLeader = useMutation({ mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) => leadershipApi.updateLeader(id, { is_active }), onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-leadership'] }) })
   const deleteTerm = useMutation({ mutationFn: leadershipApi.deleteTerm, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-leadership'] }) })
+  const createOffice = useMutation({ mutationFn: () => leadershipApi.createOffice({ name: officeName, sort_order: offices.length }), onSuccess: (office) => { setOfficeName(''); setLeader((old) => ({ ...old, office: office.name })); qc.invalidateQueries({ queryKey: ['leadership-offices'] }) } })
+  const deleteOffice = useMutation({ mutationFn: leadershipApi.deleteOffice, onSuccess: () => qc.invalidateQueries({ queryKey: ['leadership-offices'] }) })
   const flatLeaders = terms.flatMap((t) => t.leaders.map((l) => ({ ...l, term: t })))
   return (
     <TabbedCrudPage title="Leadership" description="Maintain every administration, officer, office, contact, and real leader photo.">
@@ -688,14 +692,23 @@ export function AdminLeadershipPage() {
         <Textarea label="Summary" value={term.summary} onChange={(v) => setTerm((f) => ({ ...f, summary: v }))} />
         <Check label="Current administration" checked={term.is_current} onChange={(v) => setTerm((f) => ({ ...f, is_current: v }))} />
         <Button type="submit" loading={createTerm.isPending}>Save Term</Button>
+        <div className="pt-5 border-t border-cream-dark">
+          <h3 className="font-display text-2xl font-bold text-deep">Offices</h3>
+          <p className="mt-1 text-sm text-muted">Create reusable offices before assigning an officer.</p>
+          <div className="mt-3 flex gap-2">
+            <input className="form-input" placeholder="e.g. President" value={officeName} onChange={(event) => setOfficeName(event.target.value)} />
+            <Button type="button" variant="outline" disabled={!officeName.trim()} loading={createOffice.isPending} onClick={() => createOffice.mutate()}>Add office</Button>
+          </div>
+          {!!offices.length && <div className="mt-3 flex flex-wrap gap-2">{offices.map((office) => <span key={office.id} className="inline-flex items-center gap-2 rounded-full border border-cream-dark bg-cream px-3 py-1.5 text-xs font-700 text-deep">{office.name}<button type="button" aria-label={`Delete ${office.name}`} className="text-red-700" onClick={() => deleteOffice.mutate(office.id)}>×</button></span>)}</div>}
+        </div>
         <h3 className="font-display text-2xl font-bold text-deep pt-5 border-t border-cream-dark">Officer</h3>
         <Select label="Term" value={leader.term_id || terms[0]?.id || ''} onChange={(v) => setLeader((f) => ({ ...f, term_id: v }))} options={terms.map((t) => ({ label: `${t.academic_year} - ${t.title}`, value: t.id }))} />
         <Field label="Full name" value={leader.full_name} onChange={(v) => setLeader((f) => ({ ...f, full_name: v }))} required />
-        <Field label="Office" value={leader.office} onChange={(v) => setLeader((f) => ({ ...f, office: v }))} required />
+        <Select label="Office" value={leader.office} onChange={(v) => setLeader((f) => ({ ...f, office: v }))} options={[{ label: offices.length ? 'Select an office' : 'Create an office first', value: '' }, ...offices.map((office) => ({ label: office.name, value: office.name }))]} />
         <Field label="Email" value={leader.email} onChange={(v) => setLeader((f) => ({ ...f, email: v }))} />
         <Field label="Phone" value={leader.phone} onChange={(v) => setLeader((f) => ({ ...f, phone: v }))} />
         <Textarea label="Bio" value={leader.bio} onChange={(v) => setLeader((f) => ({ ...f, bio: v }))} />
-        <Button type="button" onClick={() => createLeader.mutate()} disabled={!terms.length} loading={createLeader.isPending}>Save Officer</Button>
+        <Button type="button" onClick={() => createLeader.mutate()} disabled={!terms.length || !leader.office} loading={createLeader.isPending}>Save Officer</Button>
       </form>
       <div className="space-y-5">
       <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">

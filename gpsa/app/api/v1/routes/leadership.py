@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.core.dependencies import CurrentUser, require_roles
 from app.db.session import get_db
 from app.models.enums import UserRole
-from app.models.leadership import Leader, LeadershipTerm
+from app.models.leadership import Leader, LeadershipOffice, LeadershipTerm
 from app.repositories.base import BaseRepository
 from app.schemas.common import AppModel, MessageResponse
 from app.services.audit import AuditService
@@ -88,6 +88,17 @@ class LeadershipTermUpdateRequest(AppModel):
     is_current: bool | None = None
     sort_order: int | None = None
 
+class LeadershipOfficeResponse(AppModel):
+    id: uuid.UUID
+    name: str
+    sort_order: int
+    is_active: bool
+
+
+class LeadershipOfficeCreateRequest(AppModel):
+    name: str
+    sort_order: int = 0
+
 
 class LeaderCreateRequest(AppModel):
     term_id: uuid.UUID
@@ -118,6 +129,49 @@ router = APIRouter(tags=["Leadership"])
 
 def _manager_dependency():
     return Depends(require_roles(UserRole.exec, UserRole.admin))
+
+
+@router.get("/offices", response_model=list[LeadershipOfficeResponse], dependencies=[_manager_dependency()])
+async def list_offices(db: Annotated[AsyncSession, Depends(get_db)]) -> list[LeadershipOfficeResponse]:
+    result = await db.execute(
+        select(LeadershipOffice)
+        .where(LeadershipOffice.deleted_at.is_(None), LeadershipOffice.is_active.is_(True))
+        .order_by(LeadershipOffice.sort_order.asc(), LeadershipOffice.name.asc())
+    )
+    return [LeadershipOfficeResponse.model_validate(office) for office in result.scalars().all()]
+
+
+@router.post("/offices", response_model=LeadershipOfficeResponse, status_code=status.HTTP_201_CREATED, dependencies=[_manager_dependency()])
+async def create_office(
+    payload: LeadershipOfficeCreateRequest,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> LeadershipOfficeResponse:
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Office name is required.")
+    existing = await db.scalar(select(LeadershipOffice).where(LeadershipOffice.name.ilike(name), LeadershipOffice.deleted_at.is_(None)))
+    if existing:
+        raise HTTPException(status_code=409, detail="This office already exists.")
+    office = await BaseRepository(LeadershipOffice, db).create({"name": name, "sort_order": payload.sort_order, "is_active": True})
+    await AuditService(db).log(action="CREATE", entity_type="leadership_office", entity_id=office.id, new_values={"name": name}, request=request)
+    await db.commit()
+    return LeadershipOfficeResponse.model_validate(office)
+
+
+@router.delete("/offices/{office_id}", response_model=MessageResponse, dependencies=[_manager_dependency()])
+async def delete_office(
+    office_id: uuid.UUID,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MessageResponse:
+    office = await BaseRepository(LeadershipOffice, db).get_by_id_or_404(office_id)
+    await BaseRepository(LeadershipOffice, db).soft_delete(office)
+    await AuditService(db).log(action="DELETE", entity_type="leadership_office", entity_id=office.id, request=request)
+    await db.commit()
+    return MessageResponse(message="Leadership office deleted.")
 
 
 async def _unset_other_current_terms(db: AsyncSession, term_id: uuid.UUID | None = None) -> None:

@@ -26,6 +26,7 @@ import type {
   HeroSlideUpdateRequest,
   Leader,
   LeadershipTerm,
+  LeadershipOffice,
   LegacyPageContent,
   LegacyAwardItem,
   HistoricalRecordSubmissionInput,
@@ -610,6 +611,15 @@ export const leadershipApi = {
 
   listAdmin: () =>
     api.get<LeadershipTerm[]>('/leadership/admin').then((r) => r.data),
+
+  listOffices: () =>
+    api.get<LeadershipOffice[]>('/leadership/offices').then((r) => r.data),
+
+  createOffice: (data: { name: string; sort_order?: number }) =>
+    api.post<LeadershipOffice>('/leadership/offices', data).then((r) => r.data),
+
+  deleteOffice: (id: string) =>
+    api.delete<MessageResponse>(`/leadership/offices/${id}`).then((r) => r.data),
 
   createTerm: (data: {
     title: string

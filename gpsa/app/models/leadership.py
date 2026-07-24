@@ -27,6 +27,13 @@ class LeadershipTerm(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base)
         order_by="Leader.sort_order",
     )
 
+class LeadershipOffice(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
+    __tablename__ = "leadership_offices"
+
+    name: Mapped[str] = mapped_column(String(180), nullable=False, unique=True, index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+
 
 class Leader(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "leaders"

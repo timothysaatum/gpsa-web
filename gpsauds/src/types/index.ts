@@ -335,6 +335,13 @@ export interface LeadershipTerm {
   leaders: Leader[]
 }
 
+export interface LeadershipOffice {
+  id: string
+  name: string
+  sort_order: number
+  is_active: boolean
+}
+
 // ── Hero Slides ──────────────────────────────────────────────────────────────
 
 export interface HeroSlide {
