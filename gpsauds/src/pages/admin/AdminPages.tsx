@@ -402,9 +402,8 @@ export function AdminNewsPage() {
   const publish = useMutation({ mutationFn: newsApi.publish, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-news'] }) })
 
   return (
-    <>
-    <CmsDocumentEditor slug="news" title="News Page Settings" initialContent={newsPageDefaults} />
-    <CrudPage title="News" description="Create announcements, updates, urgent posts, and strip announcements.">
+    <TabbedCrudPage title="News" description="Create announcements, updates, urgent posts, and strip announcements.">
+      <CmsDocumentEditor slug="news" title="News Page Settings" initialContent={newsPageDefaults} defaultOpen />
       <form onSubmit={(e) => { e.preventDefault(); create.mutate() }} className="admin-form">
         <Field label="Title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} required />
         <Select label="Category" value={form.category} onChange={(v) => setForm((f) => ({ ...f, category: v as NewsCategory }))} options={['announcement','academic_update','welfare_update','events_recap','opportunities','general']} />
@@ -435,8 +434,7 @@ export function AdminNewsPage() {
         {!p.published_at && <Button size="sm" variant="outline" onClick={() => publish.mutate(p.id)}>Publish</Button>}
         <Button size="sm" variant="destructive" onClick={() => del.mutate(p.id)}>Delete</Button>
       </>} />
-    </CrudPage>
-    </>
+    </TabbedCrudPage>
   )
 }
 
@@ -447,9 +445,8 @@ export function AdminEventsPage() {
   const create = useMutation({ mutationFn: () => eventsApi.create({ ...form, end_datetime: form.end_datetime || null }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-events'] }); setForm((f) => ({ ...f, title: '', description: '', location: '' })) } })
   const del = useMutation({ mutationFn: eventsApi.deleteEvent, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-events'] }) })
   return (
-    <>
-    <CmsDocumentEditor slug="events" title="Events Page Settings" initialContent={eventsPageDefaults} />
-    <CrudPage title="Events" description="Create and manage public events.">
+    <TabbedCrudPage title="Events" description="Create and manage public events.">
+      <CmsDocumentEditor slug="events" title="Events Page Settings" initialContent={eventsPageDefaults} defaultOpen />
       <form onSubmit={(e) => { e.preventDefault(); create.mutate() }} className="admin-form">
         <Field label="Title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} required />
         <Select label="Type" value={form.event_type} onChange={(v) => setForm((f) => ({ ...f, event_type: v as EventType }))} options={['academic','welfare','outreach','social','conference']} />
@@ -462,8 +459,7 @@ export function AdminEventsPage() {
         <Button type="submit" loading={create.isPending} leftIcon={<Plus className="h-4 w-4" />}>Create Event</Button>
       </form>
       <AdminList isLoading={isLoading} items={data?.items ?? []} title={(e) => e.title} meta={(e) => `${e.event_type} · ${formatDateTime(e.start_datetime)} · ${e.location}`} actions={(e) => <Button size="sm" variant="destructive" onClick={() => del.mutate(e.id)}>Delete</Button>} />
-    </CrudPage>
-    </>
+    </TabbedCrudPage>
   )
 }
 
@@ -474,9 +470,8 @@ export function AdminOpportunitiesPage() {
   const create = useMutation({ mutationFn: () => opportunitiesApi.create({ ...form, location: form.location || null }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-opportunities'] }); setForm((f) => ({ ...f, title: '', organization: '', description: '', location: '', deadline: '', external_link: '' })) } })
   const del = useMutation({ mutationFn: opportunitiesApi.delete, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-opportunities'] }) })
   return (
-    <>
-    <CmsDocumentEditor slug="opportunities" title="Opportunities Page Settings" initialContent={opportunitiesPageDefaults} />
-    <CrudPage title="Opportunities" description="Publish internships, scholarships, jobs, and training opportunities.">
+    <TabbedCrudPage title="Opportunities" description="Publish internships, scholarships, jobs, and training opportunities.">
+      <CmsDocumentEditor slug="opportunities" title="Opportunities Page Settings" initialContent={opportunitiesPageDefaults} defaultOpen />
       <form onSubmit={(e) => { e.preventDefault(); create.mutate() }} className="admin-form">
         <Field label="Title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} required />
         <Field label="Organization" value={form.organization} onChange={(v) => setForm((f) => ({ ...f, organization: v }))} required />
@@ -488,8 +483,7 @@ export function AdminOpportunitiesPage() {
         <Button type="submit" loading={create.isPending} leftIcon={<Plus className="h-4 w-4" />}>Create Opportunity</Button>
       </form>
       <AdminList isLoading={isLoading} items={data?.items ?? []} title={(o) => o.title} meta={(o) => `${o.organization} · ${o.opp_type} · deadline ${formatDate(o.deadline)}`} actions={(o) => <Button size="sm" variant="destructive" onClick={() => del.mutate(o.id)}>Delete</Button>} />
-    </CrudPage>
-    </>
+    </TabbedCrudPage>
   )
 }
 
@@ -520,9 +514,8 @@ export function AdminGalleryPage() {
     qc.invalidateQueries({ queryKey: ['gallery'] })
   }
   return (
-    <>
-    <CmsDocumentEditor slug="gallery" title="Gallery Page Settings" initialContent={galleryPageDefaults} />
-    <CrudPage title="Gallery" description="Upload and organize public website photos.">
+    <TabbedCrudPage title="Gallery" description="Upload and organize public website photos.">
+      <CmsDocumentEditor slug="gallery" title="Gallery Page Settings" initialContent={galleryPageDefaults} defaultOpen />
       <form onSubmit={(e) => { e.preventDefault(); create.mutate() }} className="admin-form">
         <Field label="Title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} required />
         <Select label="Category" value={form.category} onChange={(v) => setForm((f) => ({ ...f, category: v as GalleryCategory }))} options={['events','academic','health','outreach','social','welfare']} />
@@ -537,8 +530,7 @@ export function AdminGalleryPage() {
         ))}
         {!isLoading && !data?.length && <EmptyState title="No gallery images" description="Upload the first image using the form." />}
       </div>
-    </CrudPage>
-    </>
+    </TabbedCrudPage>
   )
 }
 
@@ -675,8 +667,8 @@ export function AdminLeadershipPage() {
   const deleteTerm = useMutation({ mutationFn: leadershipApi.deleteTerm, onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-leadership'] }) })
   const flatLeaders = terms.flatMap((t) => t.leaders.map((l) => ({ ...l, term: t })))
   return (
-    <CrudPage title="Leadership" description="Maintain every administration, officer, office, contact, and real leader photo.">
-      <CmsDocumentEditor slug="leadership" title="Leadership Page Settings" initialContent={leadershipPageDefaults} />
+    <TabbedCrudPage title="Leadership" description="Maintain every administration, officer, office, contact, and real leader photo.">
+      <CmsDocumentEditor slug="leadership" title="Leadership Page Settings" initialContent={leadershipPageDefaults} defaultOpen />
       <form onSubmit={(e) => { e.preventDefault(); createTerm.mutate() }} className="admin-form">
         <h3 className="font-display text-2xl font-bold text-deep">Administration</h3>
         <Field label="Title" value={term.title} onChange={(v) => setTerm((f) => ({ ...f, title: v }))} required />
@@ -694,7 +686,8 @@ export function AdminLeadershipPage() {
         <Textarea label="Bio" value={leader.bio} onChange={(v) => setLeader((f) => ({ ...f, bio: v }))} />
         <Button type="button" onClick={() => createLeader.mutate()} disabled={!terms.length} loading={createLeader.isPending}>Save Officer</Button>
       </form>
-      <div className="mt-6 rounded-xl bg-white border border-cream-dark p-5 shadow-card">
+      <div className="space-y-5">
+      <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card">
         <h3 className="font-display text-2xl font-bold text-deep mb-3">Administration terms</h3>
         <AdminList isLoading={isLoading} items={terms} title={(t) => t.title} meta={(t) => `${t.academic_year} · ${t.is_current ? 'Current' : 'Archive'}`} actions={(t) => <Button size="sm" variant="destructive" disabled={t.is_current} onClick={() => deleteTerm.mutate(t.id)}>Delete</Button>} />
       </div>
@@ -703,7 +696,8 @@ export function AdminLeadershipPage() {
         <label className="btn-sm btn-outline cursor-pointer"><Upload className="h-4 w-4" />Photo<input type="file" className="sr-only" accept="image/png,image/jpeg,image/webp" onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadPhoto.mutate({ id: l.id, file }) }} /></label>
         <Button size="sm" variant="destructive" onClick={() => deleteLeader.mutate(l.id)}>Delete</Button>
       </>} />
-    </CrudPage>
+      </div>
+    </TabbedCrudPage>
   )
 }
 
@@ -813,10 +807,11 @@ function LegacyReviewQueues() {
   )
 }
 
-function CmsDocumentEditor({ slug, title, initialContent }: {
+function CmsDocumentEditor({ slug, title, initialContent, defaultOpen = false }: {
   slug: string
   title: string
   initialContent: Record<string, unknown>
+  defaultOpen?: boolean
 }) {
   const qc = useQueryClient()
   const isAdmin = useAuthStore((state) => state.user?.role === 'admin')
@@ -824,7 +819,7 @@ function CmsDocumentEditor({ slug, title, initialContent }: {
   const [value, setValue] = useState(JSON.stringify(initialContent, null, 2))
   const [published, setPublished] = useState(true)
   const [error, setError] = useState('')
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(defaultOpen)
   const parsedSettings = (() => {
     try { return JSON.parse(value) as Record<string, unknown> }
     catch { return initialContent }
@@ -1213,6 +1208,47 @@ function StructuredField({
       {heading}
       <input className="form-input" value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />
     </label>
+  )
+}
+
+function TabbedCrudPage({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  const panels = Array.isArray(children) ? children : [children]
+  const [activeTab, setActiveTab] = useState<'content' | 'create' | 'settings'>('content')
+  const tabs = [
+    { id: 'content' as const, label: 'Content', icon: ScrollText, panel: panels[2] },
+    { id: 'create' as const, label: 'Create new', icon: Plus, panel: panels[1] },
+    { id: 'settings' as const, label: 'Page settings', icon: Settings2, panel: panels[0] },
+  ]
+  const activePanel = tabs.find((tab) => tab.id === activeTab)?.panel
+  return (
+    <>
+      <AdminPageHeader title={title} description={description} />
+      <div className="mb-6 border-b border-cream-dark">
+        <div className="-mb-px flex gap-1 overflow-x-auto" role="tablist" aria-label={`${title} management`}>
+          {tabs.map(({ id, label: tabLabel, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === id}
+              aria-controls={`${title}-${id}-panel`}
+              className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-800 transition-colors ${
+                activeTab === id
+                  ? 'border-green-700 text-green-800'
+                  : 'border-transparent text-muted hover:border-green-200 hover:text-deep'
+              }`}
+              onClick={() => setActiveTab(id)}
+            >
+              <Icon className="h-4 w-4" />
+              {tabLabel}
+            </button>
+          ))}
+        </div>
+      </div>
+      <section id={`${title}-${activeTab}-panel`} role="tabpanel" className={activeTab === 'create' ? 'mx-auto max-w-3xl' : ''}>
+        {activePanel}
+      </section>
+    </>
   )
 }
 
