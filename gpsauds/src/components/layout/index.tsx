@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   Menu, X, Bell, ChevronDown, ChevronRight, LogOut, User, Settings,
   BookOpen, Calendar, Heart, Briefcase, Award,
-  Info, Image, Mail, GraduationCap, LayoutDashboard, Sparkles, MapPin, Phone, ArrowUpToLine
+  Info, Image, Mail, Newspaper, GraduationCap, LayoutDashboard, Sparkles, MapPin, Phone, ArrowUpToLine
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { notificationsApi } from '@/api/services'
@@ -38,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Home', exact: true },
   { to: '/academics', label: 'Academics', icon: BookOpen },
   { to: '/events', label: 'Events', icon: Calendar },
+  { to: '/news', label: 'News', icon: Newspaper },
   { to: '/opportunities', label: 'Opportunities', icon: Briefcase },
   { to: '/welfare', label: 'Welfare', icon: Heart },
   {
