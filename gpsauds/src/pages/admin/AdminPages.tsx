@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BarChart3, BookOpen, Briefcase, CalendarDays, CheckCircle2,
-  Image, Newspaper, Plus, RefreshCw, ScrollText, Shield, Trash2, Upload, Users,
+  ChevronDown, Image, Newspaper, Plus, RefreshCw, ScrollText, Settings2, Shield, Trash2, Upload, Users, X,
 } from 'lucide-react'
 import {
   academicsApi, aboutApi, adminApi, cmsApi, contactApi, eventsApi, galleryApi, governanceApi, impactApi, leadershipApi, legacyApi, newsApi,
@@ -824,6 +824,7 @@ function CmsDocumentEditor({ slug, title, initialContent }: {
   const [value, setValue] = useState(JSON.stringify(initialContent, null, 2))
   const [published, setPublished] = useState(true)
   const [error, setError] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
   const parsedSettings = (() => {
     try { return JSON.parse(value) as Record<string, unknown> }
     catch { return initialContent }
@@ -864,31 +865,50 @@ function CmsDocumentEditor({ slug, title, initialContent }: {
     onError: (err) => setError(err instanceof Error ? err.message : 'Unable to delete settings.'),
   })
   return (
-    <div className="rounded-xl bg-white border border-cream-dark p-5 shadow-card mb-5">
-      <h3 className="font-display text-2xl font-bold text-deep mb-3">{title}</h3>
-      <StructuredContentEditor
-        value={parsedSettings}
-        onChange={(nextValue) => setValue(JSON.stringify(nextValue, null, 2))}
-      />
-      <div className="mt-3 flex flex-wrap items-center gap-4">
-        <Check label="Published" checked={published} onChange={setPublished} />
-        <Button size="sm" loading={save.isPending} onClick={() => { try { JSON.parse(value); save.mutate() } catch { setError('Settings must be valid JSON.') } }}>Save settings</Button>
-        {isAdmin && data && (
-          <Button
-            size="sm"
-            variant="destructive"
-            loading={remove.isPending}
-            onClick={() => {
-              if (window.confirm(`Delete ${title}? The public page will use its safe defaults until settings are saved again.`)) {
-                remove.mutate()
-              }
-            }}
-          >
-            Delete settings
-          </Button>
-        )}
-        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-      </div>
+    <div className="mb-5 overflow-hidden rounded-xl border border-cream-dark bg-white shadow-card">
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-cream/50"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700">
+          <Settings2 className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-800 text-deep">{title}</span>
+          <span className="block text-xs text-muted">Page copy, labels and publishing controls</span>
+        </span>
+        <Badge variant={published ? 'green' : 'gray'}>{published ? 'Published' : 'Hidden'}</Badge>
+        <ChevronDown className={`h-5 w-5 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen && (
+        <div className="border-t border-cream-dark bg-cream/20 p-5">
+          <StructuredContentEditor
+            value={parsedSettings}
+            onChange={(nextValue) => setValue(JSON.stringify(nextValue, null, 2))}
+          />
+          <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-cream-dark pt-4">
+            <Check label="Published" checked={published} onChange={setPublished} />
+            <Button size="sm" loading={save.isPending} onClick={() => { try { JSON.parse(value); save.mutate() } catch { setError('Settings must be valid JSON.') } }}>Save changes</Button>
+            {isAdmin && data && (
+              <Button
+                size="sm"
+                variant="destructive"
+                loading={remove.isPending}
+                onClick={() => {
+                  if (window.confirm(`Delete ${title}? The public page will use its safe defaults until settings are saved again.`)) {
+                    remove.mutate()
+                  }
+                }}
+              >
+                Reset settings
+              </Button>
+            )}
+            {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1198,10 +1218,33 @@ function StructuredField({
 
 function CrudPage({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   const childArray = Array.isArray(children) ? children : [children]
+  const hasCreateView = childArray.length === 2
+  const [view, setView] = useState<'content' | 'create'>('content')
   return (
     <>
-      <AdminPageHeader title={title} description={description} />
-      <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-5 items-start">{childArray}</div>
+      <AdminPageHeader
+        title={title}
+        description={description}
+        action={hasCreateView ? (
+          view === 'content'
+            ? <Button onClick={() => setView('create')} leftIcon={<Plus className="h-4 w-4" />}>Add new</Button>
+            : <Button variant="outline" onClick={() => setView('content')} leftIcon={<X className="h-4 w-4" />}>Close form</Button>
+        ) : undefined}
+      />
+      {hasCreateView ? (
+        view === 'create' ? (
+          <section className="mx-auto w-full max-w-3xl">
+            <div className="mb-4 px-1">
+              <p className="text-xs font-800 uppercase tracking-[0.16em] text-green-700">Create</p>
+              <h2 className="mt-1 font-display text-2xl font-bold text-deep">Add new {title.toLowerCase().replace(/s$/, '')}</h2>
+              <p className="mt-1 text-sm text-muted">Complete the details below, then save when ready.</p>
+            </div>
+            {childArray[0]}
+          </section>
+        ) : <div className="min-w-0">{childArray[1]}</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[420px_1fr] xl:items-start">{childArray}</div>
+      )}
     </>
   )
 }
