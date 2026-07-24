@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
-  Menu, X, Bell, ChevronDown, ChevronRight, LogOut, User, Settings,
+  Menu, X, Bell, ChevronDown, ChevronRight, LogOut, User, Settings, LogIn, UserPlus,
   BookOpen, Calendar, Heart, Briefcase, Award,
   Info, Image, Mail, Newspaper, GraduationCap, LayoutDashboard, Sparkles, MapPin, Phone, ArrowUpToLine
 } from 'lucide-react'
@@ -96,6 +96,7 @@ export function Navbar() {
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [authDropdownOpen, setAuthDropdownOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [mobileExpanded, setMobileExpanded] = useState<Record<string, boolean>>({})
   const [scrolled, setScrolled] = useState(false)
@@ -121,12 +122,14 @@ export function Navbar() {
     setActiveDropdown(null)
     setMobileOpen(false)
     setProfileOpen(false)
+    setAuthDropdownOpen(false)
   }, [location.pathname])
 
   useEffect(() => {
     const handler = () => {
       setProfileOpen(false)
       setActiveDropdown(null)
+      setAuthDropdownOpen(false)
     }
     document.addEventListener('click', handler)
     return () => document.removeEventListener('click', handler)
@@ -384,13 +387,52 @@ export function Navbar() {
                 </div>
               </>
             ) : (
-              <div className="hidden sm:flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
-                  Sign In
-                </Button>
-                <Button variant="primary" size="sm" onClick={() => navigate('/register')}>
-                  Join GPSA
-                </Button>
+              <div className="relative hidden sm:block" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setAuthDropdownOpen((o) => !o)}
+                  className={cn(
+                    'flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-600 transition-all duration-150',
+                    authDropdownOpen
+                      ? 'bg-green-gradient text-white shadow-sm'
+                      : 'bg-green-50 text-green-800 hover:bg-green-100 hover:text-green-900 border border-green-200/60'
+                  )}
+                >
+                  <User className="h-4 w-4 text-green-700" />
+                  <span>Join / Sign In</span>
+                  <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', authDropdownOpen && 'rotate-180')} />
+                </button>
+
+                {authDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-60 card shadow-card-lg p-2 animate-fade-in z-50 bg-white/95 backdrop-blur-xl border border-cream-dark">
+                    <Link
+                      to="/register"
+                      onClick={() => setAuthDropdownOpen(false)}
+                      className="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-green-50 transition-all border border-transparent hover:border-green-200/50"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-green-100 text-green-700 flex items-center justify-center flex-shrink-0 group-hover:bg-green-700 group-hover:text-white transition-colors">
+                        <UserPlus className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-600 text-green-900 group-hover:text-green-700">Join GPSA-UDS</p>
+                        <p className="text-[11px] text-gray-500 line-clamp-1">Register new student account</p>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/login"
+                      onClick={() => setAuthDropdownOpen(false)}
+                      className="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-cream-dark transition-all border border-transparent"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-cream-dark text-green-800 flex items-center justify-center flex-shrink-0 group-hover:bg-green-100 group-hover:text-green-700 transition-colors">
+                        <LogIn className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-600 text-green-900">Sign In</p>
+                        <p className="text-[11px] text-gray-500 line-clamp-1">Access existing portal</p>
+                      </div>
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 
