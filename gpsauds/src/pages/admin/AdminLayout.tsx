@@ -61,8 +61,8 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-cream-dark lg:grid lg:grid-cols-[280px_1fr]">
-      <aside className="sticky top-0 z-40 h-auto lg:h-screen border-b lg:border-b-0 lg:border-r border-cream-dark bg-white">
-        <div className="h-16 lg:h-[76px] flex items-center justify-between px-5 border-b border-cream-dark">
+      <aside className="sticky top-0 z-40 h-auto border-b border-cream-dark bg-white lg:flex lg:h-dvh lg:flex-col lg:border-b-0 lg:border-r">
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-cream-dark px-5 lg:h-[76px]">
           <Link to="/admin/dashboard" className="flex items-center gap-3">
             <img src={gpsaLogo} alt="GPSA-UDS" className="h-10 w-10 rounded-xl object-cover" />
             <div>
@@ -73,7 +73,10 @@ export function AdminLayout() {
           <Link to="/" className="lg:hidden text-xs font-700 text-green-700">Site</Link>
         </div>
 
-        <nav className="flex gap-2 overflow-x-auto lg:block lg:overflow-visible p-3 lg:p-5 lg:space-y-7">
+        <nav
+          aria-label="Admin navigation"
+          className="flex gap-2 overflow-x-auto p-3 lg:block lg:min-h-0 lg:flex-1 lg:space-y-7 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-contain lg:p-5"
+        >
           {navGroups.map((group) => (
             <div key={group.label} className="flex lg:block gap-2 lg:space-y-2 shrink-0">
               <p className="hidden lg:block text-[10px] font-800 uppercase tracking-widest text-muted mb-2">{group.label}</p>
